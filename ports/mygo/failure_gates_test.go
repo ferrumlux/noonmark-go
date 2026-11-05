@@ -17,7 +17,7 @@ func TestFailureGateRegistry(t *testing.T) {
 		t.Fatal(e)
 	}
 	funcs := map[string]bool{}
-	for _, dir := range []string{".", "internal/taskapp", "internal/taskview", "internal/inputdraft", "internal/titlesession", "internal/titlecoordinator", "domain-core/core", "domain-core/textcanon"} {
+	for _, dir := range []string{".", "internal/taskapp", "internal/taskview", "internal/inputdraft", "internal/titlesession", "internal/titlecoordinator", "domain-core/core", "domain-core/textcanon", "domain-extensions/classification"} {
 		files, e := filepath.Glob(filepath.Join(dir, "*_test.go"))
 		if e != nil {
 			t.Fatal(e)

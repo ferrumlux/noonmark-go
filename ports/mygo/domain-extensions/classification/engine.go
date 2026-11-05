@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	core "github.com/ferrumlux/noonmark/ports/mygo/domain/core"
+	"github.com/ferrumlux/noonmark/ports/mygo/domain/textcanon"
 	"math"
 	"reflect"
 	"sort"
@@ -203,7 +204,7 @@ func mutate(s *Snapshot, c Command, n NameCanonicalizer) (bool, error) {
 			if err != nil {
 				return false, err
 			}
-			if d == item.Name {
+			if textcanon.Equivalent(d, item.Name) {
 				return false, nil
 			}
 			if reserved(s, c.Item, k) || !c.At.After(item.NameVersions[len(item.NameVersions)-1].ValidFrom) {

@@ -1,0 +1,125 @@
+{
+  "CanonicalKeyVersion": "unicode-fixture-nfkc-casefold-whitespace-v1",
+  "Revision": 2,
+  "Items": {
+    "category:00000000-0000-4000-8000-00000000000A": {
+      "Ref": {
+        "Kind": "category",
+        "ID": "00000000-0000-4000-8000-00000000000A"
+      },
+      "Name": "É",
+      "CanonicalKey": "é",
+      "CanonicalKeyVersion": "unicode-fixture-nfkc-casefold-whitespace-v1",
+      "ColorHex": "",
+      "PresentationApproval": "userApproved",
+      "Lifecycle": "active",
+      "NameVersions": [
+        {
+          "ID": "B7A44E91-9B6E-86A4-870A-8EED79A19282",
+          "Name": "É",
+          "CanonicalKey": "é",
+          "CanonicalKeyVersion": "unicode-fixture-nfkc-casefold-whitespace-v1",
+          "ValidFrom": 4607182418800017408,
+          "ValidUntil": 4611686018427387904
+        },
+        {
+          "ID": "850CCEEC-48C5-8CDD-AFCD-9C3D6FE91208",
+          "Name": "É",
+          "CanonicalKey": "é",
+          "CanonicalKeyVersion": "unicode-fixture-nfkc-casefold-whitespace-v1",
+          "ValidFrom": 4611686018427387904,
+          "ValidUntil": null
+        }
+      ],
+      "CreatedAt": 4607182418800017408,
+      "UpdatedAt": 4611686018427387904
+    }
+  },
+  "Current": {},
+  "RelationHistory": null,
+  "History": null,
+  "Merges": {},
+  "Tombstones": {},
+  "Records": [
+    {
+      "Command": {
+        "Operation": "create",
+        "Item": {
+          "Kind": "category",
+          "ID": "00000000-0000-4000-8000-00000000000A"
+        },
+        "Target": {
+          "Kind": "",
+          "ID": ""
+        },
+        "Name": "É",
+        "ColorHex": "",
+        "ChainID": "",
+        "CategoryID": "",
+        "LabelIDs": null,
+        "TraceID": "",
+        "Status": "",
+        "Source": {
+          "Kind": "userDirect",
+          "SessionID": "",
+          "DraftID": "",
+          "EvidenceID": "",
+          "JobID": "",
+          "DraftVersion": 0,
+          "Generation": 0,
+          "FromChainID": "",
+          "Reason": ""
+        },
+        "InteractionID": "00000000-0000-4000-8000-000000000001",
+        "DecisionID": "00000000-0000-4000-8000-000000000002",
+        "At": 4607182418800017408,
+        "ExpectedRevision": 0
+      },
+      "Receipt": {
+        "InteractionID": "00000000-0000-4000-8000-000000000001",
+        "Revision": 1,
+        "Changed": true
+      }
+    },
+    {
+      "Command": {
+        "Operation": "rename",
+        "Item": {
+          "Kind": "category",
+          "ID": "00000000-0000-4000-8000-00000000000A"
+        },
+        "Target": {
+          "Kind": "",
+          "ID": ""
+        },
+        "Name": "É",
+        "ColorHex": "",
+        "ChainID": "",
+        "CategoryID": "",
+        "LabelIDs": null,
+        "TraceID": "",
+        "Status": "",
+        "Source": {
+          "Kind": "userDirect",
+          "SessionID": "",
+          "DraftID": "",
+          "EvidenceID": "",
+          "JobID": "",
+          "DraftVersion": 0,
+          "Generation": 0,
+          "FromChainID": "",
+          "Reason": ""
+        },
+        "InteractionID": "00000000-0000-4000-8000-000000000003",
+        "DecisionID": "00000000-0000-4000-8000-000000000004",
+        "At": 4611686018427387904,
+        "ExpectedRevision": 1
+      },
+      "Receipt": {
+        "InteractionID": "00000000-0000-4000-8000-000000000003",
+        "Revision": 2,
+        "Changed": true
+      }
+    }
+  ]
+}

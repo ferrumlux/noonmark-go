@@ -33,3 +33,5 @@
 `classification_test.go` 各回归测试注释指向上游同名测试族。覆盖名称版本／别名、旧历史冻结、归档关系、新关系限制、合并去重与 origin、合并链、硬删除、反向时钟、非有限时间、未知 command 字段、互动重试／冲突、source 联合验证、并发 CAS、快照隔离、重放篡改检测和丢失 graph 引用。
 
 运行：`GOCACHE=/tmp/noonmark-class-cache ../go/bin/go test -race ./classification`；`../go/bin/go vet ./classification`。完整应用路径、Swift differential 与持久层事务未运行。
+
+显示名rename的Swift规范等价no-op现使用共享textcanon，不与NFKC_Casefold key相等混用。旧byte-equality错误记录会被严格重放拒绝，不自动重写。边界及永久fixture见[GO-CLASS-001](../../docs/engineering/failure-cases/GO-CLASS-001.md)，完整Unicode规范器与runtime接线仍未实现。
