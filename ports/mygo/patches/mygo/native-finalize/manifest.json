@@ -57,6 +57,38 @@
           "after": "1f59d15609a26587ecbbc1fc8a239622cb5bef6f290769571c61dac9b7616662"
         }
       }
+    },
+    {
+      "file": "0003-native-menu-lifetime.patch",
+      "sha256": "4f0b68766d62dbfd32ad897eb3549219987a7cc20525b1a7cc8f0790fe013338",
+      "files": {
+        "ui/menu.go": {
+          "before": "01476054ab86e4ae45f194d135d54ddd0575b26f2df63ddbb0348351a877b94c",
+          "after": "95b2b1555ffc31e3d61822c0380771c2d051322079da478fd6da975f6eed0a36"
+        },
+        "ui/headless.go": {
+          "before": "3a1a8840a0d3f781cccd54e4b552514c152d82952ce37f919a663210f03a5d46",
+          "after": "c642fc6b3765ed11874c90f1e9b6371bbcd7bb9b9c742532f3e5171616678e99"
+        },
+        "content.go": {
+          "before": "6551e24418b159b65e7a1b08c9d812264e7536bf3a4a0d42809b123e93fb91b4",
+          "after": "bae956a1d22eb61964a8688f940e05b0ce892e18f77acda1ee16f804540db0de"
+        }
+      }
+    },
+    {
+      "file": "0004-native-menu-regression-tests.patch",
+      "sha256": "ea849842dadf223ab82c77fa3d31f367652f455b8a00821ea90508345420086e",
+      "files": {
+        "ui/noonmark_native_menu_test.go": {
+          "before": null,
+          "after": "21a8838afc0cb6290535b150591452f649bf1669012189c3e48dfed38a8df04b"
+        },
+        "noonmark_native_menu_test.go": {
+          "before": null,
+          "after": "dfead49e34b1b8297f8d22cfdd4c456537d2a2f7f0206b1af25006aa4654b844"
+        }
+      }
     }
   ]
 }

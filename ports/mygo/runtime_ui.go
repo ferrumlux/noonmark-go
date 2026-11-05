@@ -25,6 +25,7 @@ type taskService interface {
 	AddOnDate(string, core.LocalDate) error
 	Schedule(core.TaskChainID, core.LocalDate) error
 	SetCompleted(core.DayTraceID, bool) error
+	ReturnToPool(core.TaskChainID, core.DayTraceID) error
 }
 
 func newRuntimeApp(service taskService) *app {

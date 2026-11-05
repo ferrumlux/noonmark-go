@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 source "$(dirname -- "$0")/environment"
-pattern='Test(Noonmark|Widget|TextInputClient|TextInputSurrounding|CompositionTaken|ReadOnlyInput|Handle|ValueHandle|ReferenceFocus|BufferInputs|BufferArea)'
+pattern='Test(Noonmark|Widget|TextInputClient|TextInputSurrounding|CompositionTaken|ReadOnlyInput|Handle|ValueHandle|ReferenceFocus|BufferInputs|BufferArea|.*Menu|EditCommand)'
 case "${1:-}" in '') ;; --all-ui) pattern='.';; *) echo 'Usage: check-mygo-native [--all-ui]' >&2; exit 2;; esac
 "$GO" test -p=1 -race -count=1 -buildvcs=false github.com/egoist/mygo/ui -run "$pattern" -v
-"$GO" vet -p=1 -buildvcs=false github.com/egoist/mygo/ui
+"$GO" vet -p=1 -buildvcs=false github.com/egoist/mygo/ui github.com/egoist/mygo
+
+# The native host must report synchronous popup completion, including dismissal.
+"$GO" test -p=1 -race -count=1 -buildvcs=false github.com/egoist/mygo -run '^TestNoonmarkContentPopupCompletion$' -v

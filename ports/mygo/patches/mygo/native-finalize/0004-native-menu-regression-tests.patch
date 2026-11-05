@@ -1,0 +1,175 @@
+--- /dev/null
++++ b/ui/noonmark_native_menu_test.go
+@@ -0,0 +1,139 @@
++package ui
++
++import "testing"
++
++// These tests save the callback actually handed to the headless native host.
++// They do not call menuChosen directly or forge its pending-choice state.
++func TestNoonmarkNativeMenuCallbackLifetime(t *testing.T) {
++	for _, scenario := range []string{"reopen", "replacement", "repeat", "cancel", "host-dismiss", "invalid-id", "owner-removed", "owner-disabled", "closed", "closing", "host-changed"} {
++		t.Run(scenario, func(t *testing.T) {
++			chosen, visible, disabled := 0, true, false
++			tt := coreNewTester(func(c *context) {
++				coreColumn(c).Fill().Children(func() {
++					if visible {
++						coreButton(c, "Owner").Key("owner").Disabled(disabled).ContextMenu(func(m *Menu) {
++							if m.Item("Act").Chosen() {
++								chosen++
++							}
++						})
++					}
++					coreButton(c, "Other").Key("other").ContextMenu(func(m *Menu) {
++						if m.Item("Act").Chosen() {
++							chosen += 10
++						}
++					})
++				})
++			}, 400, 300)
++			if err := tt.RightClick("Owner"); err != nil {
++				t.Fatal(err)
++			}
++			old := tt.h.chosen
++			if old == nil {
++				t.Fatal("no native host callback")
++			}
++			want := 0
++			switch scenario {
++			case "reopen":
++				tt.CloseMenu()
++				if err := tt.RightClick("Owner"); err != nil {
++					t.Fatal(err)
++				}
++			case "replacement":
++				if err := tt.RightClick("Other"); err != nil {
++					t.Fatal(err)
++				}
++			case "repeat":
++				old(1)
++				old(0) // The synchronous host reports popup completion after selection.
++				tt.Frame()
++				want = 1
++			case "cancel":
++				old(0)
++			case "host-dismiss":
++				tt.CloseMenu()
++			case "invalid-id":
++				old(999)
++			case "owner-removed":
++				visible = false
++				tt.Frame()
++				visible = true
++				tt.Frame()
++			case "owner-disabled":
++				disabled = true
++				tt.Frame()
++			case "closed":
++				tt.rt.close()
++			case "closing":
++				tt.rt.closing = true
++			case "host-changed":
++				other := coreNewTester(func(*context) {}, 400, 300)
++				tt.rt.host = other.h
++			}
++			old(1)
++			// Closed/closing engines do not build another frame. Check the actual
++			// delivery state as well, so a dropped frame cannot hide acceptance.
++			if tt.rt.menu.chosen != 0 {
++				t.Fatal("stale callback queued a choice")
++			}
++			if scenario != "closed" && scenario != "closing" {
++				tt.Frame()
++			}
++			if chosen != want {
++				t.Fatalf("stale native callback acted: got %d want %d", chosen, want)
++			}
++			if scenario == "reopen" || scenario == "replacement" {
++				if err := tt.ChooseMenuItem("Act"); err != nil {
++					t.Fatal(err)
++				}
++				want = 1
++				if scenario == "replacement" {
++					want = 10
++				}
++				if chosen != want {
++					t.Fatalf("current menu lost: got %d want %d", chosen, want)
++				}
++			}
++		})
++	}
++}
++
++func TestNoonmarkNativeMenuStaleEditingCommand(t *testing.T) {
++	value := "hello"
++	tt := coreNewTester(func(c *context) { coreTextInput(c, &value).Label("Name") }, 400, 200)
++	tt.SetClipboard("x")
++	if err := tt.RightClick("Name"); err != nil {
++		t.Fatal(err)
++	}
++	old := tt.h.chosen
++	pasteID := 0
++	for _, item := range tt.h.menu.Items {
++		if item.Label == "Paste" {
++			pasteID = item.ID
++		}
++	}
++	if old == nil || pasteID == 0 {
++		t.Fatal("no native paste callback")
++	}
++	tt.CloseMenu()
++	if err := tt.RightClick("Name"); err != nil {
++		t.Fatal(err)
++	}
++	old(pasteID)
++	tt.Frame()
++	if value != "hello" {
++		t.Fatalf("stale editing menu changed text: %q", value)
++	}
++	current := tt.h.chosen
++	if err := tt.ChooseMenuItem("Paste"); err != nil {
++		t.Fatal(err)
++	}
++	accepted := value
++	if accepted == "hello" {
++		t.Fatal("current editing menu was ignored")
++	}
++	current(pasteID)
++	tt.Frame()
++	if value != accepted {
++		t.Fatalf("repeated editing callback changed text: %q", value)
++	}
++}
+--- /dev/null
++++ b/noonmark_native_menu_test.go
+@@ -0,0 +1,30 @@
++//go:build !js
++
++package mygo
++
++import (
++	"slices"
++	"testing"
++
++	"github.com/egoist/mygo/internal/platform"
++	"github.com/egoist/mygo/ui"
++)
++
++func TestNoonmarkContentPopupCompletion(t *testing.T) {
++	for _, closed := range []bool{false, true} {
++		t.Run(map[bool]string{false: "dismissed", true: "closed-before-show"}[closed], func(t *testing.T) {
++			w, _, _ := contentWindow(t, func(c *ui.Context) { ui.Text(c, "Synthetic menu owner") })
++			var got []int
++			onMain(func() {
++				w.conn.PopupMenu(&platform.Menu{Items: []*platform.MenuItem{{ID: 1, Label: "Act", Enabled: true, Visible: true}}}, 0, 0, func(id int) { got = append(got, id) })
++				if closed {
++					w.Destroy()
++				}
++			})
++			onMain(func() {}) // The posted popup ran; the fake backend dismisses immediately.
++			if !slices.Equal(got, []int{0}) {
++				t.Fatalf("popup completion = %v, want [0]", got)
++			}
++		})
++	}
++}

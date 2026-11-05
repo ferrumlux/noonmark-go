@@ -99,6 +99,23 @@ class PrepareTests(unittest.TestCase):
         self.assertEqual(work, self.run_prepare())
         self.assertEqual(before, {path: path.read_bytes() for path in before})
 
+    def test_ordered_patch_bundle_hashes_and_frozen_receipt(self):
+        # A later reviewed bundle extends, rather than replaces, earlier patches.
+        final = self.patched.replace(b'"patched"', b'"final"')
+        data = ''.join(difflib.unified_diff(self.patched.decode().splitlines(True), final.decode().splitlines(True), fromfile='a/framework.go', tofile='b/framework.go')).encode()
+        (self.bundle / '0002.patch').write_bytes(data)
+        self.m['patches'].append({'file': '0002.patch', 'sha256': p.sha(data), 'files': {'framework.go': {'before': p.sha(self.patched), 'after': p.sha(final)}}})
+        self.save()
+        work = self.run_prepare()
+        receipt = json.loads((work.parent / 'receipt.json').read_bytes())
+        self.assertEqual((work.parent / 'mygo/framework.go').read_bytes(), final)
+        self.assertEqual(receipt['recipe']['manifest']['patches'], self.m['patches'])
+        self.assertEqual(receipt['files']['mygo/framework.go'], p.sha(final))
+        self.assertEqual(work, self.run_prepare())
+        self.m['patches'].reverse()
+        self.rejected('patches cannot be reordered past their before hashes')
+        self.assertEqual((work.parent / 'mygo/framework.go').read_bytes(), final)
+
     def test_archive_sha_mismatch(self):
         self.m['module']['zip_sha256'] = '0' * 64
         self.rejected()

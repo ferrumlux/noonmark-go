@@ -65,12 +65,12 @@ func (s *app) liveDayView(c *ui.Context, w, h float32) {
 		txt(c, sw+20, 60, 12, "任务事实或日期未通过验证，未修改任何资料。", sourceVisual.warning, 400)
 		return
 	}
-	ui.Box(c).Absolute().Left(sw).Top(0).Size(mw, h).Clip().Children(func() { s.liveDayMain(c, mw, h, day) })
+	ui.Box(c).Absolute().Left(sw).Top(0).Size(mw, h).Clip().Children(func() { s.liveDayMain(c, mw, h, day, g) })
 	if rw > 0 {
 		ui.Box(c).Absolute().Left(w-rw).Top(0).Size(rw, h).Clip().Children(func() { s.liveDayDetail(c, rw, h, day) })
 	}
 }
-func (s *app) liveDayMain(c *ui.Context, w, h float32, day taskview.DayPage) {
+func (s *app) liveDayMain(c *ui.Context, w, h float32, day taskview.DayPage, graph core.TaskGraph) {
 	title := fmt.Sprintf("%d年%d月%d日", day.Selected.Year, day.Selected.Month, day.Selected.Day)
 	dateWidth, _ := dayMeasure(c, "day-date-width", 0, 20, 600, title)
 	week := "周" + weekdayNarrow(day.Selected)
@@ -188,7 +188,8 @@ func (s *app) liveDayMain(c *ui.Context, w, h float32, day taskview.DayPage) {
 			_, weight := taskTitleStyle(r.Status == core.TraceCompleted)
 			_, textH := dayMeasure(c, "day-row-measure-"+string(r.TraceID), w-40-64, 13, weight, r.Title)
 			rowHeight := max(float32(28), textH) + 16
-			ui.Box(c.Key("live-row-" + string(r.TraceID))).Height(rowHeight).Width(w - 40).Children(func() { s.liveDayRow(c, w-40, rowHeight, textH, r) })
+			canComplete, _ := taskMenuCapabilities(graph, r, day.Today)
+			ui.Box(c.Key("live-row-" + string(r.TraceID))).Height(rowHeight).Width(w - 40).Children(func() { s.liveDayRow(c, w-40, rowHeight, textH, r, canComplete) })
 		}
 		if len(day.Rows) == 0 {
 			ui.Box(c).Height(40)
@@ -238,10 +239,28 @@ func (s *app) liveDateStrip(c *ui.Context, w float32, strip taskview.DateStrip) 
 	}
 	box(c, 0, 65, w, width, color, 0)
 }
-func (s *app) liveDayRow(c *ui.Context, w, h, textH float32, r taskview.DayRow) {
+func (s *app) liveDayRow(c *ui.Context, w, h, textH float32, r taskview.DayRow, enabled bool) {
 	id := string(r.TraceID)
 	selected := s.runtimeSelection == id
-	b := ui.ButtonBase(c.Key("day-select-"+id)).Absolute().Size(w, h).Label("查看任务 " + id).Radius(7).Background(white)
+	// Native menu choices are delivered on a later frame. Re-key the host on
+	// navigation so a menu opened before leaving cannot act after returning to
+	// the same trace. Labels remain stable for accessibility and testing.
+	navigation := uint64(0)
+	var window *titleWindow
+	if s.titles != nil {
+		window = s.titles.windows[s.titleWindowID]
+		if window != nil {
+			navigation = window.navigation
+		}
+	}
+	b := ui.ButtonBase(c.Key(struct {
+		Trace      string
+		Navigation uint64
+		Window     *titleWindow
+	}{"day-select-" + id, navigation, window})).Absolute().Size(w, h).Label("查看任务 " + id).Radius(7).Background(white)
+	if s.titles != nil {
+		b.ContextMenu(func(m *ui.Menu) { s.liveTaskContextMenu(m, r) })
+	}
 	if selected {
 		b.Background(blue.Alpha(.08)).Border(1, blue.Alpha(.22))
 	} else if b.Hovered() {
@@ -260,7 +279,6 @@ func (s *app) liveDayRow(c *ui.Context, w, h, textH float32, r taskview.DayRow) 
 	if b.Clicked() {
 		s.titleTransition(func() { s.runtimeSelection = id; s.runtimeDayRail = true })
 	}
-	enabled := s.runtimeDate == s.runtime.Today() && (r.Status == core.TracePending || r.Status == core.TraceCompleted)
 	check := ui.ButtonBase(c.Key("live-check-"+id)).Absolute().Left(12).Top((h-28)/2).Size(28, 28).Label("切换完成 " + id).Disabled(!enabled)
 	check.Children(func() {
 		circle := box(c, 5, 5, 18, 18, white, 9).Border(1.5, sourceVisual.line2)

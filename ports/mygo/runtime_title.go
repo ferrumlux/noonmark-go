@@ -40,6 +40,9 @@ func (v *titleReadView) Schedule(id core.TaskChainID, d core.LocalDate) error {
 func (v *titleReadView) SetCompleted(id core.DayTraceID, b bool) error {
 	return v.hub.store.SetCompleted(id, b)
 }
+func (v *titleReadView) ReturnToPool(chain core.TaskChainID, trace core.DayTraceID) error {
+	return v.hub.store.ReturnToPool(chain, trace)
+}
 func (h *titleHub) readView() taskService { return &titleReadView{h} }
 
 type wallTitleClock struct{}
@@ -103,6 +106,7 @@ type titleWindow struct {
 	app               *app
 	invalidate, close func()
 	commands          int
+	navigation        uint64
 	inputPending      map[string]bool
 	closing           bool
 }
@@ -259,6 +263,9 @@ func (s *app) titleTransition(fn func()) {
 		return
 	}
 	h := s.titles
+	if w := h.windows[s.titleWindowID]; w != nil {
+		w.navigation++
+	}
 	h.nextTarget++
 	target := fmt.Sprint(h.nextTarget)
 	// Only the newest queued same-window navigation owns its closure.
