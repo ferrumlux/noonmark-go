@@ -21,4 +21,6 @@
 
 ## 应用路径门禁
 
+正式应用接线提交：[`15d010173f8cbafced19605b34f79293cf6a4ebe`](https://github.com/ferrumlux/noonmark-go/commit/15d010173f8cbafced19605b34f79293cf6a4ebe)，已回读远端核验。框架可重现准备与最终化边界此前提交于 `c3e59f5224bd386eca981fb7f90a421e2b39c9d6`。应用聚合、六目标编译与 CLI 通过；该 UI 提交没有 GitHub Actions 运行，验证来自记录的本地入口。
+
 `TestTitleUICloseBeforeFrameAndInitialRegistration` 使用实际 MyGo Handle 和原生 client，在未建下一帧时提交普通文字或替换 marked 选区，再经过真实应用 guard 和合成持久化。`TestTitleUIRepeatedCloseAndLateInput` 验证已在途请求、迟到输入及再次关闭；`TestTitleUIMultiwindowQuitFailureKeepsEveryWindow` 验证失败不销毁任何受影响输入。它们由 `scripts/check` 强制运行，不把 public Tester 自动建帧当作帧前输入证据。原版红探针继续独立保留，不改成虚假的成功门禁。

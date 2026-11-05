@@ -5,7 +5,7 @@
 - 影响范围：隔离 development 候选；没有生产资料、重复领域轨迹或已知用户数据损坏。
 - 引入提交：协调器漏在途保护位于 `58da31280dc8fa856c992b91cab24991e4529664`；其他问题首次发现于尚未提交的 UI 接线候选，没有可归因的引入 commit。
 - Git author／committer：上述公开提交均为 ferrumlux；Git identity 不能单独证明实际操作者，公开仓库之外的实际操作身份未独立核实。
-- 协调器修复提交：`dec2a2570acff475ebc0798633fad732163e424d`。UI 集成提交在提交后回填验证记录；此案例不提前声明原生平台验收完成。
+- 协调器修复提交：`dec2a2570acff475ebc0798633fad732163e424d`。UI 集成修复提交：[`15d010173f8cbafced19605b34f79293cf6a4ebe`](https://github.com/ferrumlux/noonmark-go/commit/15d010173f8cbafced19605b34f79293cf6a4ebe)，已回读远端 main 核验树一致。此案例不提前声明原生平台验收完成。
 
 ## 症状、根因与修正
 
