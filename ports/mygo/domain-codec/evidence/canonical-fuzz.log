@@ -1,0 +1,7 @@
+fuzz: elapsed: 0s, gathering baseline coverage: 0/160 completed
+fuzz: elapsed: 0s, gathering baseline coverage: 160/160 completed, now fuzzing with 2 workers
+fuzz: elapsed: 3s, execs: 20159 (6718/sec), new interesting: 10 (total: 170)
+fuzz: elapsed: 6s, execs: 20159 (0/sec), new interesting: 10 (total: 170)
+fuzz: elapsed: 6s, execs: 20159 (0/sec), new interesting: 10 (total: 170)
+PASS
+ok  	github.com/ferrumlux/noonmark/ports/mygo/domain-codec/canonical	6.026s

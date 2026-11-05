@@ -1,0 +1,77 @@
+[
+  {
+    "path": ".gitignore",
+    "sha256": "a78990e098f12cc4e01b2ef56859b5fd1c53cc26d6fc77f1cee81bb570911c0d",
+    "bytes": 34
+  },
+  {
+    "path": "LICENSE",
+    "sha256": "8d56b405468aad11f87ab5763f901e276e08d9646ff5c8481b1762b6b789e9ed",
+    "bytes": 34524
+  },
+  {
+    "path": "NOTICE",
+    "sha256": "b54979196ba161ad96a58996771f5e73777271126d38a07a34afb7f982f4f4e6",
+    "bytes": 414
+  },
+  {
+    "path": "README.md",
+    "sha256": "bb97100f6027036c5824531d8435848f3c364f2ee97c2f28efcc85f3beb63ba4",
+    "bytes": 7183
+  },
+  {
+    "path": "core/clone.go",
+    "sha256": "4876f2f2b8c0a1811f0789da55451ec70928257fd7ad64c2d2f6972ec8180916",
+    "bytes": 2405
+  },
+  {
+    "path": "core/core_test.go",
+    "sha256": "d5301ec85655a27ede1f8d7ac01de28854c6c8d370b5aa5a09302fd30ac65093",
+    "bytes": 30885
+  },
+  {
+    "path": "core/kernel.go",
+    "sha256": "9998149755425448eca175ec9947f266d2c7ecaed5af43e7096392583050c32c",
+    "bytes": 11842
+  },
+  {
+    "path": "core/models.go",
+    "sha256": "29932e0e54907cc2803fcea5214b3ebc1aa7361113bc3496e78414fba573e3fe",
+    "bytes": 5714
+  },
+  {
+    "path": "core/time.go",
+    "sha256": "838c0cba9cd1e1ff56d02d0fed6c9be1aba62b1afcafe2f5809919b56ed03588",
+    "bytes": 4588
+  },
+  {
+    "path": "core/validation.go",
+    "sha256": "6b698793f32a963ca092ea2ff5867c8dda6004303b4cb01a595f535778c8e9c3",
+    "bytes": 17016
+  },
+  {
+    "path": "evidence/go-test-race.jsonl",
+    "sha256": "16ae0e9b542d23e52822d0961fcd9b51e0c3c9ec6b11f1490c57dbcdaa459782",
+    "bytes": 85684
+  },
+  {
+    "path": "evidence/linux-amd64-test-binary.log",
+    "sha256": "ed8fc2ca5ca3418f2baa6bcd1c90d4faa6ed8997302c8d57a98e1f5ef8476988",
+    "bytes": 11069
+  },
+  {
+    "path": "evidence/verification.json",
+    "sha256": "96724e7224bcdb1611b8e686a5730430955a6165b829b6ae586ac7b436dc9843",
+    "bytes": 2263
+  },
+  {
+    "path": "go.mod",
+    "sha256": "f9d9603b60e4a09aff573fb4865f9198efc72226a27f0f3940a86e23e7d3f76e",
+    "bytes": 66
+  },
+  {
+    "path": "scripts/check",
+    "sha256": "22d25da111b8e9fe6f0cd1fa05d2ad859c5d4f4d2139505e1f2ae295c554282f",
+    "bytes": 533
+  }
+]

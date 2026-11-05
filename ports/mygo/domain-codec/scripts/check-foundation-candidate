@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+# Future, explicit synthetic-fixture oracle. Never scans application data.
+set -euo pipefail
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+SWIFTC="${SWIFTC:-swiftc}"
+BUILD_ROOT="${NOONMARK_CODEC_BUILD_ROOT:-${TMPDIR:-/tmp}/noonmark-codec-build}"
+case "$BUILD_ROOT" in /*) ;; *) echo 'Use an absolute external build root' >&2; exit 1;; esac
+case "$BUILD_ROOT/" in "$ROOT/"*) echo 'Build root must be outside source' >&2; exit 1;; esac
+if ! command -v "$SWIFTC" >/dev/null; then echo 'Swift compiler unavailable; oracle NOT VERIFIED' >&2; exit 2; fi
+mkdir -p "$BUILD_ROOT/oracle" "$BUILD_ROOT/swiftmodule-cache"
+"$SWIFTC" -module-cache-path "$BUILD_ROOT/swiftmodule-cache" "$ROOT/oracle/FoundationCanonicalOracle.swift" -o "$BUILD_ROOT/oracle/foundation-canonical"
+"$BUILD_ROOT/oracle/foundation-canonical" "$ROOT/v7/testdata/synthetic-v7-candidate.json" > "$BUILD_ROOT/oracle/foundation-output.json"
+if cmp -s "$ROOT/v7/testdata/synthetic-v7-candidate.json" "$BUILD_ROOT/oracle/foundation-output.json"; then
+ echo 'Foundation formatter candidate MATCH for this fixture only; full Noonmark decode NOT VERIFIED'
+else
+ echo "Foundation formatter candidate DIFFERS; inspect $BUILD_ROOT/oracle/foundation-output.json" >&2
+ exit 1
+fi

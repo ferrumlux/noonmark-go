@@ -1,0 +1,29 @@
+{
+  "source_repository": "https://github.com/quboliu/noonmark",
+  "source_commit": "43e6eefaae3a04be89cab3e234d470111afd80ef",
+  "evidence_level": "static_source_and_test_inventory",
+  "source_tree_modified": false,
+  "upstream_tests_executed": false,
+  "target_runtime_tests_executed": false,
+  "test_method_count": 1637,
+  "counts_by_suite": {
+    "NoonmarkAITests": 26,
+    "NoonmarkCoreTests": 286,
+    "NoonmarkDMGInstallHarnessTests": 52,
+    "NoonmarkDayContextTests": 10,
+    "NoonmarkDiagnosticsTests": 67,
+    "NoonmarkMacE2ESupportTests": 25,
+    "NoonmarkMacRuntimeTests": 212,
+    "NoonmarkMacUIContractTests": 32,
+    "NoonmarkSimulationTests": 1,
+    "NoonmarkStorageTests": 309,
+    "NoonmarkSyncTests": 360,
+    "NoonmarkZhulongAITests": 11,
+    "NoonmarkZhulongTests": 246
+  },
+  "generated_files": [
+    "NOONMARK-MYGO-MIGRATION.md",
+    "upstream-test-inventory.json",
+    "upstream-test-inventory.tsv"
+  ]
+}

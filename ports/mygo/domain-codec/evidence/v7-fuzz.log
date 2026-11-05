@@ -1,0 +1,7 @@
+fuzz: elapsed: 0s, gathering baseline coverage: 0/84 completed
+fuzz: elapsed: 0s, gathering baseline coverage: 84/84 completed, now fuzzing with 2 workers
+fuzz: elapsed: 3s, execs: 11162 (3720/sec), new interesting: 17 (total: 101)
+fuzz: elapsed: 6s, execs: 11162 (0/sec), new interesting: 17 (total: 101)
+fuzz: elapsed: 6s, execs: 11162 (0/sec), new interesting: 17 (total: 101)
+PASS
+ok  	github.com/ferrumlux/noonmark/ports/mygo/domain-codec/v7	6.019s

@@ -1,0 +1,69 @@
+{
+  "scope": "first_batch_task_graph_kernel_only",
+  "source_repository": "https://github.com/quboliu/noonmark",
+  "source_commit": "43e6eefaae3a04be89cab3e234d470111afd80ef",
+  "toolchain": "go1.27.3 linux/amd64",
+  "native_host": "Linux x86_64",
+  "unit_and_race": "pass",
+  "vet": "pass",
+  "statement_coverage_percent": 90.5,
+  "top_level_test_and_fuzz_entries_passed": 34,
+  "passed_events_including_subtests": 91,
+  "fuzz": {
+    "target": "FuzzTaskGraphValidationDoesNotPanic",
+    "duration_seconds": 5,
+    "executions": 162832,
+    "workers": 2,
+    "result": "pass"
+  },
+  "targets": [
+    {
+      "target": "darwin/amd64",
+      "compile": "pass",
+      "binary_bytes": 7082848,
+      "binary_sha256": "1c51e93ef6014ff0434b206ae81e082dae404c54e86bd1fca25ccc4afe078bb2",
+      "runtime": "not_run"
+    },
+    {
+      "target": "darwin/arm64",
+      "compile": "pass",
+      "binary_bytes": 6700898,
+      "binary_sha256": "defb67ba43ee0a1ba91bdca57335f09117518c936cf3320956eb15d228c7c8d6",
+      "runtime": "not_run"
+    },
+    {
+      "target": "windows/amd64",
+      "compile": "pass",
+      "binary_bytes": 7274496,
+      "binary_sha256": "ec2fd338940edc1ea1e6d46c53e12f0a97a1b8621cc0b8a37fccb6361b3868b0",
+      "runtime": "not_run"
+    },
+    {
+      "target": "windows/arm64",
+      "compile": "pass",
+      "binary_bytes": 6703616,
+      "binary_sha256": "1337f77adb6e9181450fd0bec7bbb9660c83ee114475501fca38c997034993f5",
+      "runtime": "not_run"
+    },
+    {
+      "target": "linux/amd64",
+      "compile": "pass",
+      "binary_bytes": 7088758,
+      "binary_sha256": "659e348b2865265f0139d649173592d4b683fe1f1e6dcfbaf761722fdca612cd",
+      "runtime": "pass"
+    },
+    {
+      "target": "linux/arm64",
+      "compile": "pass",
+      "binary_bytes": 6656893,
+      "binary_sha256": "00921790ec1064c0141cf8ffd2977938c4a05ea1a82c8610675024ba318469e0",
+      "runtime": "not_run"
+    }
+  ],
+  "swift_differential_test": "not_run",
+  "canonical_data_package_v7_compatibility": "not_implemented",
+  "production_data_accessed": false,
+  "prototype_modified": false,
+  "upstream_modified": false,
+  "validation_limit": "TaskGraph lacks classification, recurring parents, ideas, preferences, sync and AI. This is not whole-snapshot validation."
+}

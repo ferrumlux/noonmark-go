@@ -1,0 +1,746 @@
+{
+  "formatVersion" : 7,
+  "snapshot" : {
+    "chains" : [
+      {
+        "createdAt" : 4636737291354636288,
+        "cycleMembership" : {
+          "occurrenceDate" : {
+            "day" : 20,
+            "month" : 7,
+            "year" : 2026
+          },
+          "seriesID" : {
+            "rawValue" : "00000000-0000-4000-8000-000000000001"
+          }
+        },
+        "id" : {
+          "rawValue" : "00000000-0000-4000-8000-000000000005"
+        },
+        "noteEntries" : [
+          {
+            "body" : "原始备注 😀",
+            "createdAt" : 4636737291354636288,
+            "id" : {
+              "rawValue" : "00000000-0000-4000-8000-0000000003B6"
+            },
+            "updatedAt" : 4636737298391510706
+          }
+        ],
+        "state" : "active",
+        "updatedAt" : 4636737291354636288
+      },
+      {
+        "createdAt" : 4636737291354636288,
+        "cycleMembership" : {
+          "occurrenceDate" : {
+            "day" : 21,
+            "month" : 7,
+            "year" : 2026
+          },
+          "seriesID" : {
+            "rawValue" : "00000000-0000-4000-8000-000000000001"
+          }
+        },
+        "id" : {
+          "rawValue" : "00000000-0000-4000-8000-00000000000B"
+        },
+        "noteEntries" : [],
+        "state" : "active",
+        "updatedAt" : 4636737291354636289
+      },
+      {
+        "createdAt" : 4636737291354636288,
+        "cycleMembership" : {
+          "occurrenceDate" : {
+            "day" : 22,
+            "month" : 7,
+            "year" : 2026
+          },
+          "seriesID" : {
+            "rawValue" : "00000000-0000-4000-8000-000000000001"
+          }
+        },
+        "id" : {
+          "rawValue" : "00000000-0000-4000-8000-000000000011"
+        },
+        "noteEntries" : [],
+        "state" : "active",
+        "updatedAt" : 4636737305428385124
+      },
+      {
+        "createdAt" : 4636737291354636288,
+        "cycleMembership" : {
+          "occurrenceDate" : {
+            "day" : 23,
+            "month" : 7,
+            "year" : 2026
+          },
+          "seriesID" : {
+            "rawValue" : "00000000-0000-4000-8000-000000000001"
+          }
+        },
+        "id" : {
+          "rawValue" : "00000000-0000-4000-8000-000000000017"
+        },
+        "noteEntries" : [],
+        "state" : "active",
+        "updatedAt" : 4636737291354636288
+      },
+      {
+        "createdAt" : 4636737291354636288,
+        "cycleMembership" : {
+          "occurrenceDate" : {
+            "day" : 24,
+            "month" : 7,
+            "year" : 2026
+          },
+          "seriesID" : {
+            "rawValue" : "00000000-0000-4000-8000-000000000001"
+          }
+        },
+        "id" : {
+          "rawValue" : "00000000-0000-4000-8000-00000000001D"
+        },
+        "noteEntries" : [],
+        "state" : "active",
+        "updatedAt" : 4636737305428385124
+      }
+    ],
+    "classifications" : {
+      "categories" : [],
+      "categoryDeletionTombstones" : [],
+      "categoryMerges" : [],
+      "changeRecords" : [],
+      "committedReceiptsByInteractionID" : [],
+      "currentByChainID" : [],
+      "formatVersion" : 1,
+      "labelDeletionTombstones" : [],
+      "labelMerges" : [],
+      "labels" : [],
+      "relationHistory" : [],
+      "revision" : 0,
+      "snapshotEventsByTraceID" : [],
+      "snapshotsByTraceID" : []
+    },
+    "days" : [
+      {
+        "createdAt" : 4636737291354636288,
+        "date" : {
+          "day" : 20,
+          "month" : 7,
+          "year" : 2026
+        },
+        "id" : {
+          "rawValue" : "00000000-0000-4000-8000-00000000000A"
+        },
+        "updatedAt" : 4636737291354636288
+      },
+      {
+        "createdAt" : 4636737291354636288,
+        "date" : {
+          "day" : 21,
+          "month" : 7,
+          "year" : 2026
+        },
+        "id" : {
+          "rawValue" : "00000000-0000-4000-8000-000000000010"
+        },
+        "updatedAt" : 4636737291354636288
+      },
+      {
+        "createdAt" : 4636737291354636288,
+        "date" : {
+          "day" : 22,
+          "month" : 7,
+          "year" : 2026
+        },
+        "id" : {
+          "rawValue" : "00000000-0000-4000-8000-000000000016"
+        },
+        "updatedAt" : 4636737291354636288
+      },
+      {
+        "createdAt" : 4636737291354636288,
+        "date" : {
+          "day" : 23,
+          "month" : 7,
+          "year" : 2026
+        },
+        "id" : {
+          "rawValue" : "00000000-0000-4000-8000-00000000001C"
+        },
+        "updatedAt" : 4636737291354636288
+      },
+      {
+        "createdAt" : 4636737291354636288,
+        "date" : {
+          "day" : 24,
+          "month" : 7,
+          "year" : 2026
+        },
+        "id" : {
+          "rawValue" : "00000000-0000-4000-8000-000000000022"
+        },
+        "updatedAt" : 4636737291354636288
+      }
+    ],
+    "definitions" : [
+      {
+        "chainID" : {
+          "rawValue" : "00000000-0000-4000-8000-000000000005"
+        },
+        "contentUpdatedAt" : 4636737291354636288,
+        "createdAt" : 4636737291354636288,
+        "id" : {
+          "rawValue" : "00000000-0000-4000-8000-000000000006"
+        },
+        "plannedSubtasks" : [
+          {
+            "createdAt" : 4636737291354636288,
+            "difficulty" : 2,
+            "id" : {
+              "rawValue" : "00000000-0000-4000-8000-000000000008"
+            },
+            "lineageID" : {
+              "rawValue" : "00000000-0000-4000-8000-000000000385"
+            },
+            "position" : 1,
+            "title" : "整理结论"
+          }
+        ],
+        "sequence" : 1,
+        "title" : "候选往返 / synthetic"
+      },
+      {
+        "chainID" : {
+          "rawValue" : "00000000-0000-4000-8000-00000000000B"
+        },
+        "contentUpdatedAt" : 4636737291354636288,
+        "createdAt" : 4636737291354636288,
+        "id" : {
+          "rawValue" : "00000000-0000-4000-8000-00000000000C"
+        },
+        "plannedSubtasks" : [
+          {
+            "createdAt" : 4636737291354636288,
+            "difficulty" : 2,
+            "id" : {
+              "rawValue" : "00000000-0000-4000-8000-00000000000E"
+            },
+            "lineageID" : {
+              "rawValue" : "00000000-0000-4000-8000-000000000385"
+            },
+            "position" : 1,
+            "title" : "整理结论"
+          }
+        ],
+        "sequence" : 1,
+        "title" : "候选往返 / synthetic"
+      },
+      {
+        "chainID" : {
+          "rawValue" : "00000000-0000-4000-8000-000000000011"
+        },
+        "contentUpdatedAt" : 4636737291354636288,
+        "createdAt" : 4636737291354636288,
+        "id" : {
+          "rawValue" : "00000000-0000-4000-8000-000000000012"
+        },
+        "plannedSubtasks" : [
+          {
+            "createdAt" : 4636737291354636288,
+            "difficulty" : 2,
+            "id" : {
+              "rawValue" : "00000000-0000-4000-8000-000000000014"
+            },
+            "lineageID" : {
+              "rawValue" : "00000000-0000-4000-8000-000000000385"
+            },
+            "position" : 1,
+            "title" : "整理结论"
+          }
+        ],
+        "sequence" : 1,
+        "title" : "候选往返 / synthetic"
+      },
+      {
+        "chainID" : {
+          "rawValue" : "00000000-0000-4000-8000-000000000017"
+        },
+        "contentUpdatedAt" : 4636737291354636288,
+        "createdAt" : 4636737291354636288,
+        "id" : {
+          "rawValue" : "00000000-0000-4000-8000-000000000018"
+        },
+        "plannedSubtasks" : [
+          {
+            "createdAt" : 4636737291354636288,
+            "difficulty" : 2,
+            "id" : {
+              "rawValue" : "00000000-0000-4000-8000-00000000001A"
+            },
+            "lineageID" : {
+              "rawValue" : "00000000-0000-4000-8000-000000000385"
+            },
+            "position" : 1,
+            "title" : "整理结论"
+          }
+        ],
+        "sequence" : 1,
+        "title" : "候选往返 / synthetic"
+      },
+      {
+        "chainID" : {
+          "rawValue" : "00000000-0000-4000-8000-00000000001D"
+        },
+        "contentUpdatedAt" : 4636737291354636288,
+        "createdAt" : 4636737291354636288,
+        "id" : {
+          "rawValue" : "00000000-0000-4000-8000-00000000001E"
+        },
+        "plannedSubtasks" : [
+          {
+            "createdAt" : 4636737291354636288,
+            "difficulty" : 2,
+            "id" : {
+              "rawValue" : "00000000-0000-4000-8000-000000000020"
+            },
+            "lineageID" : {
+              "rawValue" : "00000000-0000-4000-8000-000000000385"
+            },
+            "position" : 1,
+            "title" : "整理结论"
+          }
+        ],
+        "sequence" : 1,
+        "title" : "候选往返 / synthetic"
+      }
+    ],
+    "ideas" : [
+      {
+        "body" : "一闪而过",
+        "createdAt" : 4636737291354636288,
+        "id" : {
+          "rawValue" : "00000000-0000-4000-8000-0000000003C0"
+        },
+        "labelIDs" : [],
+        "pinnedAt" : 4636737298391510706,
+        "updatedAt" : 4636737298391510706
+      },
+      {
+        "body" : "",
+        "createdAt" : 4636737291354636288,
+        "deletedAt" : 4636737305428385124,
+        "id" : {
+          "rawValue" : "00000000-0000-4000-8000-0000000003C1"
+        },
+        "labelIDs" : [],
+        "updatedAt" : 4636737305428385124
+      }
+    ],
+    "preferences" : {
+      "backupPolicy" : {
+        "destination" : "iCloudDrive",
+        "frequency" : "off"
+      },
+      "dataMode" : "localFirst",
+      "language" : "chinese",
+      "localFirstSyncPolicy" : {
+        "enabled" : false,
+        "endpoint" : "localFolder",
+        "generateConflictCopy" : true,
+        "intervalSeconds" : 300,
+        "mode" : "manual",
+        "snapshotRetention" : {
+          "indexRetentionDays" : 30,
+          "retentionIndexesDaily" : 1
+        }
+      },
+      "settingsPoemDisplayPolicy" : {
+        "enabled" : false,
+        "text" : "合成测试 / no network"
+      },
+      "syncEndpointOptions" : [],
+      "theme" : "coolGray",
+      "themeLanguageUpdatedAt" : 0,
+      "themeLanguageWriterID" : "synthetic.fixture"
+    },
+    "subtasks" : [
+      {
+        "createdAt" : 4636737291354636288,
+        "difficulty" : 2,
+        "id" : {
+          "rawValue" : "00000000-0000-4000-8000-000000000009"
+        },
+        "lineageID" : {
+          "rawValue" : "00000000-0000-4000-8000-000000000385"
+        },
+        "position" : 1,
+        "status" : "pending",
+        "title" : "整理结论",
+        "traceID" : {
+          "rawValue" : "00000000-0000-4000-8000-000000000007"
+        },
+        "updatedAt" : 4636737291354636288
+      },
+      {
+        "createdAt" : 4636737291354636288,
+        "difficulty" : 2,
+        "id" : {
+          "rawValue" : "00000000-0000-4000-8000-00000000000F"
+        },
+        "lineageID" : {
+          "rawValue" : "00000000-0000-4000-8000-000000000385"
+        },
+        "position" : 1,
+        "status" : "pending",
+        "title" : "整理结论",
+        "traceID" : {
+          "rawValue" : "00000000-0000-4000-8000-00000000000D"
+        },
+        "updatedAt" : 4636737291354636288
+      },
+      {
+        "createdAt" : 4636737291354636288,
+        "difficulty" : 2,
+        "id" : {
+          "rawValue" : "00000000-0000-4000-8000-000000000015"
+        },
+        "lineageID" : {
+          "rawValue" : "00000000-0000-4000-8000-000000000385"
+        },
+        "position" : 1,
+        "status" : "pending",
+        "title" : "整理结论",
+        "traceID" : {
+          "rawValue" : "00000000-0000-4000-8000-000000000013"
+        },
+        "updatedAt" : 4636737291354636288
+      },
+      {
+        "createdAt" : 4636737291354636288,
+        "difficulty" : 2,
+        "id" : {
+          "rawValue" : "00000000-0000-4000-8000-00000000001B"
+        },
+        "lineageID" : {
+          "rawValue" : "00000000-0000-4000-8000-000000000385"
+        },
+        "position" : 1,
+        "status" : "pending",
+        "title" : "整理结论",
+        "traceID" : {
+          "rawValue" : "00000000-0000-4000-8000-000000000019"
+        },
+        "updatedAt" : 4636737291354636288
+      },
+      {
+        "createdAt" : 4636737291354636288,
+        "difficulty" : 2,
+        "id" : {
+          "rawValue" : "00000000-0000-4000-8000-000000000021"
+        },
+        "lineageID" : {
+          "rawValue" : "00000000-0000-4000-8000-000000000385"
+        },
+        "position" : 1,
+        "status" : "pending",
+        "title" : "整理结论",
+        "traceID" : {
+          "rawValue" : "00000000-0000-4000-8000-00000000001F"
+        },
+        "updatedAt" : 4636737291354636288
+      }
+    ],
+    "taskCycleSeries" : [
+      {
+        "cancellationFacts" : [
+          {
+            "id" : "00000000-0000-4000-8000-000000000023",
+            "reason" : "userSkipped",
+            "recordedAt" : 4636737291354636289,
+            "scope" : {
+              "occurrence" : {
+                "_0" : {
+                  "day" : 21,
+                  "month" : 7,
+                  "year" : 2026
+                }
+              }
+            }
+          },
+          {
+            "id" : "00000000-0000-4000-8000-000000000026",
+            "reason" : "planRevision",
+            "recordedAt" : 4636737305428385124,
+            "scope" : {
+              "occurrence" : {
+                "_0" : {
+                  "day" : 22,
+                  "month" : 7,
+                  "year" : 2026
+                }
+              }
+            }
+          },
+          {
+            "id" : "00000000-0000-4000-8000-000000000028",
+            "reason" : "planRevision",
+            "recordedAt" : 4636737305428385124,
+            "scope" : {
+              "occurrence" : {
+                "_0" : {
+                  "day" : 24,
+                  "month" : 7,
+                  "year" : 2026
+                }
+              }
+            }
+          }
+        ],
+        "classificationRevisions" : [
+          {
+            "id" : "00000000-0000-4000-8000-000000000003",
+            "interactionID" : "00000000-0000-4000-8000-000000000004",
+            "labelIDs" : [],
+            "recordedAt" : 4636737291354636288,
+            "source" : {
+              "deterministicDomainAction" : {
+                "reason" : "task cycle created"
+              }
+            }
+          }
+        ],
+        "createdAt" : 4636737291354636288,
+        "endCondition" : {
+          "durationDays" : {
+            "_0" : 5
+          }
+        },
+        "endDate" : {
+          "day" : 24,
+          "month" : 7,
+          "year" : 2026
+        },
+        "id" : {
+          "rawValue" : "00000000-0000-4000-8000-000000000001"
+        },
+        "labelIDs" : [],
+        "planRevisions" : [
+          {
+            "effectiveFrom" : {
+              "day" : 20,
+              "month" : 7,
+              "year" : 2026
+            },
+            "endCondition" : {
+              "onDate" : {
+                "_0" : {
+                  "day" : 24,
+                  "month" : 7,
+                  "year" : 2026
+                }
+              }
+            },
+            "endConditionAnchorDate" : {
+              "day" : 20,
+              "month" : 7,
+              "year" : 2026
+            },
+            "id" : "00000000-0000-4000-8000-000000000002",
+            "recordedAt" : 4636737291354636288,
+            "schedule" : {
+              "everyDays" : {
+                "_0" : 1
+              }
+            }
+          },
+          {
+            "effectiveFrom" : {
+              "day" : 21,
+              "month" : 7,
+              "year" : 2026
+            },
+            "endCondition" : {
+              "durationDays" : {
+                "_0" : 5
+              }
+            },
+            "endConditionAnchorDate" : {
+              "day" : 20,
+              "month" : 7,
+              "year" : 2026
+            },
+            "id" : "00000000-0000-4000-8000-000000000025",
+            "recordedAt" : 4636737305428385124,
+            "schedule" : {
+              "everyDays" : {
+                "_0" : 2
+              }
+            }
+          }
+        ],
+        "plannedSubtasks" : [
+          {
+            "createdAt" : 4636737291354636288,
+            "difficulty" : 2,
+            "id" : {
+              "rawValue" : "00000000-0000-4000-8000-000000000384"
+            },
+            "lineageID" : {
+              "rawValue" : "00000000-0000-4000-8000-000000000385"
+            },
+            "position" : 1,
+            "title" : "整理结论"
+          }
+        ],
+        "schedule" : {
+          "everyDays" : {
+            "_0" : 2
+          }
+        },
+        "startDate" : {
+          "day" : 20,
+          "month" : 7,
+          "year" : 2026
+        },
+        "title" : "候选往返 / synthetic",
+        "updatedAt" : 4636737305428385124
+      }
+    ],
+    "traces" : [
+      {
+        "chainID" : {
+          "rawValue" : "00000000-0000-4000-8000-000000000005"
+        },
+        "contentUpdatedAt" : 4636737291354636288,
+        "continuationSeq" : 0,
+        "createdAt" : 4636737291354636288,
+        "date" : {
+          "day" : 20,
+          "month" : 7,
+          "year" : 2026
+        },
+        "definitionID" : {
+          "rawValue" : "00000000-0000-4000-8000-000000000006"
+        },
+        "id" : {
+          "rawValue" : "00000000-0000-4000-8000-000000000007"
+        },
+        "noteEntries" : [],
+        "priority" : 1,
+        "status" : "pending"
+      },
+      {
+        "chainID" : {
+          "rawValue" : "00000000-0000-4000-8000-00000000000B"
+        },
+        "contentUpdatedAt" : 4636737291354636289,
+        "continuationSeq" : 0,
+        "createdAt" : 4636737291354636288,
+        "date" : {
+          "day" : 21,
+          "month" : 7,
+          "year" : 2026
+        },
+        "definitionID" : {
+          "rawValue" : "00000000-0000-4000-8000-00000000000C"
+        },
+        "draftCancellationID" : "00000000-0000-4000-8000-000000000024",
+        "draftCancelledOn" : {
+          "day" : 20,
+          "month" : 7,
+          "year" : 2026
+        },
+        "id" : {
+          "rawValue" : "00000000-0000-4000-8000-00000000000D"
+        },
+        "noteEntries" : [],
+        "priority" : 1,
+        "settledAt" : 4636737291354636289,
+        "status" : "cancelledDraft"
+      },
+      {
+        "chainID" : {
+          "rawValue" : "00000000-0000-4000-8000-000000000011"
+        },
+        "contentUpdatedAt" : 4636737305428385124,
+        "continuationSeq" : 0,
+        "createdAt" : 4636737291354636288,
+        "date" : {
+          "day" : 22,
+          "month" : 7,
+          "year" : 2026
+        },
+        "definitionID" : {
+          "rawValue" : "00000000-0000-4000-8000-000000000012"
+        },
+        "draftCancellationID" : "00000000-0000-4000-8000-000000000027",
+        "draftCancelledOn" : {
+          "day" : 20,
+          "month" : 7,
+          "year" : 2026
+        },
+        "id" : {
+          "rawValue" : "00000000-0000-4000-8000-000000000013"
+        },
+        "noteEntries" : [],
+        "priority" : 1,
+        "settledAt" : 4636737305428385124,
+        "status" : "cancelledDraft"
+      },
+      {
+        "chainID" : {
+          "rawValue" : "00000000-0000-4000-8000-000000000017"
+        },
+        "contentUpdatedAt" : 4636737291354636288,
+        "continuationSeq" : 0,
+        "createdAt" : 4636737291354636288,
+        "date" : {
+          "day" : 23,
+          "month" : 7,
+          "year" : 2026
+        },
+        "definitionID" : {
+          "rawValue" : "00000000-0000-4000-8000-000000000018"
+        },
+        "id" : {
+          "rawValue" : "00000000-0000-4000-8000-000000000019"
+        },
+        "noteEntries" : [],
+        "priority" : 1,
+        "status" : "pending"
+      },
+      {
+        "chainID" : {
+          "rawValue" : "00000000-0000-4000-8000-00000000001D"
+        },
+        "contentUpdatedAt" : 4636737305428385124,
+        "continuationSeq" : 0,
+        "createdAt" : 4636737291354636288,
+        "date" : {
+          "day" : 24,
+          "month" : 7,
+          "year" : 2026
+        },
+        "definitionID" : {
+          "rawValue" : "00000000-0000-4000-8000-00000000001E"
+        },
+        "draftCancellationID" : "00000000-0000-4000-8000-000000000029",
+        "draftCancelledOn" : {
+          "day" : 20,
+          "month" : 7,
+          "year" : 2026
+        },
+        "id" : {
+          "rawValue" : "00000000-0000-4000-8000-00000000001F"
+        },
+        "noteEntries" : [],
+        "priority" : 1,
+        "settledAt" : 4636737305428385124,
+        "status" : "cancelledDraft"
+      }
+    ]
+  }
+}

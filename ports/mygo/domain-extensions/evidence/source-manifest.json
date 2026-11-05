@@ -1,0 +1,40 @@
+{
+  "hash_algorithm": "SHA256",
+  "files": {
+    ".gitignore": "a78990e098f12cc4e01b2ef56859b5fd1c53cc26d6fc77f1cee81bb570911c0d",
+    "LICENSE": "8d56b405468aad11f87ab5763f901e276e08d9646ff5c8481b1762b6b789e9ed",
+    "NOTICE": "88853033847a4059b82726cd4a4735cc43d743a0029f7855665a76b50d0c6136",
+    "README.md": "1808c7b058029b5acbeceef028e448eb52e58f3242a5e89043293a0fc79537b0",
+    "classification/README.md": "b9c64b2a1874ebfa178e141fbb54de3075a151f82970fcce4b433a7ee9c3b631",
+    "classification/classification_test.go": "8188809ea525ed1592fbac2364fc18108108d9e49d5a1d8cca701bfb9a76207d",
+    "classification/engine.go": "4ab529f21340ab6784e349b63c99eef45734eab8e5247e8a8bfc4c6c5d38374c",
+    "classification/types.go": "8f3b69452f107397c489d6094142c753b82133a583a4fea55d7164b1af7494ad",
+    "evidence/classification-fuzz.log": "ba3031b8db19e8b5be76a26250466b5a01c2732012ab95605169a78fd902d6c0",
+    "evidence/cross-compile.log": "f4cc99361ea7b85ddd7a3f9e00949f2117bf4bfda64e614720cc1d0362c13cdf",
+    "evidence/go-test-race.jsonl": "c650453680b09759ca0c6a8123e0f543dbafbf3c67f601308a9d0e26fb5b1fa1",
+    "evidence/recurrence-command-fuzz.log": "3fd9e49fb72e09becfe87c902cf9683121cb84b6ab58fd3a0cd54b0abdcefc02",
+    "evidence/recurrence-schedule-fuzz.log": "73af46d42a218fb1ad4d0bf68ee203b18a137ff052f09669a3b6399a23e4aa0f",
+    "evidence/recurrence-upstream-parity.tsv": "580e0f6e36588df9be2ca73b2c8550581d6e9760a43438de1101a23143a42eff",
+    "evidence/reference-git-status.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "evidence/scripts-check.log": "b0d26f6ad5bebe1532661cd29acda5ebaa90d6c1bd7997db6afe6582d6b8c2b5",
+    "evidence/verification.json": "f6cfbaec802c6201e3fb85cfe244c2a355a4900d7241a112279470a81aa2eeae",
+    "go.mod": "55d18975d9d5a524fd70834c8517daf3d4a9568a56ca2e802953434a63d609ea",
+    "integration/transaction_test.go": "6b1b25148ca7a9dd1836e458d52784f5fc7e869975419c5b990f55775807af82",
+    "recurrence/commands.go": "0bb04f2b515879e711df676141f037a2736f64d2962d04473d528087be490c85",
+    "recurrence/content.go": "a51785be2720c33b004e6b6a60b56d383940c20c2b79b0370333b389da7c8882",
+    "recurrence/history_test.go": "4f3467c64ed18b995f30981338a3064cf866f7d290fa52beb12c369ac36ee945",
+    "recurrence/recurrence_test.go": "8cc4d546552daab487148b821507366a61f2e0a35d64d40452fdd01e4ffe4809",
+    "recurrence/series.go": "a3114151a697c03b1ca1e26455c26c8cc3eb65d1afa8082212c9c7a51c20eac6",
+    "recurrence/state.go": "a3f6e9d4e3831269df02f5ceb7dfc0839847f13b52e74eeb80211a1d568ebf57",
+    "scripts/check": "68a027bb17e2b76a3faa6ec72f834b8213b51c57d53466b4402c6619df7d54dc",
+    "scripts/cross-check": "976dbf61177adaaa782df79ed0d91e6db9cdba686030a83781aa5676b14279bc"
+  },
+  "dependencies": {
+    "../domain-core/core/clone.go": "4876f2f2b8c0a1811f0789da55451ec70928257fd7ad64c2d2f6972ec8180916",
+    "../domain-core/core/core_test.go": "d5301ec85655a27ede1f8d7ac01de28854c6c8d370b5aa5a09302fd30ac65093",
+    "../domain-core/core/kernel.go": "9998149755425448eca175ec9947f266d2c7ecaed5af43e7096392583050c32c",
+    "../domain-core/core/models.go": "29932e0e54907cc2803fcea5214b3ebc1aa7361113bc3496e78414fba573e3fe",
+    "../domain-core/core/time.go": "838c0cba9cd1e1ff56d02d0fed6c9be1aba62b1afcafe2f5809919b56ed03588",
+    "../domain-core/core/validation.go": "6b698793f32a963ca092ea2ff5867c8dda6004303b4cb01a595f535778c8e9c3"
+  }
+}

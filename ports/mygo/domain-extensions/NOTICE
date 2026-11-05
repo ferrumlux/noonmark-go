@@ -1,0 +1,8 @@
+This Go domain extension derives from Noonmark by its upstream contributors.
+Upstream: https://github.com/quboliu/noonmark
+Source baseline: 43e6eefaae3a04be89cab3e234d470111afd80ef
+Original license: GNU Affero General Public License, version 3 (see LICENSE).
+Modified: translated bounded classification and recurring-plan facts, commands,
+validation, history and projections into Go, with synthetic compatibility tests.
+This module is not the complete Noonmark engine, Swift wire codec, storage layer,
+classification authorization capability implementation or production ICU adapter.

@@ -1,0 +1,6 @@
+This Go domain port derives from Noonmark by its upstream contributors.
+Upstream: https://github.com/quboliu/noonmark
+Source baseline: 43e6eefaae3a04be89cab3e234d470111afd80ef
+Original license: GNU Affero General Public License, version 3 (see LICENSE).
+Modified: translated a bounded subset of domain models, validation and commands
+into Go. This package is not the full Noonmark engine or a v7 import validator.

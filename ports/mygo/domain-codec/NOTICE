@@ -1,0 +1,5 @@
+Derived from Noonmark by its upstream contributors, AGPL-3.0-only.
+Upstream: https://github.com/quboliu/noonmark
+Source baseline: 43e6eefaae3a04be89cab3e234d470111afd80ef
+Modified: isolated Go v7 transport candidate, strict schema/security validation,
+exact timestamps and synthetic fixtures. No Swift oracle validation performed.

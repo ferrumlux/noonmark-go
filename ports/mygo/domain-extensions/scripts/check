@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+set -euo pipefail
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+GO="${GO:-go}"
+BUILD_ROOT="${NOONMARK_DOMAIN_EXTENSIONS_BUILD_ROOT:-${TMPDIR:-/tmp}/noonmark-domain-extensions-build}"
+case "$BUILD_ROOT" in /*) ;; *) echo 'Build root must be absolute' >&2; exit 1;; esac
+case "$BUILD_ROOT/" in "$ROOT/"*) echo 'Build root must be outside this source module' >&2; exit 1;; esac
+mkdir -p "$BUILD_ROOT/cache" "$BUILD_ROOT/modcache"
+export GOCACHE="$BUILD_ROOT/cache" GOMODCACHE="$BUILD_ROOT/modcache"
+export GOTOOLCHAIN=local GOTELEMETRY=off GOMAXPROCS="${GOMAXPROCS:-2}"
+cd "$ROOT"
+GOFMT="${GOFMT:-$(dirname "$(command -v "$GO")")/gofmt}"
+if [[ -n "$("$GOFMT" -l classification/*.go recurrence/*.go integration/*.go)" ]]; then
+ echo 'gofmt changes are needed; format and rerun' >&2; exit 1
+fi
+"$GO" vet ./...
+"$GO" test -race -count=1 -cover ./...

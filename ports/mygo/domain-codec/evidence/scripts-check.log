@@ -1,0 +1,2 @@
+ok  	github.com/ferrumlux/noonmark/ports/mygo/domain-codec/canonical	1.025s	coverage: 86.3% of statements
+ok  	github.com/ferrumlux/noonmark/ports/mygo/domain-codec/v7	2.313s	coverage: 78.8% of statements

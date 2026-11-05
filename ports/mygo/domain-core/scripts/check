@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+set -euo pipefail
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+GO="${GO:-go}"
+BUILD_ROOT="${NOONMARK_DOMAIN_BUILD_ROOT:-${TMPDIR:-/tmp}/noonmark-domain-build}"
+mkdir -p "$BUILD_ROOT/cache" "$BUILD_ROOT/modcache"
+export GOCACHE="$BUILD_ROOT/cache" GOMODCACHE="$BUILD_ROOT/modcache"
+cd "$ROOT"
+GOFMT="${GOFMT:-$(dirname "$(command -v "$GO")")/gofmt}"
+if [[ -n "$("$GOFMT" -l core/*.go)" ]]; then
+  echo "gofmt changes are needed; format and rerun" >&2
+  exit 1
+fi
+"$GO" vet ./...
+"$GO" test -race -count=1 -cover ./...

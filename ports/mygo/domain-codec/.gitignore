@@ -1,0 +1,4 @@
+.cache/
+*.test
+*.exe
+coverage.out

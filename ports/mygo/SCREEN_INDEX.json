@@ -1,0 +1,262 @@
+[
+  {
+    "screen": "day",
+    "file": "screenshots/noonmark-day-native.png",
+    "pixels": [
+      2400,
+      1536
+    ],
+    "scale": 2,
+    "reference": "https://github.com/quboliu/noonmark/blob/43e6eefaae3a04be89cab3e234d470111afd80ef/docs/assets/screenshots/readme/day-todo.png",
+    "basis": "official screenshot + source",
+    "rendering": "MyGo native ui.Render on Linux; no HTML/WebView",
+    "pixel_identical": false
+  },
+  {
+    "screen": "pool",
+    "file": "screenshots/noonmark-pool-native.png",
+    "pixels": [
+      2400,
+      1536
+    ],
+    "scale": 2,
+    "reference": "https://github.com/quboliu/noonmark/blob/43e6eefaae3a04be89cab3e234d470111afd80ef/docs/assets/screenshots/readme/task-pool.png",
+    "basis": "official screenshot + source",
+    "rendering": "MyGo native ui.Render on Linux; no HTML/WebView",
+    "pixel_identical": false
+  },
+  {
+    "screen": "calendar",
+    "file": "screenshots/noonmark-calendar-native.png",
+    "pixels": [
+      2400,
+      1536
+    ],
+    "scale": 2,
+    "reference": "https://github.com/quboliu/noonmark/blob/43e6eefaae3a04be89cab3e234d470111afd80ef/docs/assets/screenshots/readme/calendar.png",
+    "basis": "official screenshot + source",
+    "rendering": "MyGo native ui.Render on Linux; no HTML/WebView",
+    "pixel_identical": false
+  },
+  {
+    "screen": "upcoming",
+    "file": "screenshots/noonmark-upcoming-native.png",
+    "pixels": [
+      2400,
+      1536
+    ],
+    "scale": 2,
+    "reference": "https://github.com/quboliu/noonmark/blob/43e6eefaae3a04be89cab3e234d470111afd80ef/docs/assets/screenshots/readme/future-plans.png",
+    "basis": "official screenshot + source",
+    "rendering": "MyGo native ui.Render on Linux; no HTML/WebView",
+    "pixel_identical": false
+  },
+  {
+    "screen": "recurring",
+    "file": "screenshots/noonmark-recurring-native.png",
+    "pixels": [
+      2400,
+      1536
+    ],
+    "scale": 2,
+    "reference": "https://github.com/quboliu/noonmark/blob/43e6eefaae3a04be89cab3e234d470111afd80ef/docs/assets/screenshots/readme/recurring-plans.png",
+    "basis": "official screenshot + source",
+    "rendering": "MyGo native ui.Render on Linux; no HTML/WebView",
+    "pixel_identical": false
+  },
+  {
+    "screen": "unfinished",
+    "file": "screenshots/noonmark-unfinished-native.png",
+    "pixels": [
+      2400,
+      1536
+    ],
+    "scale": 2,
+    "reference": "https://github.com/quboliu/noonmark/blob/43e6eefaae3a04be89cab3e234d470111afd80ef/docs/assets/screenshots/readme/unfinished.png",
+    "basis": "official screenshot + source",
+    "rendering": "MyGo native ui.Render on Linux; no HTML/WebView",
+    "pixel_identical": false
+  },
+  {
+    "screen": "completed",
+    "file": "screenshots/noonmark-completed-native.png",
+    "pixels": [
+      2400,
+      1536
+    ],
+    "scale": 2,
+    "reference": "https://github.com/quboliu/noonmark/blob/43e6eefaae3a04be89cab3e234d470111afd80ef/docs/assets/screenshots/readme/completed.png",
+    "basis": "official screenshot + source",
+    "rendering": "MyGo native ui.Render on Linux; no HTML/WebView",
+    "pixel_identical": false
+  },
+  {
+    "screen": "flylight",
+    "file": "screenshots/noonmark-flylight-native.png",
+    "pixels": [
+      2400,
+      1536
+    ],
+    "scale": 2,
+    "reference": "https://github.com/quboliu/noonmark/blob/43e6eefaae3a04be89cab3e234d470111afd80ef/docs/assets/screenshots/readme/flylight.png",
+    "basis": "official screenshot + source",
+    "rendering": "MyGo native ui.Render on Linux; no HTML/WebView",
+    "pixel_identical": false
+  },
+  {
+    "screen": "flylight-edit",
+    "file": "screenshots/noonmark-flylight-edit-native.png",
+    "pixels": [
+      2400,
+      1536
+    ],
+    "scale": 2,
+    "reference": "https://github.com/quboliu/noonmark/blob/43e6eefaae3a04be89cab3e234d470111afd80ef/docs/assets/screenshots/readme/flylight-inline-edit.png",
+    "basis": "official screenshot + source",
+    "rendering": "MyGo native ui.Render on Linux; no HTML/WebView",
+    "pixel_identical": false
+  },
+  {
+    "screen": "sticky",
+    "file": "screenshots/noonmark-sticky-native.png",
+    "pixels": [
+      2400,
+      1536
+    ],
+    "scale": 2,
+    "reference": "https://github.com/quboliu/noonmark/blob/43e6eefaae3a04be89cab3e234d470111afd80ef/docs/assets/screenshots/readme/sticky-notes-wall.png",
+    "basis": "official screenshot + source",
+    "rendering": "MyGo native ui.Render on Linux; no HTML/WebView",
+    "pixel_identical": false
+  },
+  {
+    "screen": "sticky-stream",
+    "file": "screenshots/noonmark-sticky-stream-native.png",
+    "pixels": [
+      2400,
+      1536
+    ],
+    "scale": 2,
+    "reference": "https://github.com/quboliu/noonmark/blob/43e6eefaae3a04be89cab3e234d470111afd80ef/docs/assets/screenshots/readme/sticky-notes-stream.png",
+    "basis": "official screenshot + source",
+    "rendering": "MyGo native ui.Render on Linux; no HTML/WebView",
+    "pixel_identical": false
+  },
+  {
+    "screen": "ai",
+    "file": "screenshots/noonmark-ai-native.png",
+    "pixels": [
+      2400,
+      1536
+    ],
+    "scale": 2,
+    "reference": "https://github.com/quboliu/noonmark/blob/43e6eefaae3a04be89cab3e234d470111afd80ef/docs/assets/screenshots/readme/zhulong.png",
+    "basis": "official screenshot + source",
+    "rendering": "MyGo native ui.Render on Linux; no HTML/WebView",
+    "pixel_identical": false
+  },
+  {
+    "screen": "settings-general",
+    "file": "screenshots/noonmark-settings-general-native.png",
+    "pixels": [
+      1720,
+      1320
+    ],
+    "scale": 2,
+    "reference": "https://github.com/quboliu/noonmark/blob/43e6eefaae3a04be89cab3e234d470111afd80ef/docs/assets/screenshots/readme/settings-general.png",
+    "basis": "official screenshot + source",
+    "rendering": "MyGo native ui.Render on Linux; no HTML/WebView",
+    "pixel_identical": false
+  },
+  {
+    "screen": "settings-groups",
+    "file": "screenshots/noonmark-settings-groups-native.png",
+    "pixels": [
+      1720,
+      1320
+    ],
+    "scale": 2,
+    "reference": "https://github.com/quboliu/noonmark/blob/43e6eefaae3a04be89cab3e234d470111afd80ef/docs/assets/screenshots/readme/settings-groups.png",
+    "basis": "official screenshot + source",
+    "rendering": "MyGo native ui.Render on Linux; no HTML/WebView",
+    "pixel_identical": false
+  },
+  {
+    "screen": "settings-data",
+    "file": "screenshots/noonmark-settings-data-native.png",
+    "pixels": [
+      1720,
+      1320
+    ],
+    "scale": 2,
+    "reference": "https://github.com/quboliu/noonmark/blob/43e6eefaae3a04be89cab3e234d470111afd80ef/docs/assets/screenshots/readme/settings-data.png",
+    "basis": "official screenshot + source",
+    "rendering": "MyGo native ui.Render on Linux; no HTML/WebView",
+    "pixel_identical": false
+  },
+  {
+    "screen": "settings-privacy",
+    "file": "screenshots/noonmark-settings-privacy-native.png",
+    "pixels": [
+      1720,
+      1320
+    ],
+    "scale": 2,
+    "reference": "https://github.com/quboliu/noonmark/blob/43e6eefaae3a04be89cab3e234d470111afd80ef/docs/assets/screenshots/readme/settings-privacy.png",
+    "basis": "official screenshot + source",
+    "rendering": "MyGo native ui.Render on Linux; no HTML/WebView",
+    "pixel_identical": false
+  },
+  {
+    "screen": "quick-entry",
+    "file": "screenshots/noonmark-quick-entry-native.png",
+    "pixels": [
+      1040,
+      336
+    ],
+    "scale": 2,
+    "reference": "https://github.com/quboliu/noonmark/blob/43e6eefaae3a04be89cab3e234d470111afd80ef/docs/assets/screenshots/readme/quick-entry.png",
+    "basis": "official screenshot + source",
+    "rendering": "MyGo native ui.Render on Linux; no HTML/WebView",
+    "pixel_identical": false
+  },
+  {
+    "screen": "flylight-quick-capture",
+    "file": "screenshots/noonmark-flylight-quick-capture-native.png",
+    "pixels": [
+      1040,
+      524
+    ],
+    "scale": 2,
+    "reference": "https://github.com/quboliu/noonmark/blob/43e6eefaae3a04be89cab3e234d470111afd80ef/docs/assets/screenshots/readme/flylight-quick-capture.png",
+    "basis": "official screenshot + source",
+    "rendering": "MyGo native ui.Render on Linux; no HTML/WebView",
+    "pixel_identical": false
+  },
+  {
+    "screen": "settings-sync",
+    "file": "screenshots/noonmark-settings-sync-native.png",
+    "pixels": [
+      1720,
+      1320
+    ],
+    "scale": 2,
+    "reference": null,
+    "basis": "source-derived; no public screenshot comparison",
+    "rendering": "MyGo native ui.Render on Linux; no HTML/WebView",
+    "pixel_identical": false
+  },
+  {
+    "screen": "settings-provider",
+    "file": "screenshots/noonmark-settings-provider-native.png",
+    "pixels": [
+      1720,
+      1320
+    ],
+    "scale": 2,
+    "reference": null,
+    "basis": "source-derived; no public screenshot comparison",
+    "rendering": "MyGo native ui.Render on Linux; no HTML/WebView",
+    "pixel_identical": false
+  }
+]

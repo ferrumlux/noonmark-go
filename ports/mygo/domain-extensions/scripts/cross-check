@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# Compile checks only. These are NOT six-platform runtime/desktop acceptance.
+set -euo pipefail
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+GO="${GO:-go}"
+BUILD_ROOT="${NOONMARK_DOMAIN_EXTENSIONS_BUILD_ROOT:-${TMPDIR:-/tmp}/noonmark-domain-extensions-build}"
+case "$BUILD_ROOT" in /*) ;; *) echo 'Build root must be absolute' >&2; exit 1;; esac
+case "$BUILD_ROOT/" in "$ROOT/"*) echo 'Build root must be outside source module' >&2; exit 1;; esac
+mkdir -p "$BUILD_ROOT/cache" "$BUILD_ROOT/modcache" "$BUILD_ROOT/cross"
+export GOCACHE="$BUILD_ROOT/cache" GOMODCACHE="$BUILD_ROOT/modcache"
+export GOTOOLCHAIN=local GOTELEMETRY=off GOMAXPROCS="${GOMAXPROCS:-2}"
+cd "$ROOT"
+for platform in linux/amd64 linux/arm64 windows/amd64 windows/arm64 darwin/amd64 darwin/arm64; do
+ os="${platform%/*}"; arch="${platform#*/}"
+ for package in classification recurrence integration; do
+  suffix=test; [[ "$os" == windows ]] && suffix=exe
+  target="$BUILD_ROOT/cross/${package}-${os}-${arch}.$suffix"
+  CGO_ENABLED=0 GOOS="$os" GOARCH="$arch" "$GO" test -c -o "$target" "./$package"
+  printf 'COMPILE PASS %s %s\n' "$platform" "$package"
+ done
+ done

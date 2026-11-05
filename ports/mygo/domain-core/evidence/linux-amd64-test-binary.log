@@ -1,0 +1,183 @@
+=== RUN   TestInstantPreservesSubmillisecondAndLargeUnsignedBits
+--- PASS: TestInstantPreservesSubmillisecondAndLargeUnsignedBits (0.00s)
+=== RUN   TestInstantRejectsHostileJSONWithoutChangingReceiver
+=== RUN   TestInstantRejectsHostileJSONWithoutChangingReceiver/null
+=== RUN   TestInstantRejectsHostileJSONWithoutChangingReceiver/__null__
+=== RUN   TestInstantRejectsHostileJSONWithoutChangingReceiver/-1
+=== RUN   TestInstantRejectsHostileJSONWithoutChangingReceiver/1.2
+=== RUN   TestInstantRejectsHostileJSONWithoutChangingReceiver/1e3
+=== RUN   TestInstantRejectsHostileJSONWithoutChangingReceiver/"123"
+=== RUN   TestInstantRejectsHostileJSONWithoutChangingReceiver/18446744073709551616
+=== RUN   TestInstantRejectsHostileJSONWithoutChangingReceiver/9218868437227405312
+=== RUN   TestInstantRejectsHostileJSONWithoutChangingReceiver/9221120237041090560
+--- PASS: TestInstantRejectsHostileJSONWithoutChangingReceiver (0.00s)
+    --- PASS: TestInstantRejectsHostileJSONWithoutChangingReceiver/null (0.00s)
+    --- PASS: TestInstantRejectsHostileJSONWithoutChangingReceiver/__null__ (0.00s)
+    --- PASS: TestInstantRejectsHostileJSONWithoutChangingReceiver/-1 (0.00s)
+    --- PASS: TestInstantRejectsHostileJSONWithoutChangingReceiver/1.2 (0.00s)
+    --- PASS: TestInstantRejectsHostileJSONWithoutChangingReceiver/1e3 (0.00s)
+    --- PASS: TestInstantRejectsHostileJSONWithoutChangingReceiver/"123" (0.00s)
+    --- PASS: TestInstantRejectsHostileJSONWithoutChangingReceiver/18446744073709551616 (0.00s)
+    --- PASS: TestInstantRejectsHostileJSONWithoutChangingReceiver/9218868437227405312 (0.00s)
+    --- PASS: TestInstantRejectsHostileJSONWithoutChangingReceiver/9221120237041090560 (0.00s)
+=== RUN   TestMutationClockNextUpAndBoundaries
+--- PASS: TestMutationClockNextUpAndBoundaries (0.00s)
+=== RUN   TestCivilDatesLeapDaysAndBounds
+--- PASS: TestCivilDatesLeapDaysAndBounds (0.00s)
+=== RUN   TestIdentitiesAndStatuses
+--- PASS: TestIdentitiesAndStatuses (0.00s)
+=== RUN   TestTaskGraphRejectsMalformedFacts
+=== RUN   TestTaskGraphRejectsMalformedFacts/duplicate_chain
+=== RUN   TestTaskGraphRejectsMalformedFacts/duplicate_date
+=== RUN   TestTaskGraphRejectsMalformedFacts/identity
+=== RUN   TestTaskGraphRejectsMalformedFacts/civil_date
+=== RUN   TestTaskGraphRejectsMalformedFacts/chain_state
+=== RUN   TestTaskGraphRejectsMalformedFacts/chain_clock
+=== RUN   TestTaskGraphRejectsMalformedFacts/day_locked_clock
+=== RUN   TestTaskGraphRejectsMalformedFacts/missing_chain
+=== RUN   TestTaskGraphRejectsMalformedFacts/missing_definition
+=== RUN   TestTaskGraphRejectsMalformedFacts/definition_sequence
+=== RUN   TestTaskGraphRejectsMalformedFacts/definition_title
+=== RUN   TestTaskGraphRejectsMalformedFacts/definition_clock
+=== RUN   TestTaskGraphRejectsMalformedFacts/supersession
+=== RUN   TestTaskGraphRejectsMalformedFacts/self_successor
+=== RUN   TestTaskGraphRejectsMalformedFacts/missing_successor
+=== RUN   TestTaskGraphRejectsMalformedFacts/two_current_definitions
+=== RUN   TestTaskGraphRejectsMalformedFacts/duplicate_sequence
+=== RUN   TestTaskGraphRejectsMalformedFacts/missing_day
+=== RUN   TestTaskGraphRejectsMalformedFacts/trace_wrong_definition
+=== RUN   TestTaskGraphRejectsMalformedFacts/trace_clock
+=== RUN   TestTaskGraphRejectsMalformedFacts/trace_unknown_status
+=== RUN   TestTaskGraphRejectsMalformedFacts/pending_completion
+=== RUN   TestTaskGraphRejectsMalformedFacts/progress_overflow
+=== RUN   TestTaskGraphRejectsMalformedFacts/unlinked_nonroot
+=== RUN   TestTaskGraphRejectsMalformedFacts/pin_zero
+=== RUN   TestTaskGraphRejectsMalformedFacts/two_pending
+=== RUN   TestTaskGraphRejectsMalformedFacts/duplicate_priority
+=== RUN   TestTaskGraphRejectsMalformedFacts/cancel_witness
+=== RUN   TestTaskGraphRejectsMalformedFacts/deferred_needs_target
+--- PASS: TestTaskGraphRejectsMalformedFacts (0.00s)
+    --- PASS: TestTaskGraphRejectsMalformedFacts/duplicate_chain (0.00s)
+    --- PASS: TestTaskGraphRejectsMalformedFacts/duplicate_date (0.00s)
+    --- PASS: TestTaskGraphRejectsMalformedFacts/identity (0.00s)
+    --- PASS: TestTaskGraphRejectsMalformedFacts/civil_date (0.00s)
+    --- PASS: TestTaskGraphRejectsMalformedFacts/chain_state (0.00s)
+    --- PASS: TestTaskGraphRejectsMalformedFacts/chain_clock (0.00s)
+    --- PASS: TestTaskGraphRejectsMalformedFacts/day_locked_clock (0.00s)
+    --- PASS: TestTaskGraphRejectsMalformedFacts/missing_chain (0.00s)
+    --- PASS: TestTaskGraphRejectsMalformedFacts/missing_definition (0.00s)
+    --- PASS: TestTaskGraphRejectsMalformedFacts/definition_sequence (0.00s)
+    --- PASS: TestTaskGraphRejectsMalformedFacts/definition_title (0.00s)
+    --- PASS: TestTaskGraphRejectsMalformedFacts/definition_clock (0.00s)
+    --- PASS: TestTaskGraphRejectsMalformedFacts/supersession (0.00s)
+    --- PASS: TestTaskGraphRejectsMalformedFacts/self_successor (0.00s)
+    --- PASS: TestTaskGraphRejectsMalformedFacts/missing_successor (0.00s)
+    --- PASS: TestTaskGraphRejectsMalformedFacts/two_current_definitions (0.00s)
+    --- PASS: TestTaskGraphRejectsMalformedFacts/duplicate_sequence (0.00s)
+    --- PASS: TestTaskGraphRejectsMalformedFacts/missing_day (0.00s)
+    --- PASS: TestTaskGraphRejectsMalformedFacts/trace_wrong_definition (0.00s)
+    --- PASS: TestTaskGraphRejectsMalformedFacts/trace_clock (0.00s)
+    --- PASS: TestTaskGraphRejectsMalformedFacts/trace_unknown_status (0.00s)
+    --- PASS: TestTaskGraphRejectsMalformedFacts/pending_completion (0.00s)
+    --- PASS: TestTaskGraphRejectsMalformedFacts/progress_overflow (0.00s)
+    --- PASS: TestTaskGraphRejectsMalformedFacts/unlinked_nonroot (0.00s)
+    --- PASS: TestTaskGraphRejectsMalformedFacts/pin_zero (0.00s)
+    --- PASS: TestTaskGraphRejectsMalformedFacts/two_pending (0.00s)
+    --- PASS: TestTaskGraphRejectsMalformedFacts/duplicate_priority (0.00s)
+    --- PASS: TestTaskGraphRejectsMalformedFacts/cancel_witness (0.00s)
+    --- PASS: TestTaskGraphRejectsMalformedFacts/deferred_needs_target (0.00s)
+=== RUN   TestEmptyExistingTitleAndDefinitionRestorationWitness
+--- PASS: TestEmptyExistingTitleAndDefinitionRestorationWitness (0.00s)
+=== RUN   TestPlannedSubtaskContracts
+=== RUN   TestPlannedSubtaskContracts/0
+=== RUN   TestPlannedSubtaskContracts/1
+=== RUN   TestPlannedSubtaskContracts/2
+=== RUN   TestPlannedSubtaskContracts/3
+=== RUN   TestPlannedSubtaskContracts/4
+--- PASS: TestPlannedSubtaskContracts (0.00s)
+    --- PASS: TestPlannedSubtaskContracts/0 (0.00s)
+    --- PASS: TestPlannedSubtaskContracts/1 (0.00s)
+    --- PASS: TestPlannedSubtaskContracts/2 (0.00s)
+    --- PASS: TestPlannedSubtaskContracts/3 (0.00s)
+    --- PASS: TestPlannedSubtaskContracts/4 (0.00s)
+=== RUN   TestStructuredNoteIdentityClockAndTombstone
+--- PASS: TestStructuredNoteIdentityClockAndTombstone (0.00s)
+=== RUN   TestDeferralAndContinuationAreDistinct
+--- PASS: TestDeferralAndContinuationAreDistinct (0.00s)
+=== RUN   TestCancelledUndoAndReservedWitness
+--- PASS: TestCancelledUndoAndReservedWitness (0.00s)
+=== RUN   TestChangedTraceMustPointToNewChainOnSameDate
+--- PASS: TestChangedTraceMustPointToNewChainOnSameDate (0.00s)
+=== RUN   TestSubtaskFactsAndTopology
+--- PASS: TestSubtaskFactsAndTopology (0.00s)
+=== RUN   TestSubtaskContinuationPreservesLineage
+--- PASS: TestSubtaskContinuationPreservesLineage (0.00s)
+=== RUN   TestCycleDetectionIsIterative
+--- PASS: TestCycleDetectionIsIterative (0.04s)
+=== RUN   TestPoolScheduleCompleteUndoAndRollover
+--- PASS: TestPoolScheduleCompleteUndoAndRollover (0.00s)
+=== RUN   TestCreationAndScheduleRejectAtomically
+--- PASS: TestCreationAndScheduleRejectAtomically (0.00s)
+=== RUN   TestScheduleCopiesPlannedSubtasksAndActiveNotes
+--- PASS: TestScheduleCopiesPlannedSubtasksAndActiveNotes (0.00s)
+=== RUN   TestCompletionCapabilityErrors
+--- PASS: TestCompletionCapabilityErrors (0.00s)
+=== RUN   TestCompletionChainClockFailureDoesNotPartiallyMutateTrace
+--- PASS: TestCompletionChainClockFailureDoesNotPartiallyMutateTrace (0.00s)
+=== RUN   TestSettlementSubtaskFailureIsAtomicAcrossDays
+--- PASS: TestSettlementSubtaskFailureIsAtomicAcrossDays (0.00s)
+=== RUN   TestKernelRejectsRecurringParentsRatherThanDroppingThem
+--- PASS: TestKernelRejectsRecurringParentsRatherThanDroppingThem (0.00s)
+=== RUN   TestSnapshotIsDeeplyDetached
+--- PASS: TestSnapshotIsDeeplyDetached (0.00s)
+=== RUN   TestConcurrentCreationAndReads
+--- PASS: TestConcurrentCreationAndReads (0.00s)
+=== RUN   TestDayTodoFiltersSupersededDeferralAndKeepsMovementFacts
+--- PASS: TestDayTodoFiltersSupersededDeferralAndKeepsMovementFacts (0.00s)
+=== RUN   TestValidationErrorDoesNotExposeTaskText
+--- PASS: TestValidationErrorDoesNotExposeTaskText (0.00s)
+=== RUN   TestTraceStatusFactMatrix
+=== RUN   TestTraceStatusFactMatrix/pending
+=== RUN   TestTraceStatusFactMatrix/completed
+=== RUN   TestTraceStatusFactMatrix/unfinished
+=== RUN   TestTraceStatusFactMatrix/returnedToPool
+=== RUN   TestTraceStatusFactMatrix/cancelledDraft
+=== RUN   TestTraceStatusFactMatrix/abandoned
+--- PASS: TestTraceStatusFactMatrix (0.00s)
+    --- PASS: TestTraceStatusFactMatrix/pending (0.00s)
+    --- PASS: TestTraceStatusFactMatrix/completed (0.00s)
+    --- PASS: TestTraceStatusFactMatrix/unfinished (0.00s)
+    --- PASS: TestTraceStatusFactMatrix/returnedToPool (0.00s)
+    --- PASS: TestTraceStatusFactMatrix/cancelledDraft (0.00s)
+    --- PASS: TestTraceStatusFactMatrix/abandoned (0.00s)
+=== RUN   TestSubtaskStatusFactMatrix
+=== RUN   TestSubtaskStatusFactMatrix/pending
+=== RUN   TestSubtaskStatusFactMatrix/completed
+=== RUN   TestSubtaskStatusFactMatrix/unfinished
+=== RUN   TestSubtaskStatusFactMatrix/abandoned
+=== RUN   TestSubtaskStatusFactMatrix/cancelledDraft
+--- PASS: TestSubtaskStatusFactMatrix (0.00s)
+    --- PASS: TestSubtaskStatusFactMatrix/pending (0.00s)
+    --- PASS: TestSubtaskStatusFactMatrix/completed (0.00s)
+    --- PASS: TestSubtaskStatusFactMatrix/unfinished (0.00s)
+    --- PASS: TestSubtaskStatusFactMatrix/abandoned (0.00s)
+    --- PASS: TestSubtaskStatusFactMatrix/cancelledDraft (0.00s)
+=== RUN   TestCancelledTraceKeepsOnlyPendingChildren
+--- PASS: TestCancelledTraceKeepsOnlyPendingChildren (0.00s)
+=== RUN   TestDayTodoPendingPinsPrecedeTerminalFacts
+--- PASS: TestDayTodoPendingPinsPrecedeTerminalFacts (0.00s)
+=== RUN   TestConstructorRejectsInvalidInputWithoutMutation
+--- PASS: TestConstructorRejectsInvalidInputWithoutMutation (0.00s)
+=== RUN   TestScheduleLateFailureDoesNotAddHalfTraceOrChildren
+--- PASS: TestScheduleLateFailureDoesNotAddHalfTraceOrChildren (0.00s)
+=== RUN   TestNegativePrioritiesRetainUpstreamNextPriorityRule
+--- PASS: TestNegativePrioritiesRetainUpstreamNextPriorityRule (0.00s)
+=== RUN   FuzzTaskGraphValidationDoesNotPanic
+=== RUN   FuzzTaskGraphValidationDoesNotPanic/seed#0
+=== RUN   FuzzTaskGraphValidationDoesNotPanic/seed#1
+=== RUN   FuzzTaskGraphValidationDoesNotPanic/seed#2
+--- PASS: FuzzTaskGraphValidationDoesNotPanic (0.00s)
+    --- PASS: FuzzTaskGraphValidationDoesNotPanic/seed#0 (0.00s)
+    --- PASS: FuzzTaskGraphValidationDoesNotPanic/seed#1 (0.00s)
+    --- PASS: FuzzTaskGraphValidationDoesNotPanic/seed#2 (0.00s)
+PASS

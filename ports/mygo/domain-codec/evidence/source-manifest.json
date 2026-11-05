@@ -1,0 +1,33 @@
+{
+  "hash_algorithm": "SHA256",
+  "files": {
+    ".gitignore": "661709217cc73d936cc1dbaeefdd20a60d21dd688678259a4bb398a579c73960",
+    "LICENSE": "8d56b405468aad11f87ab5763f901e276e08d9646ff5c8481b1762b6b789e9ed",
+    "NOTICE": "dc7b21b9a6f9173ac2eab335362a3b0e71354e5c292c98382318854966b18cc0",
+    "README.md": "559935dfff3f459102081503da680963a40541ab6d00f8953bffe9a752fda6bd",
+    "canonical/README.md": "9ad49fd10e4e45ffd5f24f3dd7c238f6dcc792ec6c4368599b64ad1ae107f14d",
+    "canonical/canonical.go": "6076f80103b6ea549df109a45722138918a42dd11c6c69757adbfbcb5cc100e8",
+    "canonical/canonical_test.go": "73d325068aa8d0cadc919ac7dac7d76458dace52ab6bca1e36b04e0f363c2dcc",
+    "evidence/canonical-fuzz.log": "867a2c7cda6fae5fb44de751d54563875c3249aad34fe61333fec7072bff4550",
+    "evidence/cross-compile.log": "f42c906a24eec264785bdb4bed6d41a785ffc51bc4d83e4535beedabfd1ace79",
+    "evidence/foundation-oracle-availability.log": "88517e9286e3dc9e6407d5d2930ce889545fa889a5570a2c0c9c1da38cb8ce35",
+    "evidence/go-test-race.jsonl": "ecef47002c429e26bec08c949bfe1686feeabe521b884fe99241947b85fc0a98",
+    "evidence/reference-git-status.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "evidence/scripts-check.log": "4270aed1a28dae8ff5099889414d13a52858c1a0c6a9f1847b7a5a9447f70ed6",
+    "evidence/upstream-package-parity.tsv": "0bb34ce7ea92e0698d5da2b7ddd229b9dad9383c2a40972d4b34eb18114fcdbd",
+    "evidence/v7-fuzz.log": "cbe31be254e87a42aafca2e17dfab3735052384f6560e4330da1e3914373a1ac",
+    "evidence/verification.json": "f024337190058f8a2ea71e1ef40207d5ce2437ccd037433acd2b68b017d9c330",
+    "go.mod": "52d2dec603306a860007e87ab8821c04b728afef2fbe352cb6f734531f840e22",
+    "oracle/FoundationCanonicalOracle.swift": "8e00b5902c155e2158156d9443ad91250571c9c24eb159d09136e387452ed631",
+    "scripts/check": "cc2eed761a98193a08ba5148f5c1b7be4b94eb54c9aba2bca53e22558f1c9bff",
+    "scripts/check-foundation-candidate": "24efb893c39091b95909b900456f8bdf5d66257e01723ac093a982aab396f892",
+    "scripts/cross-check": "dccac378f0a5225395eaa10ad0139fc522a64118da41fc08c202fba4d26ff853",
+    "v7/classification_test.go": "4e62d6c64625af08802c5e90dd26475f855118dfcc1b43aceeddfcbc06d7e5d0",
+    "v7/codec.go": "edc36d23ff17a70323f6261588cd18862fc5bc47cb83f4fc2a6594e0015b0030",
+    "v7/codec_test.go": "93342509271cdb4a58c1b2468ad52777acf424ec254c9b718bb3a8bc57f4ec8e",
+    "v7/domain.go": "4af550065b1b81e850392bfc967ec75703dde52219052000701c08221c0ed0bf",
+    "v7/references.go": "ab0f3793a273dc079f06e9f2a0319b9ed4878dc61a21d0ad9bd1aae716e1a71b",
+    "v7/schema.go": "b1523e115faf9f17e160bea12559521781c71d99b5b0cd861d297ec784ec0323",
+    "v7/testdata/synthetic-v7-candidate.json": "4b62da70592ce294adb3a034f55ed7a001c31b0b6c33261c3de1600cc7357294"
+  }
+}

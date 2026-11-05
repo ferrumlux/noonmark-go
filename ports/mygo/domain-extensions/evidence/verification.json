@@ -1,0 +1,101 @@
+{
+  "source_repository": "https://github.com/quboliu/noonmark",
+  "source_commit": "43e6eefaae3a04be89cab3e234d470111afd80ef",
+  "verified_at_utc": "2026-11-05T11:42:29.325557+00:00",
+  "license": "AGPL-3.0-only",
+  "implementation_scope": "Second-batch pure Go classification and recurring-plan domain components; not a complete engine or wire codec",
+  "runtime_platform": "linux/amd64",
+  "go_version": "go1.27.3",
+  "module_go_directive": "1.23.0",
+  "minimum_go_version_tested": false,
+  "race_tests_passed": true,
+  "tests": {
+    "classification": {
+      "top_level_passed": 12,
+      "all_test_pass_events": 14
+    },
+    "recurrence": {
+      "top_level_passed": 32,
+      "all_test_pass_events": 47
+    },
+    "integration": {
+      "top_level_passed": 2,
+      "all_test_pass_events": 2
+    }
+  },
+  "top_level_passed": 46,
+  "all_test_pass_events": 63,
+  "statement_coverage_percent": {
+    "classification": 88.0,
+    "recurrence": 83.3
+  },
+  "vet_passed": true,
+  "gofmt_check_passed": true,
+  "scripts_check_passed": true,
+  "fuzz": {
+    "recurrence-command-fuzz.log": {
+      "passed": true,
+      "executions": 5061,
+      "workers": 2,
+      "requested_duration_seconds": 5
+    },
+    "recurrence-schedule-fuzz.log": {
+      "passed": true,
+      "executions": 210337,
+      "workers": 2,
+      "requested_duration_seconds": 5
+    },
+    "classification-fuzz.log": {
+      "passed": true,
+      "executions": 237752,
+      "workers": 2,
+      "requested_duration_seconds": 5
+    }
+  },
+  "cross_compile_pass_count": 18,
+  "cross_compile_packages": [
+    "classification",
+    "recurrence",
+    "integration"
+  ],
+  "cross_compile_targets": [
+    "linux/amd64",
+    "linux/arm64",
+    "windows/amd64",
+    "windows/arm64",
+    "darwin/amd64",
+    "darwin/arm64"
+  ],
+  "cross_platform_runtime_tests_executed": false,
+  "swift_tests_executed": false,
+  "swift_differential_tests_executed": false,
+  "official_full_fixture_replay_executed": false,
+  "ui_integration_executed": false,
+  "production_data_used": false,
+  "reference_git_status_empty": true,
+  "upstream_recurrence_test_inventory": {
+    "total": 51,
+    "evidence_counts": {
+      "behavior_fixture": 37,
+      "not_ported": 8,
+      "partial_guard_only": 1,
+      "partial_no_authority_commit": 1,
+      "partial_caller_orchestration_example": 1,
+      "partial_revision_not_full_audit_log": 1,
+      "partial_mapping_not_full_engine_fixture": 1,
+      "partial_imported_synthetic_fact": 1
+    }
+  },
+  "review_corrections": [
+    "Added PooledOccurrenceCount to match upstream projection",
+    "Reject every stoppedAfterDate during revision, including nonterminal-reason FollowingDates imported facts"
+  ],
+  "known_remaining": [
+    "Production ICU NFKC_Casefold/version adapter",
+    "Swift classification prepare/confirm capabilities and AI authority",
+    "Complete core task command surface and unified transaction owner",
+    "Automatic classification history capture and inheritance hooks",
+    "Generic pool/calendar/future-plan recurring filters",
+    "Swift v7 codec, SQLite schema19, sync and platform UI/runtime acceptance"
+  ]
+}
