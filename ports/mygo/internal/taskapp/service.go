@@ -210,9 +210,15 @@ func newIDs(n int) ([]string, error) {
 	}
 	return out, nil
 }
-func (s *Service) AddPool(title string) error  { return s.add(title, false) }
-func (s *Service) AddToday(title string) error { return s.add(title, true) }
-func (s *Service) add(title string, schedule bool) error {
+func (s *Service) AddPool(title string) error  { return s.add(title, false, nil) }
+func (s *Service) AddToday(title string) error { return s.add(title, true, nil) }
+
+// AddOnDate creates and schedules a task in one persisted aggregate revision.
+// Past, invalid and locked dates are rejected without publishing a pool task.
+func (s *Service) AddOnDate(title string, date core.LocalDate) error {
+	return s.add(title, true, &date)
+}
+func (s *Service) add(title string, schedule bool, date *core.LocalDate) error {
 	return s.transact(func(k *core.TaskKernel, now core.Instant) error {
 		ids, e := newIDs(4)
 		if e != nil {
@@ -224,7 +230,13 @@ func (s *Service) add(title string, schedule bool) error {
 		if !schedule {
 			return nil
 		}
-		return k.ScheduleFromPool(core.ScheduleFromPoolInput{ChainID: core.TaskChainID(ids[0]), TraceID: core.DayTraceID(ids[2]), DayID: core.DayID(ids[3]), Date: s.today, Today: s.today, Now: now})
+		// Resolve today's shortcut only under transact's lock, so AdvanceTo cannot
+		// interleave between choosing the target and validating against today.
+		target := s.today
+		if date != nil {
+			target = *date
+		}
+		return k.ScheduleFromPool(core.ScheduleFromPoolInput{ChainID: core.TaskChainID(ids[0]), TraceID: core.DayTraceID(ids[2]), DayID: core.DayID(ids[3]), Date: target, Today: s.today, Now: now})
 	})
 }
 func (s *Service) Schedule(chain core.TaskChainID, date core.LocalDate) error {

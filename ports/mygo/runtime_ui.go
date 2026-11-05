@@ -22,6 +22,7 @@ type taskService interface {
 	Today() core.LocalDate
 	AddPool(string) error
 	AddToday(string) error
+	AddOnDate(string, core.LocalDate) error
 	Schedule(core.TaskChainID, core.LocalDate) error
 	SetCompleted(core.DayTraceID, bool) error
 }
@@ -145,7 +146,7 @@ func (s *app) submitLiveDraft(pool bool) {
 	if pool {
 		s.runCommand(func() error { return s.runtime.AddPool(title) }, true)
 	} else {
-		s.runCommand(func() error { return s.runtime.AddToday(title) }, true)
+		s.runCommand(func() error { return s.runtime.AddOnDate(title, s.runtimeDate) }, true)
 	}
 }
 func (s *app) liveSidebar(c *ui.Context, h, sw float32, g core.TaskGraph) {
@@ -210,6 +211,10 @@ func (s *app) runtimeView(c *ui.Context) {
 		liveAction(c, "capture-save", w-112, 94, 94, "保存", "保存到任务池", true, func() { s.submitLiveDraft(true) })
 		liveAction(c, "capture-cancel", 20, 94, 54, "取消", "取消快速记录", true, func() { s.dismissUtility("pool", true) })
 		s.liveFeedback(c, 20, 130, w-40)
+		return
+	}
+	if s.page == "day" {
+		s.liveDayView(c, w, h)
 		return
 	}
 	if s.page == "calendar" {
@@ -421,6 +426,7 @@ func (s *app) observeRuntimeDay(now func() time.Time) {
 		if applied != s.runtimeAppliedDay {
 			if s.runtimeDate == s.runtimeAppliedDay {
 				s.runtimeDate = applied
+				s.runtimeDayFocus = ""
 				s.runtimeSelection = ""
 			}
 			if s.runtimeCalendarDate == s.runtimeAppliedDay {

@@ -49,6 +49,8 @@ type app struct {
 	runtimeError         string
 	runtimeNotice        string
 	runtimeSelection     string
+	runtimeDayRail       bool
+	runtimeDayFocus      string
 	runtimeCalendarDate  core.LocalDate
 	runtimeCalendarRail  bool
 	runtimeCalendarFocus string

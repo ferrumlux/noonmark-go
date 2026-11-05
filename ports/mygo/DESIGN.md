@@ -1,6 +1,6 @@
 # 初始原型视觉规格
 
-以下为原20场景静态截图的研究记录，不是当前运行功能或完整UI契约。精确色值/组件配方见 visual_tokens.go 和 docs/tasks/refine-source-visual-tokens；真实日历见 docs/tasks/connect-calendar-runtime。月份网格至少5行且可能6行，日历右栏可展开，默认折叠。原型中的静态任务与统计不得混入真实运行。
+以下为原20场景静态截图的研究记录，不是当前运行功能或完整UI契约。精确色值/组件配方见 visual_tokens.go 和 docs/tasks/refine-source-visual-tokens；真实日历见 docs/tasks/connect-calendar-runtime；真实日待办见 docs/tasks/connect-day-runtime。日待办默认flat/time/ascending、右栏默认折叠，不把下方演示分组当默认或真实资料。月份网格至少5行且可能6行，日历右栏可展开，默认折叠。原型中的静态任务与统计不得混入真实运行。
 
 目标截图来自 Noonmark 当前真实 SwiftUI 示例应用，不使用旧 HTML 原型。窗口内容区为 1200×768 DIP，导出倍率 2×。
 

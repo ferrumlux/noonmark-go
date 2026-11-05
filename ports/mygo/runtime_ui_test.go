@@ -40,7 +40,7 @@ func liveType(t *testing.T, tt *ui.Tester, title string) {
 }
 func TestLiveUICommandsPersistAcrossRestart(t *testing.T) {
 	s, tt, svc, path := liveTest(t)
-	if !tt.HasText("暂无任务") || tt.HasText("修复登录阻断问题") {
+	if !tt.HasText("这一天没有留下任务。") || tt.HasText("修复登录阻断问题") {
 		t.Fatal("static facts leaked into live session")
 	}
 	liveType(t, tt, "合成：编写发布说明")
@@ -133,7 +133,7 @@ func TestLiveUIDateAndUnsupportedPagesDoNotInventData(t *testing.T) {
 	liveType(t, tt, "今日事项")
 	liveClick(t, tt, "添加任务")
 	liveClick(t, tt, "后一天")
-	if s.runtimeDate.Day != 6 || !tt.HasText("暂无任务") {
+	if s.runtimeDate.Day != 6 || !tt.HasText("这一天没有留下任务。") {
 		t.Fatal("future date projection")
 	}
 	liveClick(t, tt, "回到今天")

@@ -69,7 +69,7 @@ func TestLiveCalendarNavigationIsReadOnly(t *testing.T) {
 		t.Fatal("empty future detail")
 	}
 	liveClick(t, tt, "在 Day Todo 打开这一天")
-	if s.page != "day" || s.runtimeDate.Day != 6 || !tt.HasText("暂无任务") {
+	if s.page != "day" || s.runtimeDate.Day != 6 || !tt.HasText("这一天没有留下任务。") {
 		t.Fatal("open selected date")
 	}
 	if !reflect.DeepEqual(before, svc.Snapshot()) || !reflect.DeepEqual(files, calendarDiskSignature(t, path)) {
