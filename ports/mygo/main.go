@@ -36,19 +36,21 @@ var (
 )
 
 type app struct {
-	page             string
-	draft            string
-	selectedDay      int
-	done             map[int]bool
-	compact          bool
-	detail           bool
-	openUtility      func(string)
-	closeWindow      func()
-	runtime          taskService
-	runtimeError     string
-	runtimeNotice    string
-	runtimeSelection string
-	runtimeDate      core.LocalDate
+	page              string
+	draft             string
+	selectedDay       int
+	done              map[int]bool
+	compact           bool
+	detail            bool
+	openUtility       func(string)
+	closeWindow       func()
+	runtime           taskService
+	runtimeError      string
+	runtimeNotice     string
+	runtimeSelection  string
+	runtimeDate       core.LocalDate
+	runtimeAppliedDay core.LocalDate
+	refreshDay        func() error
 }
 
 func newApp() *app { return &app{page: "day", selectedDay: 24, done: map[int]bool{}, detail: true} }
@@ -767,6 +769,7 @@ func main() {
 		s := newApp()
 		if service != nil {
 			s = newRuntimeApp(service)
+			s.observeRuntimeDay(time.Now)
 		}
 		s.page = key
 		s.openUtility = open

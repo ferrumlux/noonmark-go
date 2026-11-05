@@ -22,14 +22,15 @@ import (
 )
 
 var (
-	ErrSession    = errors.New("invalid isolated development session")
-	ErrConflict   = errors.New("session changed; reopen before editing")
-	ErrIncomplete = errors.New("incomplete or uncertain write; session requires inspection")
-	ErrCorrupt    = errors.New("corrupt development session")
-	ErrLimit      = errors.New("development session size limit")
+	ErrSession       = errors.New("invalid isolated development session")
+	ErrConflict      = errors.New("session changed; reopen before editing")
+	ErrIncomplete    = errors.New("incomplete or uncertain write; session requires inspection")
+	ErrCorrupt       = errors.New("corrupt development session")
+	ErrLimit         = errors.New("development session size limit")
+	ErrLegacySession = fmt.Errorf("%w: development v1 lacks required audit history; create a new v2 session; existing files were preserved", ErrSession)
 )
 
-const marker = "noonmark-mygo-development-session-v1\n"
+const marker = "noonmark-mygo-development-session-v2\n"
 const markerName = "SESSION_IDENTITY"
 const maxRevisions = 1024
 const maxRecordBytes = 24 << 20
@@ -87,17 +88,20 @@ func createStore(path string) (*diskStore, error) {
 	}
 	return d, nil
 }
-func openStore(path string) (*diskStore, core.TaskGraph, error) {
+func openStore(path string) (*diskStore, canonical.Value, error) {
 	if e := pathGuard(path); e != nil {
-		return nil, core.TaskGraph{}, e
+		return nil, canonical.Value{}, e
 	}
 	r, e := os.OpenRoot(path)
 	if e != nil {
-		return nil, core.TaskGraph{}, ErrSession
+		return nil, canonical.Value{}, ErrSession
 	}
 	d := &diskStore{root: r, path: path}
-	fail := func(err error) (*diskStore, core.TaskGraph, error) { r.Close(); return nil, core.TaskGraph{}, err }
+	fail := func(err error) (*diskStore, canonical.Value, error) { r.Close(); return nil, canonical.Value{}, err }
 	b, e := d.readRegular(markerName, 128)
+	if e == nil && string(b) == "noonmark-mygo-development-session-v1\n" {
+		return fail(ErrLegacySession)
+	}
 	if e != nil || string(b) != marker {
 		return fail(ErrSession)
 	}
@@ -108,7 +112,7 @@ func openStore(path string) (*diskStore, core.TaskGraph, error) {
 	if len(names) == 0 {
 		return fail(ErrIncomplete)
 	}
-	var graph core.TaskGraph
+	var snapshot canonical.Value
 	total := 0
 	for _, n := range names {
 		b, e := d.readRegular(n+"/state.json", maxRecordBytes)
@@ -134,17 +138,17 @@ func openStore(path string) (*diskStore, core.TaskGraph, error) {
 		if e = dec.Decode(&rec); e != nil {
 			return fail(ErrCorrupt)
 		}
-		if rec.Format != "noonmark-mygo-development-v1" || rec.Revision != d.revision+1 || rec.ParentSHA256 != d.hash {
+		if rec.Format != "noonmark-mygo-development-v2" || rec.Revision != d.revision+1 || rec.ParentSHA256 != d.hash {
 			return fail(ErrCorrupt)
 		}
-		graph, e = decodeGraph(rec.Payload)
+		snapshot, e = decodeSnapshot(rec.Payload)
 		if e != nil {
 			return fail(ErrCorrupt)
 		}
 		d.revision = rec.Revision
 		d.hash = hash
 	}
-	return d, graph, nil
+	return d, snapshot, nil
 }
 func (d *diskStore) revisions() ([]string, error) {
 	f, e := d.root.Open(".")
@@ -230,18 +234,18 @@ func (d *diskStore) writeExclusive(name string, b []byte) error {
 	}
 	return nil
 }
-func (d *diskStore) commit(g core.TaskGraph) error {
+func (d *diskStore) commit(snapshot canonical.Value) error {
 	if d.blocked {
 		return ErrIncomplete
 	}
 	if d.revision >= maxRevisions {
 		return ErrLimit
 	}
-	payload, e := encodeGraph(g)
+	payload, e := encodeSnapshot(snapshot)
 	if e != nil {
 		return e
 	}
-	b, e := json.Marshal(record{Format: "noonmark-mygo-development-v1", Revision: d.revision + 1, ParentSHA256: d.hash, Payload: payload})
+	b, e := json.Marshal(record{Format: "noonmark-mygo-development-v2", Revision: d.revision + 1, ParentSHA256: d.hash, Payload: payload})
 	if e != nil || len(b) > maxRecordBytes {
 		return ErrLimit
 	}
@@ -302,47 +306,70 @@ func (d *diskStore) commit(g core.TaskGraph) error {
 	d.blocked = false
 	return nil
 }
-func encodeGraph(g core.TaskGraph) ([]byte, error) {
-	if _, e := core.NewTaskKernel(g); e != nil {
+func encodeSnapshot(snapshot canonical.Value) ([]byte, error) {
+	if e := ValidateEmptyHistory(snapshot); e != nil {
 		return nil, e
 	}
-	extra, e := emptySupplement()
-	if e != nil {
+	if e := validateRuntimeScope(snapshot); e != nil {
 		return nil, e
 	}
-	snapshot, e := v7.FromDomain(recurrence.State{Tasks: g}, extra)
-	if e != nil {
-		return nil, e
-	}
-	return v7.New(v7.Options{}).Encode(snapshot)
+	return v7.New(v7.Options{ClassificationAuditValidator: ValidateEmptyHistory}).Encode(snapshot)
 }
-func decodeGraph(b []byte) (core.TaskGraph, error) {
-	doc, e := v7.New(v7.Options{}).Decode(b)
+func decodeSnapshot(b []byte) (canonical.Value, error) {
+	doc, e := v7.New(v7.Options{ClassificationAuditValidator: ValidateEmptyHistory}).Decode(b)
 	if e != nil {
-		return core.TaskGraph{}, e
+		return canonical.Value{}, e
 	}
-	state, extra, e := v7.ToDomain(doc.Snapshot())
+	snapshot := doc.Snapshot()
+	// The generic codec skips audit callbacks for an all-empty classification
+	// section. A locked trace still requires empty-history events, so this call
+	// is mandatory even when revision is zero.
+	if e = ValidateEmptyHistory(snapshot); e != nil {
+		return canonical.Value{}, e
+	}
+	if e = validateRuntimeScope(snapshot); e != nil {
+		return canonical.Value{}, e
+	}
+	return snapshot, nil
+}
+func validateRuntimeScope(snapshot canonical.Value) error {
+	state, extra, e := v7.ToDomain(snapshot)
 	if e != nil {
-		return core.TaskGraph{}, e
+		return e
 	}
-	neutral, err := emptySupplement()
-	if err != nil {
-		return core.TaskGraph{}, err
+	neutral, e := emptySupplement()
+	if e != nil {
+		return e
 	}
-	for _, pair := range [][2]canonical.Value{{extra.Preferences, neutral.Preferences}, {extra.Classifications, neutral.Classifications}, {extra.Ideas, neutral.Ideas}} {
-		a, ae := canonical.Marshal(pair[0])
-		b, be := canonical.Marshal(pair[1])
-		if ae != nil || be != nil || !bytes.Equal(a, b) {
-			return core.TaskGraph{}, ErrCorrupt
+	for _, pair := range [][2]canonical.Value{{extra.Preferences, neutral.Preferences}, {extra.Ideas, neutral.Ideas}} {
+		if !historyEqual(pair[0], pair[1]) {
+			return ErrCorrupt
 		}
 	}
 	if len(state.Series) != 0 {
-		return core.TaskGraph{}, core.ErrUnsupportedRecurring
+		return core.ErrUnsupportedRecurring
 	}
-	if _, e = core.NewTaskKernel(state.Tasks); e != nil {
-		return core.TaskGraph{}, e
+	_, e = core.NewTaskKernel(state.Tasks)
+	return e
+}
+func initialSnapshot() (canonical.Value, error) {
+	extra, e := emptySupplement()
+	if e != nil {
+		return canonical.Value{}, e
 	}
-	return state.Tasks, nil
+	return v7.FromDomain(recurrence.State{}, extra)
+}
+func normalizeSnapshot(snapshot canonical.Value) (canonical.Value, core.TaskGraph, error) {
+	b, e := encodeSnapshot(snapshot)
+	if e != nil {
+		return canonical.Value{}, core.TaskGraph{}, e
+	}
+	normalized, e := decodeSnapshot(b)
+	if e != nil {
+		return canonical.Value{}, core.TaskGraph{}, e
+	}
+	state, _, e := v7.ToDomain(normalized)
+	return normalized, state.Tasks, e
 }
 func emptySupplement() (v7.Supplement, error) {
 	v, e := canonical.Parse([]byte(neutralSupplement), canonical.DefaultLimits())
@@ -412,7 +439,7 @@ func (d *diskStore) verifyPrefix(expectedRevision int, expectedHash string, allo
 		if e = dec.Decode(&rec); e != nil {
 			return 0, ErrCorrupt
 		}
-		if rec.Format != "noonmark-mygo-development-v1" || rec.Revision != i+1 || rec.ParentSHA256 != parent {
+		if rec.Format != "noonmark-mygo-development-v2" || rec.Revision != i+1 || rec.ParentSHA256 != parent {
 			return 0, ErrCorrupt
 		}
 		parent = digest

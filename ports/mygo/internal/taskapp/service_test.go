@@ -3,6 +3,7 @@ package taskapp
 
 import (
 	"errors"
+	"github.com/ferrumlux/noonmark/ports/mygo/domain-codec/v7"
 	"github.com/ferrumlux/noonmark/ports/mygo/domain/core"
 	"os"
 	"path/filepath"
@@ -274,9 +275,12 @@ func TestBoundedRecordAndClosedService(t *testing.T) {
 func TestNativePayloadIsNotSwiftImport(t *testing.T) {
 	s, _ := fresh(t)
 	must(t, s.AddToday("synthetic"))
-	payload, e := encodeGraph(s.Snapshot())
+	payload, e := encodeSnapshot(s.snapshot)
 	must(t, e)
-	g, e := decodeGraph(payload)
+	wire, e := decodeSnapshot(payload)
+	state, _, e2 := v7.ToDomain(wire)
+	must(t, e2)
+	g := state.Tasks
 	must(t, e)
 	if !reflect.DeepEqual(g, s.Snapshot()) {
 		t.Fatal("transport changed state")
@@ -305,13 +309,13 @@ func TestReopenNextDaySettlesHistoryWithoutChangingPastCompletion(t *testing.T) 
 
 func TestRejectUnsupportedSupplementsInsteadOfDiscarding(t *testing.T) {
 	s, _ := fresh(t)
-	b, e := encodeGraph(s.Snapshot())
+	b, e := encodeSnapshot(s.snapshot)
 	must(t, e)
 	changed := strings.Replace(string(b), `"text" : ""`, `"text" : "unsupported preference"`, 1)
 	if changed == string(b) {
 		t.Fatal("fixture did not change")
 	}
-	if _, e := decodeGraph([]byte(changed)); !errors.Is(e, ErrCorrupt) {
+	if _, e := decodeSnapshot([]byte(changed)); !errors.Is(e, ErrCorrupt) {
 		t.Fatalf("unsupported supplement was discarded: %v", e)
 	}
 }

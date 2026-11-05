@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"testing"
+	"time"
 )
 
 var liveTestDay = core.LocalDate{Year: 2026, Month: 11, Day: 5}
@@ -250,5 +251,52 @@ func TestLiveUICorruptHistoryRefusesSave(t *testing.T) {
 	}
 	if _, e = os.Stat(filepath.Join(path, "rev-0000000003")); !os.IsNotExist(e) {
 		t.Fatal("corrupt session reserved another revision")
+	}
+}
+
+func TestLiveUINaturalDayAdvancesBeforeCommands(t *testing.T) {
+	s, tt, svc, _ := liveTest(t)
+	at := time.Date(2026, 11, 5, 23, 59, 0, 0, time.UTC)
+	s.observeRuntimeDay(func() time.Time { return at })
+	liveType(t, tt, "yesterday")
+	liveClick(t, tt, "添加任务")
+	at = at.Add(2 * time.Minute)
+	tt.Frame()
+	if s.runtimeDate.Day != 6 || svc.Today().Day != 6 || svc.Snapshot().Traces[0].Status != core.TraceUnfinished || !tt.HasText("2026年11月6日") {
+		t.Fatal("day boundary not applied before view")
+	}
+	liveType(t, tt, "today")
+	liveClick(t, tt, "添加任务")
+	g := svc.Snapshot()
+	if len(g.Traces) != 2 || g.Traces[1].Date.Day != 6 {
+		t.Fatal("new command used yesterday")
+	}
+	second := newRuntimeApp(svc)
+	second.runtimeDate = core.LocalDate{Year: 2026, Month: 11, Day: 4}
+	second.observeRuntimeDay(func() time.Time { return at })
+	st := ui.NewTester(second.view, 1200, 768)
+	at = at.Add(24 * time.Hour)
+	tt.Frame()
+	st.Frame()
+	if s.runtimeDate.Day != 7 || second.runtimeDate.Day != 4 || second.runtimeAppliedDay.Day != 7 {
+		t.Fatal("shared boundary lost explicit historical selection")
+	}
+}
+func TestLiveUIBoundaryFailureBlocksCommandsAndPreservesDraft(t *testing.T) {
+	s, tt, svc, path := liveTest(t)
+	at := time.Date(2026, 11, 5, 23, 59, 0, 0, time.UTC)
+	s.observeRuntimeDay(func() time.Time { return at })
+	liveType(t, tt, "original")
+	liveClick(t, tt, "添加任务")
+	liveType(t, tt, "unsaved next day draft")
+	before := svc.Snapshot()
+	if e := os.Remove(filepath.Join(path, "SESSION_IDENTITY")); e != nil {
+		t.Fatal(e)
+	}
+	at = at.Add(2 * time.Minute)
+	tt.Frame()
+	liveClick(t, tt, "添加任务")
+	if svc.Today() != liveTestDay || s.runtimeDate != liveTestDay || s.draft != "unsaved next day draft" || s.runtimeError == "" || !reflect.DeepEqual(before, svc.Snapshot()) {
+		t.Fatal("boundary failure partially published or allowed mutation")
 	}
 }

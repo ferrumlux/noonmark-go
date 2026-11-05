@@ -8,7 +8,7 @@
 - 将任务池条目排到今天或明天。
 - 完成/撤销今日任务，按真实事实更新导航计数和已完成/未来计划列表。
 - 日切换、滚动长列表、详情选择、快速记录到任务池。
-- 关闭并重开开发会话保留完整 TaskChain / Definition / Trace；跨日期重开结算过去未完成任务。
+- 关闭并重开开发会话保留完整 TaskChain / Definition / Trace；自然日推进时以同事务结算任务和空分类历史。
 - 写入失败保留草稿和原快照；并发冲突、损坏和不完整写入 fail-closed。
 
 未接入的页面明确显示状态，不混入静态演示任务。原 20 场景视觉原型仍可显式运行，详见 docs/UI-PROTOTYPE.md。
@@ -23,10 +23,10 @@ export NOONMARK_MYGO_BUILD_ROOT=/absolute/external/noonmark-build
 export NOONMARK_GO=/absolute/path/to/go
 bash scripts/check
 bash scripts/build
-# session-001 必须不存在；此入口只创建隔离 development 会话
-"$NOONMARK_MYGO_BUILD_ROOT/bin/noonmark-mygo" -init-session "$NOONMARK_MYGO_BUILD_ROOT/session-001"
+# v2-session-001 必须不存在；此入口只创建隔离 development 会话
+"$NOONMARK_MYGO_BUILD_ROOT/bin/noonmark-mygo" -init-session "$NOONMARK_MYGO_BUILD_ROOT/v2-session-001"
 # 关闭后重开同一会话
-"$NOONMARK_MYGO_BUILD_ROOT/bin/noonmark-mygo" -session "$NOONMARK_MYGO_BUILD_ROOT/session-001"
+"$NOONMARK_MYGO_BUILD_ROOT/bin/noonmark-mygo" -session "$NOONMARK_MYGO_BUILD_ROOT/v2-session-001"
 # 不接存储的旧视觉原型
 "$NOONMARK_MYGO_BUILD_ROOT/bin/noonmark-mygo" -prototype
 ```
@@ -41,8 +41,10 @@ Linux 原生窗口需要 GTK3 和可用 DISPLAY / WAYLAND_DISPLAY。无显示服
 - internal/taskapp：仅普通任务的开发会话事务与持久化，详细安全和容量边界见其 README。
 - docs/migration-audit：完整产品差距与上游测试库存。
 
-还未完成 SQLite schema 19、同步、AI、全局快捷键、子任务与完整编辑/分类/重复/飞光运行接线、跨午夜自动推进、真实一年互动演示及原生三平台验收。当前文件后端不能替代生产存储；不得打开、探测或迁移实际用户数据。
+还未完成 SQLite schema 19、同步、AI、全局快捷键、子任务与完整编辑/分类/重复/飞光运行接线、原生时区/唤醒通知完整对等、真实一年互动演示及原生三平台验收。当前文件后端不能替代生产存储；不得打开、探测或迁移实际用户数据。
 
 ## 来源与许可
 
 AGPL-3.0。上游 https://github.com/quboliu/noonmark，基线 43e6eefaae3a04be89cab3e234d470111afd80ef。MyGo 保留 MIT 许可。该独立仓库保留 ports/mygo 布局以便日后通过获准的上游 fork 分支提交 draft PR；目前未创建上游 PR。
+
+开发会话格式已更新为 v2，以保留未分类任务也必须具有的分类历史事件。旧 v1 会话会明确拒绝打开，原资料不变；请另建全新 v2 开发会话，不执行生产迁移。

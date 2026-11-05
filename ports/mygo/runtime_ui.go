@@ -10,6 +10,7 @@ import (
 	"github.com/ferrumlux/noonmark/ports/mygo/internal/taskapp"
 	"sort"
 	"strings"
+	"time"
 )
 
 // The UI only sees a transaction boundary. A successful command means that its
@@ -27,6 +28,7 @@ func newRuntimeApp(service taskService) *app {
 	s := newApp()
 	s.runtime = service
 	s.runtimeDate = service.Today()
+	s.runtimeAppliedDay = service.Today()
 	return s
 }
 
@@ -98,6 +100,13 @@ func rowsFor(g core.TaskGraph, page string, date, today core.LocalDate) []liveRo
 	return rows
 }
 func (s *app) runCommand(fn func() error, clear bool) {
+	if s.refreshDay != nil {
+		if e := s.refreshDay(); e != nil {
+			s.runtimeError = "日期变化未能安全保存，任务操作已暂停。请保留草稿并检查会话。"
+			s.runtimeNotice = ""
+			return
+		}
+	}
 	if err := fn(); err != nil {
 		s.runtimeError = "操作未保存，界面仍保留原资料与草稿。"
 		switch {
@@ -107,7 +116,9 @@ func (s *app) runCommand(fn func() error, clear bool) {
 			s.runtimeError = "写入未完整确认。已停止修改，请保留会话供检查。"
 		case errors.Is(err, taskapp.ErrLimit):
 			s.runtimeError = "已到达开发会话容量限制，未写入新资料。"
-		case errors.Is(err, core.ErrImmutableHistory), errors.Is(err, core.ErrFuturePlanCannotComplete):
+		case errors.Is(err, core.ErrImmutableHistory):
+			s.runtimeError = "这个日期的历史已锁定，不能改写。"
+		case errors.Is(err, core.ErrFuturePlanCannotComplete):
 			s.runtimeError = "只能完成今天的任务，历史与未来计划保持不变。"
 		}
 		s.runtimeNotice = ""
@@ -176,6 +187,13 @@ func liveAction(c *ui.Context, key string, x, y, w float32, title, label string,
 	}
 }
 func (s *app) runtimeView(c *ui.Context) {
+	if s.refreshDay != nil {
+		if e := s.refreshDay(); e != nil {
+			s.runtimeError = "日期变化未能安全保存，任务操作已暂停。请保留草稿并检查会话。"
+			s.runtimeNotice = ""
+		}
+		c.After(time.Minute)
+	}
 	w, h := c.Size()
 	if s.page == "quick-entry" {
 		txt(c, 20, 15, 18, "快速记录", ink, 700)
@@ -372,4 +390,30 @@ func (s *app) liveRail(c *ui.Context, w, h float32, g core.TaskGraph) {
 	}
 	txt(c, 17, h-77, 10.5, "开发存储，不是 Swift 数据导入器。", muted, 400).Width(w - 34)
 	txt(c, 17, h-48, 10.5, "未接通的页面不展示伪造任务。", muted, 400).Width(w - 34)
+}
+
+func (s *app) observeRuntimeDay(now func() time.Time) {
+	boundary, ok := s.runtime.(interface{ AdvanceTo(core.LocalDate) error })
+	if !ok {
+		return
+	}
+	s.refreshDay = func() error {
+		at := now()
+		today := core.LocalDate{Year: at.Year(), Month: int(at.Month()), Day: at.Day()}
+		if e := boundary.AdvanceTo(today); e != nil {
+			return e
+		}
+		applied := s.runtime.Today()
+		if applied != s.runtimeAppliedDay {
+			if s.runtimeDate == s.runtimeAppliedDay {
+				s.runtimeDate = applied
+				s.runtimeSelection = ""
+			}
+			s.runtimeAppliedDay = applied
+			for _, w := range mygo.Windows() {
+				w.Invalidate()
+			}
+		}
+		return nil
+	}
 }

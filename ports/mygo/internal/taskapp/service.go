@@ -2,19 +2,21 @@
 package taskapp
 
 import (
+	"github.com/ferrumlux/noonmark/ports/mygo/domain-codec/canonical"
+	"github.com/ferrumlux/noonmark/ports/mygo/domain-codec/v7"
 	"github.com/ferrumlux/noonmark/ports/mygo/domain/core"
-	"reflect"
 	"sync"
 	"time"
 )
 
 type Service struct {
-	mu     sync.RWMutex
-	disk   *diskStore
-	graph  core.TaskGraph
-	today  core.LocalDate
-	clock  func() time.Time
-	closed bool
+	mu       sync.RWMutex
+	disk     *diskStore
+	graph    core.TaskGraph
+	snapshot canonical.Value
+	today    core.LocalDate
+	clock    func() time.Time
+	closed   bool
 }
 
 func Create(path string, today core.LocalDate) (*Service, error) {
@@ -26,56 +28,92 @@ func Create(path string, today core.LocalDate) (*Service, error) {
 		return nil, e
 	}
 	s := &Service{disk: d, today: today, clock: time.Now}
-	normalized, e := normalizeGraph(s.graph)
+	wire, e := initialSnapshot()
 	if e != nil {
 		d.root.Close()
 		return nil, e
 	}
-	s.graph = normalized
-	if e = d.commit(s.graph); e != nil {
+	wire, g, e := normalizeSnapshot(wire)
+	if e != nil {
 		d.root.Close()
 		return nil, e
 	}
+	if e = d.commit(wire); e != nil {
+		d.root.Close()
+		return nil, e
+	}
+	s.graph = g
+	s.snapshot = wire
 	return s, nil
 }
 func Open(path string, today core.LocalDate) (*Service, error) {
 	if !today.Valid() {
 		return nil, core.ErrInvalidInput
 	}
-	d, g, e := openStore(path)
+	d, wire, e := openStore(path)
 	if e != nil {
 		return nil, e
 	}
-	s := &Service{disk: d, graph: g, today: today, clock: time.Now}
-	// Empty classification is the only supported runtime scope. Closing earlier
-	// task days therefore cannot omit any classification history facts.
-	k, e := core.NewTaskKernel(g)
+	state, _, e := v7.ToDomain(wire)
 	if e != nil {
 		d.root.Close()
 		return nil, e
+	}
+	g := state.Tasks
+	s := &Service{disk: d, graph: g, snapshot: wire, today: today, clock: time.Now}
+	if e = s.reconcileDayLocked(today); e != nil {
+		d.root.Close()
+		return nil, e
+	}
+	return s, nil
+}
+
+// AdvanceTo applies the natural-day boundary and its empty classification
+// history in one persisted transaction. A failed write publishes neither the
+// candidate task facts nor its audit nor the new today value.
+func (s *Service) AdvanceTo(today core.LocalDate) error {
+	if !today.Valid() {
+		return core.ErrInvalidInput
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.closed {
+		return ErrSession
+	}
+	if today == s.today {
+		return nil
+	}
+	return s.reconcileDayLocked(today)
+}
+func (s *Service) reconcileDayLocked(today core.LocalDate) error {
+	k, e := core.NewTaskKernel(s.graph)
+	if e != nil {
+		return e
 	}
 	now, e := s.nextInstant()
 	if e != nil {
-		d.root.Close()
-		return nil, e
+		return e
 	}
 	if e = k.SettleTaskDays(today, now); e != nil {
-		d.root.Close()
-		return nil, e
+		return e
 	}
-	settled, e := normalizeGraph(k.Snapshot())
+	captured, e := CaptureEmptyHistory(s.snapshot, s.graph, k.Snapshot())
 	if e != nil {
-		d.root.Close()
-		return nil, e
+		return e
 	}
-	if !reflect.DeepEqual(g, settled) {
-		if e = d.commit(settled); e != nil {
-			d.root.Close()
-			return nil, e
+	wire, g, e := normalizeSnapshot(captured)
+	if e != nil {
+		return e
+	}
+	if !historyEqual(s.snapshot, wire) {
+		if e = s.disk.commit(wire); e != nil {
+			return e
 		}
-		s.graph = settled
+		s.graph = g
+		s.snapshot = wire
 	}
-	return s, nil
+	s.today = today
+	return nil
 }
 func (s *Service) Close() error {
 	s.mu.Lock()
@@ -109,14 +147,19 @@ func (s *Service) transact(fn func(*core.TaskKernel, core.Instant) error) error 
 	if e = fn(k, now); e != nil {
 		return e
 	}
-	g, e := normalizeGraph(k.Snapshot())
+	captured, e := CaptureEmptyHistory(s.snapshot, s.graph, k.Snapshot())
 	if e != nil {
 		return e
 	}
-	if e = s.disk.commit(g); e != nil {
+	wire, g, e := normalizeSnapshot(captured)
+	if e != nil {
+		return e
+	}
+	if e = s.disk.commit(wire); e != nil {
 		return e
 	}
 	s.graph = g
+	s.snapshot = wire
 	return nil
 }
 func (s *Service) nextInstant() (core.Instant, error) {
@@ -200,12 +243,4 @@ func (s *Service) SetCompleted(trace core.DayTraceID, completed bool) error {
 		}
 		return k.UndoCompleted(trace, s.today, now)
 	})
-}
-
-func normalizeGraph(g core.TaskGraph) (core.TaskGraph, error) {
-	b, e := encodeGraph(g)
-	if e != nil {
-		return core.TaskGraph{}, e
-	}
-	return decodeGraph(b)
 }
