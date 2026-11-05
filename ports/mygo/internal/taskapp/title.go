@@ -41,7 +41,8 @@ func (s *Service) SaveTaskTitleInput(chain core.TaskChainID, title string) error
 func (s *Service) editTitle(chain core.TaskChainID, title string, mode titleMode) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	return s.editTitleLocked(chain, title, mode)
+	_, err := s.editTitleLocked(chain, title, mode)
+	return err
 }
 
 // SaveTraceTitleInput is the Day detail adapter. Check the selected trace, not
@@ -49,71 +50,94 @@ func (s *Service) editTitle(chain core.TaskChainID, title string, mode titleMode
 // the complete title transaction under one lock to prevent stale UI callbacks
 // from modifying a current task through an immutable historical detail.
 func (s *Service) SaveTraceTitleInput(trace core.DayTraceID, title string) error {
+	_, err := s.SaveTraceTitleInputAcknowledged(trace, title)
+	return err
+}
+
+// SaveTraceTitleInputAcknowledged returns the exact verified persisted title
+// from the same locked transaction. A canonical-equivalent no-op returns its
+// existing bytes; async input owners must not invent normalized stored bytes.
+func (s *Service) SaveTraceTitleInputAcknowledged(trace core.DayTraceID, title string) (string, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if s.closed {
-		return ErrSession
+		return "", ErrSession
 	}
 	if s.disk.blocked {
-		return ErrIncomplete
+		return "", ErrIncomplete
 	}
 	for _, tr := range s.graph.Traces {
 		if tr.ID != trace {
 			continue
 		}
 		if tr.Date.Compare(s.today) < 0 {
-			return core.ErrImmutableHistory
+			return "", core.ErrImmutableHistory
 		}
 		if tr.Status != core.TracePending {
-			return core.ErrInvalidTransition
+			return "", core.ErrInvalidTransition
 		}
 		return s.editTitleLocked(tr.ChainID, title, titleInput)
 	}
-	return core.ErrNotFound
+	return "", core.ErrNotFound
 }
 
 // Caller owns s.mu for both any route validation and the complete transaction.
-func (s *Service) editTitleLocked(chain core.TaskChainID, title string, mode titleMode) error {
+func (s *Service) editTitleLocked(chain core.TaskChainID, title string, mode titleMode) (string, error) {
 	if s.closed {
-		return ErrSession
+		return "", ErrSession
 	}
 	if s.disk.blocked {
-		return ErrIncomplete
+		return "", ErrIncomplete
 	}
 	k, err := core.NewTaskKernel(s.graph)
 	if err != nil {
-		return err
+		return "", err
 	}
 	now, err := s.nextInstant()
 	if err != nil {
-		return err
+		return "", err
 	}
 	ids, err := newIDs(1)
 	if err != nil {
-		return err
+		return "", err
 	}
 	command := titleCommand{mode, core.EditTaskTitleInput{ChainID: chain, Title: title, Today: s.today, Now: now, NewDefinitionID: core.TaskDefinitionID(ids[0])}}
 	if err = command.apply(k); err != nil {
-		return err
+		return "", err
 	}
 	captured, err := captureTitleHistory(s.snapshot, s.graph, k.Snapshot(), command)
 	if err != nil {
-		return err
+		return "", err
 	}
 	wire, graph, err := normalizeSnapshot(captured)
 	if err != nil {
-		return err
+		return "", err
+	}
+	// Derive the acknowledgment from the normalized candidate before any write.
+	// Its bytes are returned only after prefix verification or durable commit.
+	acceptedTitle, found := "", false
+	for _, definition := range graph.Definitions {
+		if definition.ChainID == chain && definition.SupersededAt == nil {
+			acceptedTitle, found = definition.Title, true
+			break
+		}
+	}
+	if !found {
+		return "", core.ErrNotFound
 	}
 	if historyEqual(s.snapshot, wire) {
 		// No revision consumed, but a stale/uncertain handle cannot acknowledge a save.
 		_, err = s.disk.verifyPrefix(s.disk.revision, s.disk.hash, false)
-		return err
+		if err != nil {
+			return "", err
+		}
+		return acceptedTitle, nil
 	}
 	if err = s.disk.commit(wire); err != nil {
-		return err
+		return "", err
 	}
 	s.graph, s.snapshot = graph, wire
-	return nil
+	return acceptedTitle, nil
 }
 
 // captureTitleHistory audits precisely one replayable title command. The strict

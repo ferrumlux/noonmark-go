@@ -1,0 +1,15 @@
+--- a/ui/value_input.go
++++ b/ui/value_input.go
+@@ -244,6 +244,12 @@
+ 
+ func applyString(n *node) {
+ 	ed, st, rt := n.st.editor, n.st, n.c.rt
++	// A view can move focus during a build pass before updateTextInput
++	// releases the previous native client. Finalize preedit before syncing
++	// its committed buffer; clearing compose below would otherwise lose it.
++	if rt.focused != n.id && !n.disabled() && !ed.readOnly {
++		ed.commitCompose()
++	}
+ 	value := ed.value
+ 	if ed.nativeDirty {
+ 		before := ed.nativeValue
