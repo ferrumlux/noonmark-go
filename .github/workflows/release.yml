@@ -1,0 +1,86 @@
+name: Reproducible release packages
+on:
+  workflow_dispatch:
+  push:
+    branches: ['main']
+    tags: ['v*']
+    paths:
+      - '.github/workflows/release.yml'
+      - 'ports/mygo/scripts/release/**'
+      - 'ports/mygo/release/**'
+      - 'ports/mygo/docs/release/**'
+      - 'ports/mygo/scripts/ci/requirements.txt'
+permissions:
+  contents: read
+concurrency:
+  group: noonmark-release-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    permissions:
+      contents: read
+      actions: read
+    env:
+      PYTHONDONTWRITEBYTECODE: '1'
+      RELEASE_VERSION: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/') && github.ref_name || '' }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16
+        with:
+          go-version: '1.27.3'
+          cache: false
+      - name: Install pinned workflow parser
+        run: |
+          python3 -m venv "$RUNNER_TEMP/release-python"
+          "$RUNNER_TEMP/release-python/bin/pip" install --no-cache-dir -r ports/mygo/scripts/ci/requirements.txt
+          echo "$RUNNER_TEMP/release-python/bin" >> "$GITHUB_PATH"
+      - name: Require approved exact main commit before stable packaging
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python3 -B ports/mygo/scripts/release/release.py gate "$GITHUB_REF_NAME"
+          git merge-base --is-ancestor "$GITHUB_SHA" origin/main
+          python3 -B ports/mygo/scripts/release/check_hosted_ci.py
+      - name: Build twice and rebuild all targets from corresponding source
+        run: |
+          export NOONMARK_MYGO_BUILD_ROOT="$RUNNER_TEMP/noonmark-release-check"
+          mkdir "$NOONMARK_MYGO_BUILD_ROOT"
+          args=()
+          if test -n "$RELEASE_VERSION"; then args=(--version "$RELEASE_VERSION"); fi
+          bash ports/mygo/scripts/release/check "${args[@]}"
+      - name: Upload only checked distributable files
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: noonmark-release-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/noonmark-release-check/first/package/*.tar.gz
+            ${{ runner.temp }}/noonmark-release-check/first/package/*.zip
+            ${{ runner.temp }}/noonmark-release-check/first/package/manifest.json
+            ${{ runner.temp }}/noonmark-release-check/first/package/SHA256SUMS
+          if-no-files-found: error
+          retention-days: 7
+  publish:
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/') && github.repository == 'ferrumlux/noonmark-go'
+    needs: verify
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: write
+      actions: read
+    env:
+      GH_TOKEN: ${{ github.token }}
+      PYTHONDONTWRITEBYTECODE: '1'
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+      - name: Download this exact checked artifact and publish a new release
+        run: |
+          gh run download "$GITHUB_RUN_ID" --repo "$GITHUB_REPOSITORY" --name "noonmark-release-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}" --dir "$RUNNER_TEMP/release-assets"
+          python3 -B ports/mygo/scripts/release/publish.py "$RUNNER_TEMP/release-assets"

@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# Full packaging check, including different roots and source-bundle rebuild.
+set -euo pipefail
+APP=$(cd -- "$(dirname -- "$0")/../.." && pwd -P)
+: "${NOONMARK_MYGO_BUILD_ROOT:?Set an existing empty external build root}"
+ROOT=$(cd -- "$NOONMARK_MYGO_BUILD_ROOT" && pwd -P)
+REPO=$(cd -- "$APP/../.." && pwd -P)
+case "$ROOT/" in "$REPO/"*) echo 'Release check root must be external' >&2; exit 2;; esac
+test -z "$(find "$ROOT" -mindepth 1 -maxdepth 1 -print -quit)" || { echo 'Release check requires an empty root' >&2; exit 2; }
+export PYTHONDONTWRITEBYTECODE=1
+python3 -B -m unittest discover -s "$APP/scripts/release" -p 'test_*.py' -v
+python3 -B "$APP/scripts/release/validate_workflow.py"
+for attempt in first second; do
+  mkdir "$ROOT/$attempt"
+  NOONMARK_MYGO_BUILD_ROOT="$ROOT/$attempt" bash "$APP/scripts/release/package" --output "$ROOT/$attempt/package" "$@"
+done
+python3 -B "$APP/scripts/release/compare.py" "$ROOT/first/package" "$ROOT/second/package"
+mkdir "$ROOT/extracted"
+# Extract only our verified regular-file archive through the safe archive reader.
+python3 -B "$APP/scripts/release/compare.py" --extract "$ROOT/first/package" "$ROOT/extracted"
+python3 -B "$ROOT/extracted/build.py" --go "${NOONMARK_GO:-go}" --output "$ROOT/rebuild"
+python3 -B "$APP/scripts/release/compare.py" --binaries "$ROOT/first/package" "$ROOT/rebuild"
+printf 'PASS: six packages and source, different-path byte comparison, offline six-target source rebuild.\n'

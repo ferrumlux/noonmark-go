@@ -1,0 +1,15 @@
+# 发行准备验证边界
+
+本批只准备流水线；approval.json仍为approved=false，没有tag或GitHub Release。
+
+## 已有独立证据
+
+冻结流水线候选d69520243d3add197c688037e6eef6a6f5c93cd1在应用c619c7824f1cb16c4bf25ebc57e14e86a634e659上，实际执行三轮六目标编译：两不同绝对根目录构建的全部归档/元数据逐字节相同，从已归档对应源码在禁用模块网络、全新缓存下重建的六个二进制也逐字节相同。17单测含8种模拟发布场景，14个旧workflow负例、4个真实篡改包拒绝、默认稳定gate exit2。该证据不覆盖后来的Unicode或子任务代码，不是六平台实机、签名、安装器或Swift oracle验收。
+
+## 本次整合
+
+源码安全审查后合入当前普通子任务批次，保留现有development workflow。为真实运行新pipeline而不提前建tag，发布相关文件推到main时触发只读候选包检查；手动dispatch同样只候选。稳定版本、正式gate及publish三处均明确要求refs/tags/ push。verify权限仍contents/actions read，唯一写权限job仍要求指定仓库、tag上下文、全部verify成功。
+
+本工位17单测、17负例、shell语法和actionlint通过。原流水线实现者另在只读副本重跑17单测/17负例，并将三个tag条件逐一移除、将verify权限升为write，共4个独立反例均拒绝。tag的paths过滤不生效，稳定tag不会跳过正式gate。
+
+新增main触发将对推送后的精确新head执行真实hosted候选检查，结果须另行核对；不得把前述旧候选的重建证据标成新应用head已验收。发布API仅做模拟测试，不以模拟声称真实发布成功。归档复现覆盖同一环境的不同根目录，未证明跨Python/zlib版本压缩字节恒等。

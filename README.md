@@ -11,3 +11,5 @@ Upstream reference: `43e6eefaae3a04be89cab3e234d470111afd80ef`. Toolchains, buil
 This is an independent repository, not a GitHub fork. To propose the port upstream later, create a branch in an authorized upstream fork from the recorded upstream baseline, transplant only the reviewed `ports/mygo` changes, run upstream and port checks, and open a draft PR. No upstream PR has been opened.
 
 See [the implementation status and checks](ports/mygo/README.md) for current limitations and reproduction commands.
+
+Reproducible six-target packaging is prepared behind a blocked stable-release gate. See [release preparation and acceptance requirements](ports/mygo/docs/release/RELEASING.md). Manual packaging runs create development candidates only; they do not publish a release or prove native platform support.

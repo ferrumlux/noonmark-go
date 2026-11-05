@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+# Pure build/package operation. Never launches an application or publishes.
+set -euo pipefail
+source "$(dirname -- "$0")/../environment"
+exec python3 -B "$SOURCE_ROOT/scripts/release/release.py" package "$@"
