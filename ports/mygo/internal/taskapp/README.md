@@ -1,6 +1,6 @@
 # 隔离任务应用服务
 
-当前服务只接入第一批 TaskKernel 的普通任务：任务池新增、今日新增、今天/未来排期、今日完成/撤销、两个标题保存入口、今天回池／未来取消及重开时的过去日期结算。重复计划、分类、飞光、子任务编辑与完整上游命令还未接入此运行服务。
+当前服务只接入第一批 TaskKernel 的普通任务：任务池新增、今日新增、今天/未来排期、今日完成/撤销、两个标题保存入口、今天回池／未来取消、普通计划及实际子任务编辑和重开时的过去日期结算。重复计划、分类、飞光与完整上游命令还未接入此运行服务。
 
 ## 提交边界
 
@@ -37,3 +37,7 @@ Swift String canonical 等价输入不重写原字符串或消耗磁盘 revision
 v2 格式标识没有改变，但新 reader 接受的事实范围扩大；旧 reader 拒绝含回池／取消事实的开发会话。不得删除、覆盖或自动降级这些事实，亦不能把源码回滚视为会话兼容。详细边界见 `../../docs/TASK_RETURN_BATCH.md`。
 
 回池菜单现由后续 UI 批次接入：共享标题队列先最终化／保存，再以不可变 chain+trace 键执行本 Service；原生菜单生命周期另有外置 MyGo 修复。UI 验证见 `../../docs/tasks/connect-return-menu/VERIFY.md`，不改变上述事务或 reader 边界。
+
+## 普通子任务
+
+计划项在池内原地修改当前definition；实际项只改自身，删除保留取消墓碑、lineage与position，不自动完成父项。显式chain/definition或chain/trace/child路由、精确命令重放审计、原子确认与no-op prefix校验，详见[设计](../../docs/tasks/connect-subtask-core/DESIGN.md)与[验证](../../docs/tasks/connect-subtask-core/VERIFY.md)。此处是Service接通，不代表子任务UI、加权进度或源snapshot undo已实现。

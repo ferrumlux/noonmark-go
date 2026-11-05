@@ -50,10 +50,10 @@ Linux 原生窗口需要 GTK3 和可用 DISPLAY / WAYLAND_DISPLAY。无显示服
 - internal/titlecoordinator：实际多窗口标题／导航／关闭协调与有序lane；每次真实退出仍重新检查原生输入。
 - internal/titlesession：草稿/实际存储确认/生命周期快照状态；拒写保留输入，不能单凭状态允许退出。
 - patches/mygo/native-finalize：可重现的帧间 native snapshot/finalization 修复，已接日待办标题；三平台实机 IME 仍待验收。
-- internal/taskapp：仅普通任务的开发会话事务与持久化，含专用审计的标题编辑与回池 API；日待办标题 UI 已接入，今天回池／未来取消的 Service 已通过持久化测试，回池原生菜单已接通，回池 undo 尚未实现。详细安全和容量边界见其 README。
+- internal/taskapp：仅普通任务的开发会话事务与持久化，含专用审计的标题编辑、回池和普通子任务 API；日待办标题 UI 已接入，今天回池／未来取消的 Service 已通过持久化测试，回池原生菜单已接通，回池 undo 尚未实现。详细安全和容量边界见其 README。
 - docs/migration-audit：完整产品差距与上游测试库存。
 
-还未完成 SQLite schema 19、同步、AI、全局快捷键、子任务与完整编辑/分类/重复/飞光运行接线、原生时区/唤醒通知完整对等、真实一年互动演示及原生三平台验收。当前文件后端不能替代生产存储；不得打开、探测或迁移实际用户数据。
+还未完成 SQLite schema 19、同步、AI、全局快捷键、子任务 UI 与完整编辑/分类/重复/飞光运行接线、原生时区/唤醒通知完整对等、真实一年互动演示及原生三平台验收。当前文件后端不能替代生产存储；不得打开、探测或迁移实际用户数据。
 
 ## 来源与许可
 
