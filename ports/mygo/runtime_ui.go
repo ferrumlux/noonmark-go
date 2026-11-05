@@ -157,18 +157,22 @@ func (s *app) liveSidebar(c *ui.Context, h, sw float32, g core.TaskGraph) {
 	labelButton(c, "live-collapse", sw-35, 32, 28, 28, "收起侧栏", func() { s.compact = !s.compact })
 	for _, n := range nav {
 		n := n
-		if s.page == n.page {
-			box(c, 9, n.y, sw-18, 34, soft, 9)
+		active := s.page == n.page
+		inset, iconX := navInset, navInset+navLeading+(navIconFrame-navIconSize)/2
+		if sw <= 100 {
+			inset, iconX = navCompactInset, (sw-navIconSize)/2
 		}
-		icon(c, 24, n.y+10, 16, n.icon, n.color)
-		if sw > 100 {
-			txt(c, 52, n.y+7, 15, n.title, ink, 600)
-			switch n.page {
-			case "day", "pool", "upcoming", "completed", "unfinished":
-				txt(c, sw-35, n.y+9, 11, fmt.Sprint(len(rowsFor(g, n.page, s.runtime.Today(), s.runtime.Today()))), muted, 400)
+		navButton(c, "live-nav-"+n.page, inset, n.y, sw-2*inset, active, "切换到"+n.title, func() { s.page = n.page; s.runtimeSelection = ""; s.runtimeError = ""; s.runtimeNotice = "" }, func() {
+			icon(c, iconX-inset, (navRowHeight-navIconSize)/2, navIconSize, n.icon, n.color)
+			if sw > 100 {
+				col, weight := navLabelStyle(active)
+				txt(c, navLeading+navIconFrame+navTextGap, 7, navFontSize, n.title, col, weight)
+				switch n.page {
+				case "day", "pool", "upcoming", "completed", "unfinished":
+					txt(c, sw-35-inset, 9, 11, fmt.Sprint(len(rowsFor(g, n.page, s.runtime.Today(), s.runtime.Today()))), sourceVisual.text3, 400).FontFeatures("tnum")
+				}
 			}
-		}
-		labelButton(c, "live-nav-"+n.page, 9, n.y, sw-18, 34, "切换到"+n.title, func() { s.page = n.page; s.runtimeSelection = ""; s.runtimeError = ""; s.runtimeNotice = "" })
+		})
 	}
 	if sw > 100 {
 		txt(c, 20, h-48, 10.5, "隔离开发会话", blue, 600)
@@ -240,7 +244,7 @@ func (s *app) liveMain(c *ui.Context, w, h float32, g core.TaskGraph) {
 	if s.page == "day" {
 		title = fmt.Sprintf("%d年%d月%d日", s.runtimeDate.Year, s.runtimeDate.Month, s.runtimeDate.Day)
 	}
-	txt(c, 20, 16, 21, title, ink, 700)
+	txt(c, 20, 16, pageHeadingSize, title, ink, 600)
 	supported := false
 	switch s.page {
 	case "day", "pool", "upcoming", "completed", "unfinished", "calendar":
@@ -296,11 +300,11 @@ func (s *app) liveTaskRow(c *ui.Context, w float32, r liveRow) {
 	}
 	complete := r.status == core.TraceCompleted
 	if r.trace != "" {
-		col := faint
+		col := sourceVisual.line2
 		if complete {
 			col = green
 		}
-		circle := box(c, 9, 13, 18, 18, white, 9).Border(1.3, col)
+		circle := box(c, 9, 13, completionDiameter, completionDiameter, white, completionDiameter/2).Border(1.5, col)
 		if complete {
 			circle.Background(green)
 			txt(c, 12, 11, 14, "✓", white, 700)
@@ -317,9 +321,10 @@ func (s *app) liveTaskRow(c *ui.Context, w float32, r liveRow) {
 	if r.trace == "" {
 		right = 175
 	}
-	t := txt(c, 41, 12, 12.5, r.title, ink, 600).Width(w - 41 - right).SingleLine()
+	titleColor, titleWeight := taskTitleStyle(complete)
+	t := txt(c, 41, 12, dayTitleSize, r.title, titleColor, titleWeight).Width(w - 41 - right).SingleLine()
 	if complete {
-		t.Strikethrough().TextColor(muted)
+		t.Strikethrough()
 	}
 	status := "任务池"
 	if r.trace != "" {

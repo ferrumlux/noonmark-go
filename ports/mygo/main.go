@@ -1,5 +1,6 @@
-// Noonmark UI study implemented with MyGo's native Go UI toolkit.
-// This is a UI-only prototype. No HTML, JavaScript, database, network or AI logic.
+// Noonmark native Go + MyGo UI: explicit static prototype mode and isolated
+// development runtime backed by the task service. No HTML/WebView, production
+// storage, iCloud, or live AI integration.
 package main
 
 import (
@@ -20,18 +21,18 @@ import (
 )
 
 var (
-	white  = ui.Hex("#ffffff")
-	side   = ui.Hex("#fafafa")
-	ink    = ui.Hex("#202124")
-	muted  = ui.Hex("#777782")
-	faint  = ui.Hex("#bfbfc3")
-	line   = ui.Hex("#e7e7eb")
-	blue   = ui.Hex("#2b61cf")
-	soft   = ui.Hex("#eff4ff")
+	white  = sourceVisual.panel
+	side   = sourceVisual.sidebar
+	ink    = sourceVisual.text1
+	muted  = sourceVisual.text2
+	faint  = sourceVisual.placeholder
+	line   = sourceVisual.line
+	blue   = sourceVisual.accent
+	soft   = sourceVisual.accentSoft
 	teal   = ui.Hex("#009f95")
 	orange = ui.Hex("#e98616")
 	purple = ui.Hex("#8656ff")
-	green  = ui.Hex("#087b57")
+	green  = sourceVisual.success
 	pink   = ui.Hex("#df4181")
 )
 
@@ -87,11 +88,13 @@ func badge(c *ui.Context, x, y float32, s string, col ui.Color) {
 	case "洞察":
 		col = teal
 	}
-	bg := col.Mix(white, 0.92)
-	w := float32(21 + len([]rune(s))*10)
-	box(c, x, y, w, 21, bg, 3).Border(0.7, line)
-	txt(c, x+5, y+2, 10.5, "#", col, 700)
-	txt(c, x+16, y+2, 10.5, s, muted, 600)
+	bg := col.Alpha(classificationFillOpacity)
+	hashWidth, _ := c.MeasureText(0, ui.Span{Text: "#", Size: 9, Weight: 900})
+	labelWidth, _ := c.MeasureText(0, ui.Span{Text: s, Size: 10.5, Weight: 600})
+	w := 12 + hashWidth + 4 + labelWidth
+	box(c, x, y, w, 22, bg, classificationRadius).Border(1, line)
+	txt(c, x+6, y+3, 9, "#", col, 900)
+	txt(c, x+6+hashWidth+4, y+2, 10.5, s, muted, 600)
 }
 func group(c *ui.Context, x, y float32, title string, count int, col ui.Color) {
 	icon(c, x, y+2, 14, "folder", col)
@@ -134,14 +137,14 @@ type navitem struct {
 }
 
 var nav = []navitem{
-	{"Day Todo", "day", "clock", "22", 66, blue}, {"任务池", "pool", "tray", "32", 103, teal}, {"未来计划", "upcoming", "calendar", "23", 140, purple}, {"重复计划", "recurring", "repeat", "12", 177, orange},
-	{"未完成", "unfinished", "alert", "15", 245, orange}, {"已完成", "completed", "check", "460", 282, green}, {"日历", "calendar", "calendar", "", 319, pink}, {"烛龙", "ai", "spark", "", 356, purple},
-	{"Sticky Note", "sticky", "note", "", 424, ui.Hex("#c74006")}, {"飞光", "flylight", "bulb", "", 461, ui.Hex("#cb8900")},
+	{"Day Todo", "day", "clock", "22", 66, ui.Hex("#2A6FDB")}, {"任务池", "pool", "tray", "32", 103, ui.Hex("#0E9488")}, {"未来计划", "upcoming", "calendar", "23", 140, ui.Hex("#7C5CFF")}, {"重复计划", "recurring", "repeat", "12", 177, ui.Hex("#B86A16")},
+	{"未完成", "unfinished", "alert", "15", 245, ui.Hex("#E0851B")}, {"已完成", "completed", "check", "460", 282, ui.Hex("#1F8A5B")}, {"日历", "calendar", "calendar", "", 319, ui.Hex("#D1477A")}, {"烛龙", "ai", "spark", "", 356, ui.Hex("#7C5CFF")},
+	{"Sticky Note", "sticky", "note", "", 424, ui.Hex("#C2410C")}, {"飞光", "flylight", "bulb", "", 461, ui.Hex("#CA8A04")},
 }
 
 func (s *app) sidebar(c *ui.Context, h, sw float32) {
 	box(c, 0, 0, sw, h, side, 0)
-	box(c, sw, 0, .7, h, ui.Hex("#d6d6d9"), 0)
+	box(c, sw, 0, .7, h, line, 0)
 	if sw > 100 {
 		txt(c, 20, 36, 11, "计划", muted, 600)
 		txt(c, 20, 224, 11, "轨迹", muted, 600)
@@ -151,21 +154,21 @@ func (s *app) sidebar(c *ui.Context, h, sw float32) {
 	labelButton(c, "collapse", sw-35, 32, 28, 28, "收起侧栏", func() { s.compact = !s.compact })
 	for _, n := range nav {
 		n := n
-		if navPage(s.page) == n.page {
-			box(c, 9, n.y, sw-18, 34, soft, 9)
+		active := navPage(s.page) == n.page
+		inset, iconX := navInset, navInset+navLeading+(navIconFrame-navIconSize)/2
+		if sw <= 100 {
+			inset, iconX = navCompactInset, (sw-navIconSize)/2
 		}
-		icon(c, 24, n.y+10, 16, n.icon, n.color)
-		if sw > 100 {
-			col := muted
-			if navPage(s.page) == n.page {
-				col = ink
+		navButton(c, "nav-"+n.page, inset, n.y, sw-2*inset, active, "切换到"+n.title, func() { s.page = n.page; s.draft = "" }, func() {
+			icon(c, iconX-inset, (navRowHeight-navIconSize)/2, navIconSize, n.icon, n.color)
+			if sw > 100 {
+				col, weight := navLabelStyle(active)
+				txt(c, navLeading+navIconFrame+navTextGap, 7, navFontSize, n.title, col, weight)
+				if n.count != "" {
+					txt(c, sw-35-inset, 9, 11, n.count, sourceVisual.text3, 400).FontFeatures("tnum")
+				}
 			}
-			txt(c, 52, n.y+7, 15, n.title, col, 600)
-			if n.count != "" {
-				txt(c, sw-35, n.y+9, 11, n.count, muted, 400)
-			}
-		}
-		labelButton(c, "nav-"+n.page, 9, n.y, sw-18, 34, "切换到"+n.title, func() { s.page = n.page; s.draft = "" })
+		})
 	}
 }
 func (s *app) dismissUtility(fallback string, clearDraft bool) {
@@ -300,7 +303,7 @@ func toolbar(c *ui.Context, w, y float32, calendar bool) {
 }
 
 func (s *app) day(c *ui.Context, w, h float32) {
-	txt(c, 20, 15, 21, "2026年7月24日", ink, 700)
+	txt(c, 20, 16, pageHeadingSize, "2026年7月24日", ink, 600)
 	txt(c, 173, 23, 11, "周五", muted, 500)
 	box(c, 205, 25, 37, 18, blue, 10)
 	txt(c, 213, 25, 10.5, "今日", white, 600)
@@ -357,23 +360,20 @@ func (s *app) task(c *ui.Context, id int, x, y, w float32, title, grp, tag strin
 	if id == 3 {
 		cy = y + 20
 	}
-	circle := box(c, x-19, cy, 18, 18, white, 9).Border(1.5, ui.Hex("#cdced6"))
+	circle := box(c, x-19, cy, completionDiameter, completionDiameter, white, completionDiameter/2).Border(1.5, sourceVisual.line2)
 	if checked {
 		circle.Background(green).Border(0, green)
 		txt(c, x-15, cy-1, 14, "✓", white, 700)
 	}
 	labelButton(c, fmt.Sprintf("check-%d", id), x-24, cy-5, 28, 28, "完成 "+title, func() { s.done[id] = !s.done[id] })
-	tc := ink
-	if checked {
-		tc = ui.Hex("#a3a3ad")
-	}
-	tt := txt(c, x+16, y, 12.5, title, tc, 600)
+	tc, weight := taskTitleStyle(checked)
+	tt := txt(c, x+16, y, dayTitleSize, title, tc, weight)
 	if checked {
 		tt.Strikethrough()
 	}
 	bx := x + 16
 	if grp != "" {
-		box(c, bx, y+21, 48, 20, col.Mix(white, .91), 3)
+		box(c, bx, y+21, 48, 20, col.Alpha(.09), classificationRadius)
 		icon(c, bx+5, y+25, 11, "folder", col)
 		txt(c, bx+21, y+23, 10.5, grp, col, 600)
 		bx += 54
