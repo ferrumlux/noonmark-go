@@ -10,6 +10,10 @@ import (
 )
 
 func (s *app) openPoolPicker() {
+	s.titleTransition(s.openPoolPickerNow)
+}
+func (s *app) openPoolPickerNow() {
+	s.poolPickerEpoch++
 	s.runtimePoolPicker = true
 	s.runtimePoolFocus = "cancel"
 	if rows, e := taskview.ProjectPool(s.runtime.Snapshot()); e == nil && len(rows) > 0 && s.runtimeDate.Compare(s.runtime.Today()) >= 0 {
@@ -17,14 +21,30 @@ func (s *app) openPoolPicker() {
 	}
 }
 func (s *app) schedulePoolSelection(chain core.TaskChainID) {
-	s.runCommand(func() error { return s.runtime.Schedule(chain, s.runtimeDate) }, false)
+	date := s.runtimeDate
+	if s.titles != nil {
+		key := "schedule:" + string(chain) + ":" + date.String()
+		epoch, page, selection := s.poolPickerEpoch, s.page, s.runtimeSelection
+		s.titles.commandOnce(s, key, func() error { return s.runtime.Schedule(chain, date) }, func(err error) {
+			if err == nil && s.runtimePoolPicker && s.poolPickerEpoch == epoch && s.page == page && s.runtimeDate == date && s.runtimeSelection == selection {
+				s.finishPoolSelection(chain, date)
+			}
+		})
+		return
+	}
+	s.runCommand(func() error { return s.runtime.Schedule(chain, date) }, false)
+	if s.runtimeError == "" {
+		s.finishPoolSelection(chain, date)
+	}
+}
+func (s *app) finishPoolSelection(chain core.TaskChainID, date core.LocalDate) {
 	if s.runtimeError != "" {
 		return
 	}
 	// Schedule succeeds only after full aggregate persistence/readback. Resolve
 	// the resulting trace from that published graph, never from a guessed ID.
 	for _, t := range s.runtime.Snapshot().Traces {
-		if t.ChainID == chain && t.Date == s.runtimeDate && t.Status == core.TracePending {
+		if t.ChainID == chain && t.Date == date && t.Status == core.TracePending {
 			s.runtimeSelection = string(t.ID)
 			s.runtimeDayRail = true
 			break

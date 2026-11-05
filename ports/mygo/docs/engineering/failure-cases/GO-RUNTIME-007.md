@@ -1,6 +1,6 @@
 # GO-RUNTIME-007：标题退出排空会漏掉替换选区的 marked text
 
-状态：原始依赖反例保留；downstream 框架修正已通过支持入口的原始反例、定向回归与应用聚合验证。新标题 UI 未开放，应用导航/退出验收仍未完成，不宣称当前只读 UI 已发生用户数据丢失。
+状态：处理中。原始依赖反例保留；downstream 框架修正已通过支持入口的原始反例、定向回归与应用聚合验证。后续日标题编辑已接入隔离 development 应用，真实 Handle 的帧前输入、导航和退出症状已有 headless 回归；真实操作系统输入法及系统退出仍待验收。下方“只读／未开放”是首次发现阶段的历史处置，不代表当前接线状态，也不宣称实际用户资料发生过丢失。
 
 - 首次发现：2026-11-05，connect-title-autosave 依赖接线研究。MyGo 锁定版本为 `977ea57e0baf78da62698ba7371420d192260466`；未定位引入此行为的精确上游 commit 或实际修改者，未知，不能把整个依赖作者当成故障责任人。移植仓库基线 `986cd8d` 尚无标题编辑 UI。
 - 原始症状：原生 TextInputClient.ReplaceText 在帧前已修改 editor，但绑定 draft 仍为旧值，ObserveInput 不会收到这条原生路径。直接在 OnClose/OnBeforeQuit 保存 draft 会漏最后输入。
@@ -17,4 +17,8 @@
 
 37项定向回归覆盖原始选区探针、Undo、重入关闭/host修改同一binding、readonly/disabled、帧间/遮挡不绘制、迟到client、frame-local binding等。原始红探针脚本显式GOWORK=off仍测试原官方来源；scripts/check-mygo-native测试受审副本，scripts/check调用此门禁。
 
-隔离完整ui race只有原版同样失败的TestDiffFrameAllocs（steady3/within9），未改阈值，不能声称框架全绿。框架边界修正不等于应用Close/BeforeQuit已接通，不解开只读UI门禁；真实三平台IME与Swift动态oracle仍待验收。最终正式入口结果见DEPENDENCY.md。
+隔离完整ui race只有原版同样失败的TestDiffFrameAllocs（steady3/within9），未改阈值，不能声称框架全绿。框架边界修正本身不证明应用Close/BeforeQuit已接通；后续实际接线与独立症状门禁见 `../../tasks/connect-title-autosave/NATIVE-UI.md`。真实三平台IME与Swift动态oracle仍待验收。
+
+## 应用路径门禁
+
+`TestTitleUICloseBeforeFrameAndInitialRegistration` 使用实际 MyGo Handle 和原生 client，在未建下一帧时提交普通文字或替换 marked 选区，再经过真实应用 guard 和合成持久化。`TestTitleUIRepeatedCloseAndLateInput` 验证已在途请求、迟到输入及再次关闭；`TestTitleUIMultiwindowQuitFailureKeepsEveryWindow` 验证失败不销毁任何受影响输入。它们由 `scripts/check` 强制运行，不把 public Tester 自动建帧当作帧前输入证据。原版红探针继续独立保留，不改成虚假的成功门禁。

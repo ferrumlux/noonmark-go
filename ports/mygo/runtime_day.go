@@ -23,13 +23,15 @@ func (s *app) selectRuntimeDate(date core.LocalDate, focus bool) {
 	if !date.Valid() {
 		return
 	}
-	s.runtimeDate = date
-	s.runtimeSelection = ""
-	if focus {
-		s.runtimeDayFocus = date.String()
-	} else {
-		s.runtimeDayFocus = ""
-	}
+	s.titleTransition(func() {
+		s.runtimeDate = date
+		s.runtimeSelection = ""
+		if focus {
+			s.runtimeDayFocus = date.String()
+		} else {
+			s.runtimeDayFocus = ""
+		}
+	})
 }
 func (s *app) liveDayView(c *ui.Context, w, h float32) {
 	if focus := ui.FocusedValue(c, &s.runtimeDayFocus); focus != "" && !s.runtimePoolPicker {
@@ -256,8 +258,7 @@ func (s *app) liveDayRow(c *ui.Context, w, h, textH float32, r taskview.DayRow) 
 		}
 	})
 	if b.Clicked() {
-		s.runtimeSelection = id
-		s.runtimeDayRail = true
+		s.titleTransition(func() { s.runtimeSelection = id; s.runtimeDayRail = true })
 	}
 	enabled := s.runtimeDate == s.runtime.Today() && (r.Status == core.TracePending || r.Status == core.TraceCompleted)
 	check := ui.ButtonBase(c.Key("live-check-"+id)).Absolute().Left(12).Top((h-28)/2).Size(28, 28).Label("切换完成 " + id).Disabled(!enabled)
@@ -279,7 +280,9 @@ func (s *app) liveDayRow(c *ui.Context, w, h, textH float32, r taskview.DayRow) 
 		}
 	})
 	if enabled && check.Clicked() {
-		s.runCommand(func() error { return s.runtime.SetCompleted(r.TraceID, r.Status != core.TraceCompleted) }, false)
+		s.titleTransition(func() {
+			s.runAction(fmt.Sprintf("complete:%s:%t", r.TraceID, r.Status != core.TraceCompleted), func() error { return s.runtime.SetCompleted(r.TraceID, r.Status != core.TraceCompleted) })
+		})
 	}
 	if !selected {
 		box(c, 44, h-1, w-44, 1, line.Alpha(.62), 0).PassThrough()
@@ -287,7 +290,7 @@ func (s *app) liveDayRow(c *ui.Context, w, h, textH float32, r taskview.DayRow) 
 }
 func (s *app) liveDayDetail(c *ui.Context, w, h float32, day taskview.DayPage) {
 	box(c, 0, 0, 1, h, line, 0)
-	calendarPaneButton(c, "day-close-rail", w-38, 14, "››", "收起日待办详情", func() { s.runtimeDayRail = false })
+	calendarPaneButton(c, "day-close-rail", w-38, 14, "››", "收起日待办详情", func() { s.titleTransition(func() { s.runtimeDayRail = false }) })
 	var selected *taskview.DayRow
 	for i := range day.Rows {
 		if string(day.Rows[i].TraceID) == s.runtimeSelection {
@@ -295,20 +298,23 @@ func (s *app) liveDayDetail(c *ui.Context, w, h float32, day taskview.DayPage) {
 			break
 		}
 	}
+	if s.titleEditor != nil {
+		selected = &s.titleEditor.row
+	}
 	if selected != nil {
 		txt(c, 14, 18, 12, "任务详情", muted, 600)
 		ui.Scroll(c.Key("day-task-detail-scroll")).Absolute().Left(14).Top(56).Size(w-28, h-70).Children(func() {
-			ui.Text(c, selected.Title).FontSize(13).FontWeight(600).TextColor(ink).Width(w - 28).Label("日任务详情标题")
+			s.liveTitle(c, w-28, *selected)
 			ui.Box(c).Height(16)
 			ui.Text(c, statusText(selected.Status)).FontSize(11.5).TextColor(sourceVisual.text3).Label("日任务详情状态")
 			ui.Box(c).Height(10)
 			ui.Text(c, day.Selected.String()).FontSize(11).TextColor(muted)
 			ui.Box(c).Height(18)
 			ui.Box(c).Size(w-28, 28).Children(func() {
-				calendarHeaderButton(c, "day-show-review", 0, 0, 100, "返回日统计", "返回日统计", true, func() { s.runtimeSelection = "" })
+				calendarHeaderButton(c, "day-show-review", 0, 0, 100, "返回日统计", "返回日统计", true, func() { s.titleTransition(func() { s.runtimeSelection = "" }) })
 			})
 			ui.Box(c).Height(24)
-			ui.Text(c, "只读详情。标题编辑、子任务及分类尚未接通。").FontSize(10.5).TextColor(muted).Width(w - 28)
+			ui.Text(c, "子任务及分类尚未接通；完整 Markdown 显示仍待对齐。").FontSize(10.5).TextColor(muted).Width(w - 28)
 		})
 		return
 	}

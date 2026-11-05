@@ -7,6 +7,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/ferrumlux/noonmark/ports/mygo/internal/taskapp"
+	coordinator "github.com/ferrumlux/noonmark/ports/mygo/internal/titlecoordinator"
 	"image/png"
 	"log"
 	"os"
@@ -37,6 +38,11 @@ var (
 )
 
 type app struct {
+	poolPickerEpoch            uint64
+	titles                     *titleHub
+	titleEditor                *runtimeTitleEditor
+	titleWindowID, titleTarget string
+
 	page                 string
 	draft                string
 	selectedDay          int
@@ -767,6 +773,19 @@ func main() {
 		}
 		return
 	}
+	var hub *titleHub
+	var writer, dispatcher *coordinator.SerialLane
+	if service != nil {
+		writer = coordinator.NewSerialLane()
+		var post func(func())
+		dispatcher, post = newTitleDispatch()
+		hub = newTitleHub(service, writer, post, wallTitleClock{}, time.Now, mygo.App.Quit)
+		mygo.App.OnBeforeQuit(func(e *mygo.QuitEvent) {
+			if !hub.beforeQuit() {
+				e.PreventDefault()
+			}
+		})
+	}
 	var open func(string)
 	open = func(key string) {
 		spec, ok := findScreen(key)
@@ -775,8 +794,7 @@ func main() {
 		}
 		s := newApp()
 		if service != nil {
-			s = newRuntimeApp(service)
-			s.observeRuntimeDay(time.Now)
+			s = newRuntimeApp(hub.readView())
 		}
 		s.page = key
 		s.openUtility = open
@@ -792,9 +810,41 @@ func main() {
 		}
 		win := mygo.NewWindow(mygo.WindowOptions{Title: title, Width: spec.width, Height: spec.height, MinWidth: mw, MinHeight: mh, Content: ui.View(s.view)})
 		s.closeWindow = win.Close
+		if hub != nil {
+			hub.attach(s, win.Invalidate, win.Close)
+			win.OnClose(func(e *mygo.CloseEvent) {
+				if !hub.beforeClose(s) {
+					e.PreventDefault()
+				}
+			})
+		}
 	}
 	mygo.App.WhenReady(func() { open(*page) })
-	if err := mygo.App.Run(); err != nil {
-		log.Fatal(err)
+	code := runtimeExitStatus(mygo.App.Run(), func() {
+		// The event loop has ended. No UI callback waits here; drain accepted
+		// commands before closing storage, including an event-loop startup failure.
+		if writer != nil {
+			writer.StopAfterDrain()
+			<-writer.Done()
+			dispatcher.StopAfterDrain()
+			<-dispatcher.Done()
+		}
+		if service != nil {
+			if err := service.Close(); err != nil {
+				log.Print(err)
+			}
+		}
+	})
+	if code != 0 {
+		os.Exit(code)
 	}
+}
+
+func runtimeExitStatus(runErr error, cleanup func()) int {
+	cleanup()
+	if runErr != nil {
+		log.Print(runErr)
+		return 1
+	}
+	return 0
 }

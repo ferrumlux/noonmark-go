@@ -104,6 +104,10 @@ func rowsFor(g core.TaskGraph, page string, date, today core.LocalDate) []liveRo
 	return rows
 }
 func (s *app) runCommand(fn func() error, clear bool) {
+	if s.titles != nil {
+		s.titles.command(s, fn, clear, nil)
+		return
+	}
 	if s.refreshDay != nil {
 		if e := s.refreshDay(); e != nil {
 			s.runtimeError = naturalDayFailureMessage
@@ -111,7 +115,10 @@ func (s *app) runCommand(fn func() error, clear bool) {
 			return
 		}
 	}
-	if err := fn(); err != nil {
+	s.commandResult(fn(), clear)
+}
+func (s *app) commandResult(err error, clear bool) {
+	if err != nil {
 		s.runtimeError = "操作未保存，界面仍保留原资料与草稿。"
 		switch {
 		case errors.Is(err, taskapp.ErrConflict):
@@ -130,6 +137,10 @@ func (s *app) runCommand(fn func() error, clear bool) {
 	}
 	s.runtimeError = ""
 	s.runtimeNotice = "已保存到隔离开发会话"
+	if e := s.titleEditor; e != nil && e.failure != nil {
+		s.runtimeError = titleFailureMessage
+		s.runtimeNotice = ""
+	}
 	for _, w := range mygo.Windows() {
 		w.Invalidate()
 	}
@@ -149,7 +160,8 @@ func (s *app) submitLiveDraft(pool bool) {
 	if pool {
 		s.runCommand(func() error { return s.runtime.AddPool(title) }, true)
 	} else {
-		s.runCommand(func() error { return s.runtime.AddOnDate(title, s.runtimeDate) }, true)
+		date := s.runtimeDate
+		s.runCommand(func() error { return s.runtime.AddOnDate(title, date) }, true)
 	}
 }
 func (s *app) liveSidebar(c *ui.Context, h, sw float32, g core.TaskGraph) {
@@ -169,7 +181,9 @@ func (s *app) liveSidebar(c *ui.Context, h, sw float32, g core.TaskGraph) {
 		if sw <= 100 {
 			inset, iconX = navCompactInset, (sw-navIconSize)/2
 		}
-		navButton(c, "live-nav-"+n.page, inset, n.y, sw-2*inset, active, "切换到"+n.title, func() { s.page = n.page; s.runtimeSelection = ""; s.runtimeError = ""; s.runtimeNotice = "" }, func() {
+		navButton(c, "live-nav-"+n.page, inset, n.y, sw-2*inset, active, "切换到"+n.title, func() {
+			s.titleTransition(func() { s.page = n.page; s.runtimeSelection = ""; s.runtimeError = ""; s.runtimeNotice = "" })
+		}, func() {
 			icon(c, iconX-inset, (navRowHeight-navIconSize)/2, navIconSize, n.icon, n.color)
 			if sw > 100 {
 				col, weight := navLabelStyle(active)
@@ -198,6 +212,10 @@ func liveAction(c *ui.Context, key string, x, y, w float32, title, label string,
 	}
 }
 func (s *app) runtimeView(c *ui.Context) {
+	if s.titles != nil {
+		s.titles.observeDay()
+		c.After(time.Minute)
+	}
 	if s.refreshDay != nil {
 		if e := s.refreshDay(); e != nil {
 			s.runtimeError = naturalDayFailureMessage
@@ -330,7 +348,7 @@ func (s *app) liveTaskRow(c *ui.Context, w float32, r liveRow) {
 		enabled := r.date == s.runtime.Today() && (r.status == core.TracePending || complete)
 		b := ui.ButtonBase(c.Key("live-check-"+r.key)).Absolute().Left(4).Top(7).Size(28, 30).Label("切换完成 " + r.key).Disabled(!enabled)
 		if enabled && b.Clicked() {
-			s.runCommand(func() error { return s.runtime.SetCompleted(r.trace, !complete) }, false)
+			s.runAction(fmt.Sprintf("complete:%s:%t", r.trace, !complete), func() error { return s.runtime.SetCompleted(r.trace, !complete) })
 		}
 	} else {
 		icon(c, 10, 14, 16, "dotted", muted)
@@ -349,13 +367,16 @@ func (s *app) liveTaskRow(c *ui.Context, w float32, r liveRow) {
 		status = r.date.String() + " · " + statusText(r.status)
 	}
 	txt(c, 41, 35, 10.5, status, muted, 400)
-	labelButton(c, "live-select-"+r.key, 39, 5, w-41-right, 48, "查看任务 "+r.key, func() { s.runtimeSelection = r.key })
+	labelButton(c, "live-select-"+r.key, 39, 5, w-41-right, 48, "查看任务 "+r.key, func() { s.titleTransition(func() { s.runtimeSelection = r.key }) })
 	if r.trace == "" {
-		liveAction(c, "live-schedule-today-"+r.key, w-150, 15, 66, "排到今天", "排到今天 "+r.key, true, func() { s.runCommand(func() error { return s.runtime.Schedule(r.chain, s.runtime.Today()) }, false) })
+		liveAction(c, "live-schedule-today-"+r.key, w-150, 15, 66, "排到今天", "排到今天 "+r.key, true, func() {
+			date := s.runtime.Today()
+			s.runAction("schedule:"+string(r.chain)+":"+date.String(), func() error { return s.runtime.Schedule(r.chain, date) })
+		})
 		liveAction(c, "live-schedule-tomorrow-"+r.key, w-75, 15, 66, "排到明天", "排到明天 "+r.key, true, func() {
 			d, e := s.runtime.Today().AddDays(1)
 			if e == nil {
-				s.runCommand(func() error { return s.runtime.Schedule(r.chain, d) }, false)
+				s.runAction("schedule:"+string(r.chain)+":"+d.String(), func() error { return s.runtime.Schedule(r.chain, d) })
 			}
 		})
 	}

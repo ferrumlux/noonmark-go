@@ -1,3 +1,9 @@
+## 当前状态（2026-11-06，新加坡）
+
+日待办 pending 且 date>=today 的原生多行标题编辑已接入隔离 development 应用：700ms自动保存、真实Handle快照／最终化、统一写入lane、可取消Close／Quit及失败留稿。完整实现、最终证据与安全差异见 [NATIVE-UI.md](NATIVE-UI.md)。下面报告保留为当时的前置设计／验证记录，其中“只读／尚未开放”等描述只适用于该历史批次，不代表当前运行状态。
+
+Linux headless与六目标编译不是实机IME或Swift动态oracle；这些限制及原始未修复依赖红色探针继续保留。
+
 # 标题 autosave 前置批次验证
 
 2026-11-05。基线 986cd8d，所有状态与资料均为合成 development/e2e。

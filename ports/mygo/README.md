@@ -4,6 +4,9 @@
 
 ## 当前可用
 
+- 日待办详情 pending 且日期不早于今天的标题原生多行编辑：700ms自动保存，Return换行，导航／完成／退出先确认草稿，失败保留输入；历史／完成标题保持只读。
+- 共享后台写入lane与UI已确认读视图，存储提交不阻塞重绘；新原生输入不会被迟到完成或跨窗更新覆盖。
+
 - 在 Day Todo 所选今天/未来日期输入中文标题，Enter 提交；任务池可用Enter或添加按钮。未来任务不会误写到今天。
 - Day 的“从任务池排期…”弹窗可将已有任务排到所选今天/未来日期；任务池页仍有今天/明天快捷排期。
 - 完成/撤销今日任务，按真实事实更新导航计数和已完成/未来计划列表。
@@ -42,10 +45,11 @@ Linux 原生窗口需要 GTK3 和可用 DISPLAY / WAYLAND_DISPLAY。无显示服
 - domain-core：TaskChain / Definition / Trace、精确时间与历史不变量。
 - domain-extensions：分类、重复计划生命周期及版本历史，尚未接入运行 UI。
 - domain-codec：候选 v7 规范编解码及安全校验，只用合成 fixture。Swift 互通尚未验证，非空分类 audit 默认拒绝。
-- internal/inputdraft：按原版移植的纯 IME autosave gate，尚未绑定编辑 UI。
+- internal/inputdraft：按原版移植的纯 IME autosave gate，已用于日待办标题编辑。
+- internal/titlecoordinator：实际多窗口标题／导航／关闭协调与有序lane；每次真实退出仍重新检查原生输入。
 - internal/titlesession：草稿/实际存储确认/生命周期快照状态；拒写保留输入，不能单凭状态允许退出。
-- patches/mygo/native-finalize：可重现的帧间 native snapshot/finalization 修复，UI 接线和三平台 IME 仍待验收。
-- internal/taskapp：仅普通任务的开发会话事务与持久化，包括有专用历史审计的标题编辑 API；编辑 UI 尚未开放，详细安全和容量边界见其 README。
+- patches/mygo/native-finalize：可重现的帧间 native snapshot/finalization 修复，已接日待办标题；三平台实机 IME 仍待验收。
+- internal/taskapp：仅普通任务的开发会话事务与持久化，包括有专用历史审计的标题编辑 API；日待办标题编辑 UI 已接入，详细安全和容量边界见其 README。
 - docs/migration-audit：完整产品差距与上游测试库存。
 
 还未完成 SQLite schema 19、同步、AI、全局快捷键、子任务与完整编辑/分类/重复/飞光运行接线、原生时区/唤醒通知完整对等、真实一年互动演示及原生三平台验收。当前文件后端不能替代生产存储；不得打开、探测或迁移实际用户数据。

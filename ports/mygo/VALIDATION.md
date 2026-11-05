@@ -1,3 +1,7 @@
+# 当前标题接线验证入口
+
+2026-11-06：隔离 development 日待办标题原生编辑已接入，完整范围、实际UI／磁盘fault回归、有序读视图与未验收项目见 [NATIVE-UI.md](docs/tasks/connect-title-autosave/NATIVE-UI.md)。下文保留已有其他批次验证记录，不能将旧原型截图或编译当作真实系统IME／Swift oracle。
+
 # 验证结果与局限
 
 ## 执行环境
