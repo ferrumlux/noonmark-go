@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+set -euo pipefail
+source "$(dirname -- "$0")/environment"
+for module in . domain-core domain-extensions domain-codec; do
+  (
+    cd -- "$module"
+    GOFMT="$(dirname "$(command -v "$GO")")/gofmt"
+    test -z "$(find . -name '*.go' -not -path './domain-*/*' -print0 | xargs -0 "$GOFMT" -l)" || { echo 'Source requires gofmt' >&2; exit 1; }
+    "$GO" test -p=1 -race -buildvcs=false ./...
+    "$GO" vet -p=1 -buildvcs=false ./...
+  )
+done

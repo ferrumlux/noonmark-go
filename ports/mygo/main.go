@@ -5,15 +5,18 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/ferrumlux/noonmark/ports/mygo/internal/taskapp"
 	"image/png"
 	"log"
 	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
+	"time"
 
 	"github.com/egoist/mygo"
 	"github.com/egoist/mygo/ui"
+	"github.com/ferrumlux/noonmark/ports/mygo/domain/core"
 )
 
 var (
@@ -33,14 +36,19 @@ var (
 )
 
 type app struct {
-	page        string
-	draft       string
-	selectedDay int
-	done        map[int]bool
-	compact     bool
-	detail      bool
-	openUtility func(string)
-	closeWindow func()
+	page             string
+	draft            string
+	selectedDay      int
+	done             map[int]bool
+	compact          bool
+	detail           bool
+	openUtility      func(string)
+	closeWindow      func()
+	runtime          taskService
+	runtimeError     string
+	runtimeNotice    string
+	runtimeSelection string
+	runtimeDate      core.LocalDate
 }
 
 func newApp() *app { return &app{page: "day", selectedDay: 24, done: map[int]bool{}, detail: true} }
@@ -192,6 +200,10 @@ func (s *app) view(c *ui.Context) {
 		t.Font = "Noto Sans CJK SC"
 	}
 	c.SetTheme(t)
+	if s.runtime != nil {
+		s.runtimeView(c)
+		return
+	}
 	if strings.HasPrefix(s.page, "settings-") {
 		s.settingsView(c)
 		return
@@ -661,6 +673,9 @@ func findScreen(key string) (screenSpec, bool) {
 func renderScreen(spec screenSpec, dir string) error {
 	s := newApp()
 	s.page = spec.key
+	return renderApp(s, spec, dir)
+}
+func renderApp(s *app, spec screenSpec, dir string) error {
 	img := ui.Render(s.view, spec.width, spec.height, 2)
 	f, err := os.Create(filepath.Join(dir, "noonmark-"+spec.key+"-native.png"))
 	if err != nil {
@@ -678,6 +693,9 @@ func main() {
 	one := flag.String("render-one", "", "Export only -screen to this directory")
 	page := flag.String("screen", "day", "Initial screen; use -list to see available screens")
 	list := flag.Bool("list", false, "List native prototype screen keys and logical dimensions")
+	initSession := flag.String("init-session", "", "Exclusively create a new isolated development session directory")
+	session := flag.String("session", "", "Open an existing isolated development session")
+	prototype := flag.Bool("prototype", false, "Run the static UI prototype without storage")
 	flag.Parse()
 	if *list {
 		for _, spec := range screens {
@@ -688,6 +706,30 @@ func main() {
 	spec, ok := findScreen(*page)
 	if !ok {
 		log.Fatalf("Unknown screen %q; use -list", *page)
+	}
+	if *initSession != "" && *session != "" {
+		log.Fatal("Choose only one session action")
+	}
+	var service *taskapp.Service
+	if *initSession != "" || *session != "" {
+		if *prototype || *render != "" {
+			log.Fatal("Session mode cannot mix with prototype or all-screen rendering")
+		}
+		now := time.Now()
+		today := core.LocalDate{Year: now.Year(), Month: int(now.Month()), Day: now.Day()}
+		var err error
+		if *initSession != "" {
+			service, err = taskapp.Create(*initSession, today)
+		} else {
+			service, err = taskapp.Open(*session, today)
+		}
+		if err != nil {
+			log.Fatal("Cannot open isolated development session: ", err)
+		}
+		defer service.Close()
+	}
+	if service == nil && !*prototype && *render == "" && *one == "" {
+		log.Fatal("Use -init-session or -session for development storage; -prototype for the static visual study")
 	}
 	if *render != "" || *one != "" {
 		dir := *render
@@ -702,7 +744,15 @@ func main() {
 			targets = []screenSpec{spec}
 		}
 		for _, target := range targets {
-			if err := renderScreen(target, dir); err != nil {
+			var err error
+			if service != nil {
+				state := newRuntimeApp(service)
+				state.page = target.key
+				err = renderApp(state, target, dir)
+			} else {
+				err = renderScreen(target, dir)
+			}
+			if err != nil {
 				log.Fatal(err)
 			}
 		}
@@ -715,6 +765,9 @@ func main() {
 			return
 		}
 		s := newApp()
+		if service != nil {
+			s = newRuntimeApp(service)
+		}
 		s.page = key
 		s.openUtility = open
 		mw, mh := 960, 720
@@ -723,7 +776,11 @@ func main() {
 		} else if spec.width < 960 {
 			mw, mh = spec.width, spec.height
 		}
-		win := mygo.NewWindow(mygo.WindowOptions{Title: "Noonmark · MyGo UI Prototype", Width: spec.width, Height: spec.height, MinWidth: mw, MinHeight: mh, Content: ui.View(s.view)})
+		title := "Noonmark · MyGo UI Prototype"
+		if service != nil {
+			title = "Noonmark · MyGo Development"
+		}
+		win := mygo.NewWindow(mygo.WindowOptions{Title: title, Width: spec.width, Height: spec.height, MinWidth: mw, MinHeight: mh, Content: ui.View(s.view)})
 		s.closeWindow = win.Close
 	}
 	mygo.App.WhenReady(func() { open(*page) })

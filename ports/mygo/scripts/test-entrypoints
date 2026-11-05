@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+set -euo pipefail
+source "$(dirname -- "$0")/environment"
+: "${NOONMARK_MYGO_BINARY:?Set NOONMARK_MYGO_BINARY to the built host executable}"
+case "$NOONMARK_MYGO_BINARY" in /*) ;; *) echo 'Binary path must be absolute' >&2; exit 2;; esac
+session_parent=$(mktemp -d "$BUILD_ROOT/e2e-session.XXXXXXXX")
+"$NOONMARK_MYGO_BINARY" -list > "$session_parent/screens.txt"
+test "$(wc -l < "$session_parent/screens.txt" | tr -d ' ')" = 20
+"$NOONMARK_MYGO_BINARY" -init-session "$session_parent/session" -render-one "$session_parent/frames" -screen day
+"$NOONMARK_MYGO_BINARY" -session "$session_parent/session" -render-one "$session_parent/frames" -screen pool
+if "$NOONMARK_MYGO_BINARY" -init-session "$session_parent/session" -render-one "$session_parent/frames" -screen day > "$session_parent/reuse.log" 2>&1; then echo 'Existing session was overwritten' >&2; exit 1; fi
+if "$NOONMARK_MYGO_BINARY" > "$session_parent/implicit.log" 2>&1; then echo 'Unscoped runtime unexpectedly started' >&2; exit 1; fi
+printf 'CLI development identity/create/reopen/reuse guards passed; desktop window not tested.\n'

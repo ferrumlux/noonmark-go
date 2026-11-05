@@ -1,0 +1,2 @@
+case_id	fast_gate	symptom_gate	aggregate	status
+GO-RUNTIME-001	TestCreateScheduleCompleteUndoRestart;TestNativePayloadIsNotSwiftImport	TestLiveUICommandsPersistAcrossRestart;TestLiveUICaptureAndSharedSession	scripts/check	candidate_passed_commit_pending

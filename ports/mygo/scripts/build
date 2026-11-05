@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+set -euo pipefail
+source "$(dirname -- "$0")/environment"
+"$GO" build -p=1 -buildvcs=false -o "$BUILD_ROOT/bin/noonmark-mygo" .

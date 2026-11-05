@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+set -euo pipefail
+SOURCE_ROOT=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)
+: "${NOONMARK_MYGO_BUILD_ROOT:?Set NOONMARK_MYGO_BUILD_ROOT to an existing external build directory}"
+case "$NOONMARK_MYGO_BUILD_ROOT" in /*) ;; *) echo 'Build root must be absolute' >&2; exit 2;; esac
+BUILD_ROOT=$(cd -- "$NOONMARK_MYGO_BUILD_ROOT" && pwd -P)
+REPO_ROOT=$(cd -- "$SOURCE_ROOT/../.." && pwd -P)
+case "$BUILD_ROOT/" in "$REPO_ROOT/"*) echo 'Build root must be outside the source repository' >&2; exit 2;; esac
+GO=${NOONMARK_GO:-go}
+export GOTOOLCHAIN=local GOTELEMETRY=off GOMAXPROCS=${GOMAXPROCS:-2}
+export GOGC=${GOGC:-20} GOMEMLIMIT=${GOMEMLIMIT:-700MiB}
+export GOCACHE=${GOCACHE:-"$BUILD_ROOT/go-cache"}
+export GOPATH=${GOPATH:-"$BUILD_ROOT/go-path"}
+export TMPDIR="$BUILD_ROOT/tmp"
+export XDG_CACHE_HOME="$BUILD_ROOT/xdg-cache"
+for cache in "$GOCACHE" "$GOPATH"; do
+  if test -d "$cache"; then
+    physical=$(cd -- "$cache" && pwd -P)
+    case "$physical/" in "$REPO_ROOT/"*) echo 'Cache must be outside the repository' >&2; exit 2;; esac
+  else
+    case "$cache" in "$BUILD_ROOT/go-cache"|"$BUILD_ROOT/go-path") ;; *) echo 'Custom cache directory must already exist' >&2; exit 2;; esac
+  fi
+done
+mkdir -p -- "$GOCACHE" "$GOPATH" "$TMPDIR" "$BUILD_ROOT/evidence" "$BUILD_ROOT/bin" "$XDG_CACHE_HOME"
+cd -- "$SOURCE_ROOT"

@@ -1,0 +1,5 @@
+# Build output must use the external build root, not these ignored paths.
+/noonmark-mygo
+/noonmark-prototype
+/*.exe
+/*.test
