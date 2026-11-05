@@ -1,0 +1,62 @@
+{
+  "schema": 1,
+  "module": {
+    "gomod_sum": "h1:dVav53PwF2xEotjf4oA5lTY2Jp2exgzyjLhbSXhbMwE=",
+    "license_sha256": "f0b56f4ab53beb6e18c5e155219c2e2b6000b5475c0ae3ddb3af3894fd9349b4",
+    "path": "github.com/egoist/mygo",
+    "sum": "h1:6sD4+5BmgaV81Jczuvm6M1dCK2/ogfhbXfvrEw27z28=",
+    "version": "v0.7.5-0.20261105040656-977ea57e0baf",
+    "zip_sha256": "463ce03497083b99a5ae1ffac14d95b9ae8769abd02743636362cc8fce48d777"
+  },
+  "go": "1.27.3",
+  "patches": [
+    {
+      "file": "0001-native-finalize.patch",
+      "sha256": "fe612bda88e6baa1da4727a01758211cb8111913cad21bde469d0ce56a6b5744",
+      "files": {
+        "ui/ref.go": {
+          "before": "4b8e03bf5054b0952b497e76f97417d936571fc0fdfa3a308e2df284301619a0",
+          "after": "b4f38576faba63115e155737ac5593990fd17dad1de5363b48f2bd58debcd835"
+        },
+        "ui/text_input_client.go": {
+          "before": "ad5e3d2158bef9a6e0ba11a82dbc5ea67af98624c86337787844b21c39de2aab",
+          "after": "e0fc0fbbadb1e69d10b35516283d5dc694b26155af50a77c47a82996e92f08e1"
+        },
+        "ui/runtime.go": {
+          "before": "64e39e9f2213900b3670aad0ac5464fff1a525e41759f421827dac276feeaa6b",
+          "after": "c8e7ee77a96701bc0d8dbc07f0fc530a5fd0dd4da4a11e81cf05e44df0a97798"
+        },
+        "ui/input.go": {
+          "before": "5cd2dd5c902eedeb806d4da4f27a83f50cb4c5374fd600d0c92b010597e241a4",
+          "after": "a1bc793443afe3e2f0c6a771136d833f748f32121e52d5f3276d0d46d287e0a0"
+        },
+        "ui/editor_input.go": {
+          "before": "cc54639b22f2eda0297e99d0c79c230976cd7f0fee9b90cd049ed7e131e82931",
+          "after": "32ceedb8cac6fcc427178100a728980825c8dc035e58c8fbf25b78d3c81a0e75"
+        },
+        "ui/value_input.go": {
+          "before": "d1aac3c4a8428821692fd3f01aeb6d12e73f5da6ecc46d973ffc0eaa9619654c",
+          "after": "1723dfb0c85f8211c8fff18006f2ee4b6460b73d3c86d785bc5a1bd1eebc30d4"
+        },
+        "ui/handle_text_input.go": {
+          "before": null,
+          "after": "70eb6834a606ebb0e99b8a94cbcc0d8762504d4b257403bddf23f6f5de9240d8"
+        }
+      }
+    },
+    {
+      "file": "0002-native-finalize-regression-tests.patch",
+      "sha256": "eb25eb9e29214a2ea53988babd0b1b97fa50541ef3d21f3d7d07a1e506b1157f",
+      "files": {
+        "ui/handle_text_input_test.go": {
+          "before": null,
+          "after": "1db34bfb94607787c8765b97e99fd9bc7c916c61d5f33beb9a7f1136a0a5d8eb"
+        },
+        "ui/noonmark_native_probe_test.go": {
+          "before": null,
+          "after": "1f59d15609a26587ecbbc1fc8a239622cb5bef6f290769571c61dac9b7616662"
+        }
+      }
+    }
+  ]
+}

@@ -6,7 +6,7 @@
 
 ## 结果
 
-候选目录为 `noonmark-mygo-work/title-session-work/`。完成文本拥有的 session、不可修改作业/保存请求、实例和 generation 防串线、真实确认字节回传、nonemptyTrimmed 与事件驱动生命周期状态。没有改正式 `noonmark-go`、上游 `noonmark-reference` 或 `mygo`；没有 commit/push。父任务另行修改的 Service 不属于本候选变更。
+候选目录为 `noonmark-mygo-work/title-session-work/`。完成文本拥有的 session、不可修改作业/保存请求、实例和 generation 防串线、真实确认字节回传、nonemptyTrimmed 与事件驱动生命周期状态。没有改正式 `noonmark-go`、上游 `noonmark-reference` 或 `mygo`；没有 commit/push。独立修改的 Service 不属于本候选变更。
 
 29 项 session 测试及 36 项复制的 Gate 测试通过；额外有界串行事件序列包含 96 × 160 = 15,360 次事件，检查失败/未核实结果不修改文本、不能并行保存、旧完成回调不改变状态，以及 dirty/in-flight/composing/error/待执行作业不可能返回 FlushClean。所有 fixture 均为合成文字。
 
@@ -53,7 +53,7 @@ Gate 实现 SHA-256 与正式文件一致：
 
 ## 原子 Service 接法
 
-父任务已另外提供 `SaveTraceTitleInputAcknowledged(traceID,title) (string,error)`；本候选没有复制或修改 Service。外层的单一有序执行路径应：
+现有 Service 已提供 `SaveTraceTitleInputAcknowledged(traceID,title) (string,error)`；本候选没有复制或修改 Service。外层的单一有序执行路径应：
 
 1. 使用不可变 request 捕获的 trace 与 normalized text，不重新读取 selection。
 2. 按正式规范完成自然日刷新，然后调用 acknowledged Service。
@@ -138,6 +138,6 @@ race 与 coverage 均使用 `-count=1`。未覆盖部分主要是构造后 Gate 
 - 没有 UI 接线、真实 timer/时钟、导航 registry、多窗口 coordinator、Close/Quit 执行器。
 - 没有原生 snapshot/finalization 实现，未跑 MyGo native IME 或 Apple/Windows/Linux 实机。
 - 没有 Swift 动态 oracle，不承诺 Foundation whitespace 的全标量对账。
-- 没有在此 module 真正调用 Service/磁盘；此处只验证请求必须发出及确认结果的纯处理。真实 Service 原子 route/ack/故障门禁属于父任务的独立证据。
+- 没有在此 module 真正调用 Service/磁盘；此处只验证请求必须发出及确认结果的纯处理。真实 Service 原子 route/ack/故障门禁见正式 Service 的独立证据。
 - 没有 production、iCloud、Keychain、AI、网络或用户资料。
 - 候选可以独立 review；不能据此启用标题编辑 UI，或声称安全退出路径已完成。

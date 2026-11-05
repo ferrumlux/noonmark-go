@@ -7,7 +7,7 @@ BUILD_ROOT=$(cd -- "$NOONMARK_MYGO_BUILD_ROOT" && pwd -P)
 REPO_ROOT=$(cd -- "$SOURCE_ROOT/../.." && pwd -P)
 case "$BUILD_ROOT/" in "$REPO_ROOT/"*) echo 'Build root must be outside the source repository' >&2; exit 2;; esac
 GO=${NOONMARK_GO:-go}
-export GOTOOLCHAIN=local GOTELEMETRY=off GOMAXPROCS=${GOMAXPROCS:-2}
+export GOTOOLCHAIN=local GOTELEMETRY=off GOENV=off GOFLAGS=-mod=readonly GOMAXPROCS=${GOMAXPROCS:-2}
 export GOGC=${GOGC:-20} GOMEMLIMIT=${GOMEMLIMIT:-700MiB}
 export GOCACHE=${GOCACHE:-"$BUILD_ROOT/go-cache"}
 export GOPATH=${GOPATH:-"$BUILD_ROOT/go-path"}
@@ -23,3 +23,21 @@ for cache in "$GOCACHE" "$GOPATH"; do
 done
 mkdir -p -- "$GOCACHE" "$GOPATH" "$TMPDIR" "$BUILD_ROOT/evidence" "$BUILD_ROOT/bin" "$XDG_CACHE_HOME"
 cd -- "$SOURCE_ROOT"
+
+# Keep reviewed patches out of the source tree and the official module cache.
+# A standard Go download only fills a missing official pinned archive. The
+# offline preparer verifies archive/module/license/patch hashes before use.
+export GOMODCACHE="$GOPATH/pkg/mod"
+MYGO_VERSION=v0.7.5-0.20261105040656-977ea57e0baf
+MYGO_ARCHIVE="$GOMODCACHE/cache/download/github.com/egoist/mygo/@v/$MYGO_VERSION.zip"
+if ! test -f "$MYGO_ARCHIVE"; then
+  GOWORK=off "$GO" mod download "github.com/egoist/mygo@$MYGO_VERSION"
+fi
+MYGO_MANIFEST="$SOURCE_ROOT/patches/mygo/native-finalize/manifest.json"
+export PYTHONDONTWRITEBYTECODE=1
+GOWORK=$(python3 -B "$SOURCE_ROOT/scripts/dependency/prepare_dependency.py" \
+  --manifest "$MYGO_MANIFEST" --archive "$MYGO_ARCHIVE" \
+  --source-root "$SOURCE_ROOT" --repo-root "$REPO_ROOT" --build-root "$BUILD_ROOT")
+export GOWORK
+"$GO" list -m -json github.com/egoist/mygo | python3 -B "$SOURCE_ROOT/scripts/dependency/verify_selection.py" \
+  --manifest "$MYGO_MANIFEST" --gowork "$GOWORK"

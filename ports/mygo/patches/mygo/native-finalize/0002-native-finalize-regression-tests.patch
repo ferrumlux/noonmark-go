@@ -1,0 +1,560 @@
+--- /dev/null
++++ b/ui/handle_text_input_test.go
+@@ -0,0 +1,492 @@
++package ui
++
++import (
++	"github.com/egoist/mygo/internal/platform"
++	"testing"
++)
++
++func TestNoonmarkFinishBeforeFrame(t *testing.T) {
++	for _, kind := range []string{"replace", "marked", "selection", "empty-commit", "cancel-preedit", "empty-preedit", "multiline"} {
++		t.Run(kind, func(t *testing.T) {
++			draft := "old"
++			var h Handle
++			var c *Context
++			builds := 0
++			tt := NewTester(func(ctx *Context) {
++				c = ctx
++				builds++
++				TextAreaBase(c.Key("title"), &draft).Bind(&h).AutoFocus().Width(250)
++			}, 300, 180)
++			defer tt.rt.close()
++			old := tt.h.ime.Client
++			want := "old未定"
++			committed := "old"
++			marked := "未定"
++			switch kind {
++			case "replace":
++				old.ReplaceText(nil, "新")
++				want = "old新"
++				committed = want
++				marked = ""
++			case "marked":
++				old.SetMarkedText(nil, "未定", TextInputRange{Start: 2, End: 2})
++			case "selection":
++				old.SetMarkedText(&TextInputRange{Start: 0, End: 3}, "未定", TextInputRange{Start: 2, End: 2})
++				want = "未定"
++				committed = ""
++			case "empty-commit":
++				old.ReplaceText(&TextInputRange{Start: 0, End: 3}, "")
++				want = ""
++				committed = ""
++				marked = ""
++			case "cancel-preedit":
++				old.SetMarkedText(nil, "未定", TextInputRange{})
++				old.SetMarkedText(nil, "", TextInputRange{})
++				want = "old"
++				marked = ""
++			case "empty-preedit":
++				old.SetMarkedText(nil, "", TextInputRange{})
++				want = "old"
++				marked = ""
++			case "multiline":
++				old.ReplaceText(nil, "\n新")
++				want = "old\n新"
++				committed = want
++				marked = ""
++			}
++			beforeBuild, frame := builds, tt.rt.frame
++			tt.h.hidden = true
++			got, ok := h.TextInputSnapshot(c)
++			if !ok || got.Text != committed || got.MarkedText != marked || got.Composing != (marked != "") {
++				t.Fatalf("snapshot=%+v ok=%v", got, ok)
++			}
++			if draft != "old" {
++				t.Fatalf("snapshot published %q", draft)
++			}
++			got, ok = h.FinishTextEditing(c)
++			if !ok || got.Text != want || got.Composing || draft != want {
++				t.Fatalf("finish=%+v ok=%v binding=%q want=%q", got, ok, draft, want)
++			}
++			if builds != beforeBuild || tt.rt.frame != frame || tt.h.ime.Active {
++				t.Fatal("finish depended on a frame or left route active")
++			}
++			old.ReplaceText(nil, "late")
++			old.SetMarkedText(nil, "late", TextInputRange{})
++			old.UnmarkText()
++			again, ok := h.FinishTextEditing(c)
++			if !ok || again != got || draft != want {
++				t.Fatal("repeat/late changed result", again, draft)
++			}
++			tt.h.hidden = false
++			h.Focus(c)
++			tt.Frame()
++			fresh := tt.h.ime.Client
++			if fresh == nil || fresh == old {
++				t.Fatal("refocus reused stale lease")
++			}
++			old.ReplaceText(nil, "stale-after-refocus")
++			fresh.ReplaceText(nil, "!")
++			got, ok = h.FinishTextEditing(c)
++			if !ok || got.Text != want+"!" {
++				t.Fatal("refocus route failed", got)
++			}
++		})
++	}
++}
++
++func TestNoonmarkFinishQueueAndUndo(t *testing.T) {
++	draft := "old"
++	var h Handle
++	var c *Context
++	tt := NewTester(func(ctx *Context) { c = ctx; TextAreaBase(c, &draft).Bind(&h).AutoFocus().Width(250) }, 300, 180)
++	defer tt.rt.close()
++	client := tt.h.ime.Client
++	// Native selection replacement is one composition undo transaction.
++	client.SetMarkedText(&TextInputRange{Start: 0, End: 3}, "未定", TextInputRange{Start: 2, End: 2})
++	got, ok := h.FinishTextEditing(c)
++	if !ok || got.Text != "未定" {
++		t.Fatal(got, ok)
++	}
++	h.Focus(c)
++	tt.Frame()
++	tt.rt.editEvent(editEvent{kind: editCommand, text: "undo"})
++	if len(tt.rt.states[tt.rt.focused].editor.queue) == 0 {
++		t.Fatal("undo was not queued")
++	}
++	got, ok = h.FinishTextEditing(c)
++	if !ok || got.Text != "old" {
++		t.Fatal("queued undo", got, ok)
++	}
++	h.Focus(c)
++	tt.Frame()
++	tt.rt.keyDown(0, KeyLeft, false)
++	if len(tt.rt.states[tt.rt.focused].editor.queue) == 0 {
++		t.Fatal("navigation was not queued")
++	}
++	tt.h.ime.Client.ReplaceText(nil, "!")
++	got, ok = h.FinishTextEditing(c)
++	if !ok || got.Text != "ol!d" {
++		t.Fatal("queued navigation before native replacement", got, ok)
++	}
++}
++
++func TestNoonmarkFinishIdentityAndPolicy(t *testing.T) {
++	for _, kind := range []string{"unbound", "omitted", "hidden", "ancestor-hidden", "reused-id", "closed", "readonly", "disabled", "buffer", "custom", "build"} {
++		t.Run(kind, func(t *testing.T) {
++			draft := "old"
++			var h Handle
++			var c *Context
++			phase := false
++			tt := NewTester(func(ctx *Context) {
++				c = ctx
++				if phase && kind == "omitted" {
++					return
++				}
++				build := func() {
++					var e Element
++					switch kind {
++					case "buffer":
++						e = TextAreaBufferBase(c.Key("title"), NewTextBuffer("old"))
++					case "custom":
++						e = Box(c.Key("title")).HandleTextInput(&primitiveClient{text: "old"})
++					default:
++						e = TextAreaBase(c.Key("title"), &draft)
++					}
++					if !(phase && (kind == "unbound" || kind == "reused-id")) {
++						e = e.Bind(&h)
++					}
++					e.AutoFocus().Width(200)
++					if kind == "hidden" && phase {
++						e.Hidden(true)
++					}
++					if kind == "readonly" && phase {
++						e.ReadOnly(true)
++					}
++					if kind == "disabled" && phase {
++						e.Disabled(true)
++					}
++					if kind == "build" {
++						if _, ok := h.FinishTextEditing(c); ok {
++							t.Fatal("accepted in build")
++						}
++					}
++				}
++				if kind == "ancestor-hidden" {
++					Column(c).Hidden(phase).Children(build)
++				} else {
++					build()
++				}
++			}, 300, 180)
++			defer tt.rt.close()
++			old := tt.h.ime.Client
++			phase = true
++			if kind == "reused-id" {
++				// Destroy state while keeping the same public identity key; replacement
++				// deliberately does not bind h. Its pool storage can reuse the old state.
++				saved := tt.rt.view
++				tt.rt.view = func(*context) {}
++				tt.Frame()
++				tt.rt.view = saved
++			}
++			tt.Frame()
++			if kind == "closed" {
++				tt.rt.close()
++			}
++			if kind == "build" {
++				return
++			}
++			if _, ok := h.FinishTextEditing(c); ok {
++				t.Fatal("invalid or unsupported finish succeeded")
++			}
++			if kind == "readonly" || kind == "disabled" {
++				if snap, ok := h.TextInputSnapshot(c); !ok || snap.Text != "old" {
++					t.Fatal("cannot read policy-protected value", snap, ok)
++				}
++			} else if _, ok := h.TextInputSnapshot(c); ok {
++				t.Fatal("invalid snapshot succeeded")
++			}
++			if old != nil {
++				old.ReplaceText(nil, "late")
++			}
++			if kind == "readonly" || kind == "disabled" || kind == "closed" || kind == "hidden" || kind == "ancestor-hidden" || kind == "reused-id" {
++				if draft != "old" {
++					t.Fatal("stale client changed binding")
++				}
++			}
++		})
++	}
++	var zero Handle
++	if _, ok := zero.FinishTextEditing(nil); ok {
++		t.Fatal("nil context accepted")
++	}
++	if _, ok := zero.TextInputSnapshot(&Context{}); ok {
++		t.Fatal("empty context accepted")
++	}
++}
++
++func TestNoonmarkFinishExternalValue(t *testing.T) {
++	for _, kind := range []string{"replace", "selection", "preedit", "queue", "unchanged"} {
++		t.Run(kind, func(t *testing.T) {
++			draft := "old"
++			var h Handle
++			var c *Context
++			tt := NewTester(func(ctx *Context) { c = ctx; TextAreaBase(c, &draft).Bind(&h).AutoFocus().Width(200) }, 300, 180)
++			defer tt.rt.close()
++			switch kind {
++			case "replace":
++				tt.h.ime.Client.ReplaceText(nil, "native")
++			case "selection":
++				tt.h.ime.Client.SetMarkedText(&TextInputRange{Start: 0, End: 3}, "marked", TextInputRange{})
++			case "preedit":
++				tt.h.ime.Client.SetMarkedText(nil, "marked", TextInputRange{})
++			case "queue":
++				tt.rt.keyDown(0, KeyBackspace, false)
++			}
++			draft = "APP"
++			got, ok := h.FinishTextEditing(c)
++			want := "APP"
++			if kind == "queue" {
++				want = "AP"
++			} // Existing applyString applies queued edits after external sync.
++			if !ok || got.Text != want || draft != want || got.Composing {
++				t.Fatal("external value lost", got, ok, draft)
++			}
++		})
++	}
++}
++
++func TestNoonmarkFinishMultiWindowAndRebind(t *testing.T) {
++	var h Handle
++	var a, b *Context
++	first, second := "A", "B"
++	left := NewTester(func(c *Context) { a = c; TextAreaBase(c, &first).Bind(&h).AutoFocus().Width(200) }, 300, 180)
++	defer left.rt.close()
++	right := NewTester(func(c *Context) { b = c; TextAreaBase(c, &second).Bind(&h).AutoFocus().Width(200) }, 300, 180)
++	defer right.rt.close()
++	left.h.ime.Client.ReplaceText(nil, "1")
++	right.h.ime.Client.ReplaceText(nil, "2")
++	if got, ok := h.FinishTextEditing(a); !ok || got.Text != "A1" || second != "B" || !right.h.ime.Active {
++		t.Fatal("cross-window finish", got, second)
++	}
++	if got, ok := h.FinishTextEditing(b); !ok || got.Text != "B2" {
++		t.Fatal("second window finish", got)
++	}
++	left.rt.close()
++	if _, ok := h.FinishTextEditing(a); ok {
++		t.Fatal("closed window lease")
++	}
++	if _, ok := h.TextInputSnapshot(b); !ok {
++		t.Fatal("other window invalidated")
++	}
++
++	var r Handle
++	var c *Context
++	x, y := "old", "NEW"
++	target := &x
++	session := 1
++	tt := NewTester(func(ctx *Context) { c = ctx; TextAreaBase(c.Key(session), target).Bind(&r).AutoFocus().Width(200) }, 300, 180)
++	defer tt.rt.close()
++	old := tt.h.ime.Client
++	target = &y
++	session++
++	tt.Frame()
++	fresh := tt.h.ime.Client
++	old.ReplaceText(nil, "bad")
++	fresh.ReplaceText(nil, "!")
++	got, ok := r.FinishTextEditing(c)
++	if !ok || got.Text != "NEW!" || x != "old" || fresh == old {
++		t.Fatal("rebound native lease", got, x, y)
++	}
++}
++
++func TestNoonmarkFinishReentrantCloseAndLateSave(t *testing.T) {
++	draft := "old"
++	var h Handle
++	var c *Context
++	tt := NewTester(func(ctx *Context) { c = ctx; TextAreaBase(c, &draft).Bind(&h).AutoFocus().Width(200) }, 300, 180)
++	tt.h.clipboard = "paste"
++	tt.h.reading = func() {
++		if _, ok := h.FinishTextEditing(c); ok {
++			t.Fatal("reentrant finish succeeded")
++		}
++		tt.rt.close()
++	}
++	tt.rt.editEvent(editEvent{kind: editCommand, text: "paste"})
++	if len(tt.rt.states[tt.rt.focused].editor.queue) == 0 {
++		t.Fatal("paste was not queued")
++	}
++	if _, ok := h.FinishTextEditing(c); ok {
++		t.Fatal("closed during queued callback still succeeded")
++	}
++	if _, ok := h.TextInputSnapshot(c); ok {
++		t.Fatal("late async completion can resolve closed editor")
++	}
++	// An application completion must carry its own owner/generation. No API
++	// revision pretends that a new binding is the owner of an older save.
++	var r Handle
++	var current *Context
++	value := "session-one"
++	owner := uint64(1)
++	second := NewTester(func(ctx *Context) {
++		current = ctx
++		TextAreaBase(current.Key(owner), &value).Bind(&r).AutoFocus().Width(200)
++	}, 300, 180)
++	defer second.rt.close()
++	saveOwner := owner
++	saved, ok := r.FinishTextEditing(current)
++	if !ok {
++		t.Fatal("save snapshot")
++	}
++	owner++
++	value = "session-two"
++	second.Frame()
++	applyCompletion := func() {
++		if owner != saveOwner {
++			return
++		}
++		if _, valid := r.TextInputSnapshot(current); valid {
++			value = saved.Text
++		}
++	}
++	applyCompletion()
++	if value != "session-two" {
++		t.Fatal("late save crossed owner")
++	}
++	second.rt.close()
++	applyCompletion()
++}
++
++func TestNoonmarkFinishLocalBindingAndReentry(t *testing.T) {
++	value := "old"
++	var h Handle
++	var c *Context
++	var last *string
++	tt := NewTester(func(ctx *Context) {
++		c = ctx
++		local := value
++		TextAreaBase(c.Key("title"), &local).Bind(&h).AutoFocus().Width(200)
++		last = &local
++		value = local
++	}, 300, 180)
++	defer tt.rt.close()
++	old := tt.h.ime.Client
++	old.SetMarkedText(nil, "未定", TextInputRange{})
++	tt.Frame()
++	if tt.h.ime.Client != old {
++		t.Fatal("per-build local binding reset native session")
++	}
++	snap, ok := h.FinishTextEditing(c)
++	if !ok || snap.Text != "old未定" || *last != "old未定" || value != "old" {
++		t.Fatal("local binding contract", snap, *last, value)
++	}
++	// A frame-local copy cannot magically publish into an application field that
++	// was copied from it earlier. Caller must consume returned Text explicitly.
++	value = snap.Text
++	h.Focus(c)
++	tt.Frame()
++	fresh := tt.h.ime.Client
++	tt.h.clipboard = "!"
++	tt.h.reading = func() {
++		fresh.ReplaceText(nil, "BAD")
++		tt.rt.editEvent(editEvent{kind: editInsert, text: "BAD"})
++		tt.rt.keyDown(0, KeyBackspace, false)
++		if _, ok := h.FinishTextEditing(c); ok {
++			t.Fatal("nested finish accepted")
++		}
++	}
++	tt.rt.editEvent(editEvent{kind: editCommand, text: "paste"})
++	got, ok := h.FinishTextEditing(c)
++	if !ok || got.Text != "old未定!" {
++		t.Fatal("native route reentered finish", got, ok)
++	}
++}
++
++type noonmarkFinishHost struct {
++	*headless
++	onSet func(platform.TextInputState)
++}
++
++func (h *noonmarkFinishHost) setTextInput(s platform.TextInputState) {
++	h.headless.setTextInput(s)
++	if h.onSet != nil {
++		h.onSet(s)
++	}
++}
++func TestNoonmarkFinishHostReentry(t *testing.T) {
++	for _, closeDuring := range []bool{false, true} {
++		draft := "old"
++		var handle Handle
++		var c *Context
++		tt := NewTester(func(ctx *Context) { c = ctx; TextAreaBase(c, &draft).Bind(&handle).AutoFocus().Width(200) }, 300, 180)
++		client := tt.h.ime.Client
++		client.SetMarkedText(&TextInputRange{Start: 0, End: 3}, "未定", TextInputRange{})
++		resets := 0
++		tt.rt.host = &noonmarkFinishHost{headless: tt.h, onSet: func(s platform.TextInputState) {
++			if s.Active {
++				return
++			}
++			resets++
++			if draft != "未定" {
++				t.Fatal("host deactivated before committed string published", draft)
++			}
++			client.ReplaceText(nil, "late-host")
++			client.UnmarkText()
++			if _, ok := handle.FinishTextEditing(c); ok {
++				t.Fatal("host reentrant finish succeeded")
++			}
++			if closeDuring {
++				tt.rt.close()
++			}
++		}}
++		got, ok := handle.FinishTextEditing(c)
++		if ok == closeDuring || draft != "未定" || resets != 1 {
++			t.Fatal("host result", got, ok, draft, resets, closeDuring)
++		}
++		tt.rt.close()
++	}
++}
++
++func TestNoonmarkFinishHostMutatesSameIdentity(t *testing.T) {
++	for _, kind := range []string{"external-value", "readonly", "disabled"} {
++		t.Run(kind, func(t *testing.T) {
++			draft := "old"
++			var h Handle
++			var c *Context
++			readonly, disabled := false, false
++			tt := NewTester(func(ctx *Context) {
++				c = ctx
++				TextAreaBase(c, &draft).Bind(&h).AutoFocus().Width(200).ReadOnly(readonly).Disabled(disabled)
++			}, 300, 180)
++			defer tt.rt.close()
++			tt.h.ime.Client.ReplaceText(nil, "-native")
++			resets := 0
++			tt.rt.host = &noonmarkFinishHost{headless: tt.h, onSet: func(s platform.TextInputState) {
++				if s.Active {
++					return
++				}
++				resets++
++				switch kind {
++				case "external-value":
++					draft = "host-new"
++				case "readonly":
++					readonly = true
++					tt.Frame()
++				case "disabled":
++					disabled = true
++					tt.Frame()
++				}
++			}}
++			got, ok := h.FinishTextEditing(c)
++			if resets != 1 {
++				t.Fatal("unexpected host resets", resets)
++			}
++			if kind == "external-value" {
++				if !ok || got.Text != "host-new" || draft != "host-new" {
++					t.Fatal("host changed same binding after capture", got, ok, draft)
++				}
++			} else if ok {
++				t.Fatal("host changed policy after capture", kind, got)
++			}
++		})
++	}
++}
+--- /dev/null
++++ b/ui/noonmark_native_probe_test.go
+@@ -0,0 +1,62 @@
++package ui
++
++import "testing"
++
++func TestNoonmarkNativeBeforeFrameProbe(t *testing.T) {
++ draft := "old"
++ observed:=0
++ var ed Element
++ tt:=NewTester(func(c *Context) {
++  ed=TextAreaBase(c.Key("title"),&draft).AutoFocus().Lines(1,8).Width(250)
++  ed.ObserveInput(func(InputEvent){observed++})
++ },300,180)
++ client:=tt.h.ime.Client
++ if client==nil {t.Fatal("no native input client")}
++ client.ReplaceText(nil,"已提交")
++ t.Logf("native ReplaceText BEFORE frame bound=%q observerCalls=%d",draft,observed)
++ if draft!="old" || observed!=0 {t.Fatal("probe expectation changed",draft,observed)}
++ tt.Frame()
++ if draft!="old已提交" {t.Fatal(draft)}
++ t.Logf("AFTER frame bound=%q",draft)
++ client.SetMarkedText(nil,"未定",TextInputRange{Start:2,End:2})
++ t.Logf("native SetMarkedText BEFORE frame bound=%q observerCalls=%d",draft,observed)
++ if observed!=0 {t.Fatal("direct native client unexpectedly observed")}
++}
++
++func TestNoonmarkStagedCloseDrainProbe(t *testing.T) {
++ for _,kind:=range []string{"committed-before-frame","marked-before-frame", "marked-selection-before-frame"} {
++  t.Run(kind,func(t *testing.T) {
++   draft:="old"
++   phase:=0
++   var captured string
++   tt:=NewTester(func(c *Context) {
++    e:=TextAreaBase(c.Key("title"),&draft).AutoFocus().Lines(1,8).Width(250)
++    switch phase {
++    case 1:
++     // Editor must be built before taking focus away. Keep it mounted.
++     c.Root().Focus()
++     phase=2
++     c.Invalidate()
++    case 2:
++     if e.Composing() { t.Fatal("second drain frame still composing") }
++     captured=draft
++     e.Disabled(true)
++     phase=3
++    case 3:
++     e.Disabled(true)
++    }
++   },300,180)
++   client:=tt.h.ime.Client
++   if kind=="committed-before-frame" {client.ReplaceText(nil,"已提交")} else if kind=="marked-selection-before-frame" { client.SetMarkedText(&TextInputRange{Start:0,End:3},"未定",TextInputRange{Start:2,End:2}) } else {client.SetMarkedText(nil,"未定",TextInputRange{Start:2,End:2})}
++   if draft!="old" {t.Fatal("native unexpectedly immediately publishes")}
++   phase=1
++   tt.Frame()
++   want:="old已提交"; if kind=="marked-before-frame" {want="old未定"}; if kind=="marked-selection-before-frame" {want="未定"}
++   t.Logf("stage=%d captured=%q want=%q",phase,captured,want)
++   if phase!=3 || captured!=want {t.Fatal("staged drain lost input")}
++   client.ReplaceText(nil,"迟到")
++   tt.Frame()
++   if draft!=want {t.Fatal("disabled drain barrier accepted late native input")}
++  })
++ }
++}

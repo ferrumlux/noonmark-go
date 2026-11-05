@@ -1,0 +1,307 @@
+--- a/ui/ref.go
++++ b/ui/ref.go
+@@ -19,6 +19,8 @@
+ 	element           Element
+ 	id                uint64
+ 	requested, closed bool
++	textClient        *widgetTextInput
++	textValue         *string
+ }
+ 
+ func (r *Handle) init() *handleState {
+@@ -183,8 +185,12 @@
+ 		if b.closed {
+ 			continue
+ 		}
++		b.textClient, b.textValue = nil, nil
+ 		if n := b.element.lookup(); n != nil {
+ 			b.id = n.id
++			if w, ok := n.textClient.(*widgetTextInput); ok && w.ed.document == nil && !n.inHidden() {
++				b.textClient, b.textValue = w, w.ed.value
++			}
+ 		}
+ 		if !b.requested {
+ 			continue
+--- a/ui/text_input_client.go
++++ b/ui/text_input_client.go
+@@ -77,15 +77,16 @@
+ // inside a surrogate pair down to the rune's beginning and clamping to s.
+ func UTF16ByteOffset(s string, index int) int { return platform.UTF16ByteOffset(s, max(0, index)) }
+ 
+-// textInputAdapter is stable for an element's lifetime. A stale native
++// textInputAdapter is a revocable lease for a native focus session. A stale native
+ // reference cannot edit another element after focus, disposal or reuse.
+ type textInputAdapter struct {
+-	rt *engine
+-	id uint64
++	rt      *engine
++	id      uint64
++	revoked bool
+ }
+ 
+ func (a *textInputAdapter) client() (TextInputClient, *state) {
+-	if a.rt.textInputClosed || !a.rt.windowFocus() || a.rt.focused != a.id {
++	if a.revoked || a.rt.textInputClosed || !a.rt.windowFocus() || a.rt.focused != a.id {
+ 		return nil, nil
+ 	}
+ 	s := a.rt.states[a.id]
+@@ -95,8 +96,17 @@
+ 	return s.textClient, s
+ }
+ 
++func newTextInputAdapter(rt *engine, s *state) *textInputAdapter {
++	a := &textInputAdapter{rt: rt, id: s.id}
++	return a
++}
++
+ func (a *textInputAdapter) release() {
+-	if s := a.rt.states[a.id]; s != nil && s.textAdapter == a && s.textClient != nil {
++	if a.revoked {
++		return
++	}
++	a.revoked = true
++	if s := a.rt.states[a.id]; s != nil && s.textAdapter == a && s.textClient != nil && s.flags&flagDisabled == 0 && (s.editor == nil || !s.editor.readOnly) {
+ 		if _, marked := s.textClient.MarkedRange(); marked {
+ 			s.textClient.UnmarkText()
+ 		}
+--- a/ui/runtime.go
++++ b/ui/runtime.go
+@@ -1198,6 +1198,7 @@
+ 	for _, r := range rt.refs {
+ 		r.closed = true
+ 		r.requested = false
++		r.textClient, r.textValue = nil, nil
+ 	}
+ 	clear(rt.refs)
+ 	rt.refs = nil
+@@ -1370,7 +1371,7 @@
+ 		s.textClient, s.textAdapter = e.textClient, nil
+ 	}
+ 	if s.textClient != nil && s.textAdapter == nil {
+-		s.textAdapter = &textInputAdapter{rt: rt, id: s.id}
++		s.textAdapter = newTextInputAdapter(rt, s)
+ 	}
+ 	if (e.flags&flagEditable != 0 || e.flags&flagSelectable != 0 && s.editor != nil) && s.cursor == 0 {
+ 		s.cursor = CursorText + 1
+--- a/ui/input.go
++++ b/ui/input.go
+@@ -794,6 +794,9 @@
+ // A chord of a key the layout does not type as a US key, as S on a Cyrillic
+ // layout, matches shortcuts by that position; plain typing is untouched.
+ func (rt *engine) keyDownPhysical(mods Modifiers, key, physical Key, repeat bool) bool {
++	if s := rt.states[rt.focused]; s != nil && s.editor != nil && s.editor.client != nil && s.editor.client.finishing {
++		return true
++	}
+ 	if platform.KeyByPosition(platform.Key(key), platform.Key(physical), platform.Modifiers(mods)) {
+ 		if rt.byPosition == nil {
+ 			rt.byPosition = map[Key]bool{}
+@@ -1091,6 +1094,9 @@
+ // editEvent delivers text, a composition or an edit command to the focus,
+ // and reports whether an element took it.
+ func (rt *engine) editEvent(ev editEvent) bool {
++	if s := rt.states[rt.focused]; s != nil && s.editor != nil && s.editor.client != nil && s.editor.client.finishing {
++		return true
++	}
+ 	if rt.observers > 0 {
+ 		kind := InputText
+ 		if ev.kind == editCompose {
+@@ -1100,7 +1106,7 @@
+ 		}
+ 		rt.observeFocus(InputEvent{Kind: kind, Text: ev.text, Caret: ev.caret})
+ 	}
+-	if s := rt.states[rt.focused]; s != nil && s.textClient != nil && rt.windowFocus() && s.flags&flagDisabled == 0 && (s.editor == nil || !s.editor.readOnly) {
++	if s := rt.states[rt.focused]; s != nil && s.textClient != nil && rt.windowFocus() && s.flags&flagDisabled == 0 && (s.editor == nil || !s.editor.readOnly && (s.editor.client == nil || !s.editor.client.finishing)) {
+ 		if ev.kind == editInsert || ev.kind == editCompose {
+ 			var r *TextInputRange
+ 			if ev.replace {
+@@ -1214,7 +1220,10 @@
+ func (rt *engine) updateTextInput() {
+ 	var t platform.TextInputState
+ 	base := 0
+-	if s := rt.states[rt.focused]; s != nil && s.textClient != nil && rt.windowFocus() && s.flags&flagDisabled == 0 && (s.editor == nil || !s.editor.readOnly) {
++	if s := rt.states[rt.focused]; s != nil && s.textClient != nil && rt.windowFocus() && s.flags&flagDisabled == 0 && (s.editor == nil || !s.editor.readOnly && (s.editor.client == nil || !s.editor.client.finishing)) {
++		if s.textAdapter == nil || s.textAdapter.revoked {
++			s.textAdapter = newTextInputAdapter(rt, s)
++		}
+ 		t.Active, t.Client, t.NoInputMethod = true, s.textAdapter, s.noIME
+ 		sel := s.textAdapter.Selection()
+ 		caret := sel.Caret()
+--- a/ui/editor_input.go
++++ b/ui/editor_input.go
+@@ -17,6 +17,7 @@
+ 	rt         *engine
+ 	id         uint64
+ 	processing bool
++	finishing  bool
+ }
+ 
+ var _ TextInputClient = (*widgetTextInput)(nil)
+--- a/ui/value_input.go
++++ b/ui/value_input.go
+@@ -244,6 +244,12 @@
+ 
+ func applyString(n *node) {
+ 	ed, st, rt := n.st.editor, n.st, n.c.rt
++	// A view can move focus during a build pass before updateTextInput
++	// releases the previous native client. Finalize preedit before syncing
++	// its committed buffer; clearing compose below would otherwise lose it.
++	if rt.focused != n.id && !n.disabled() && !ed.readOnly {
++		ed.commitCompose()
++	}
+ 	value := ed.value
+ 	if ed.nativeDirty {
+ 		before := ed.nativeValue
+--- /dev/null
++++ b/ui/handle_text_input.go
+@@ -0,0 +1,151 @@
++package ui
++
++// TextInputSnapshot separates the built-in editor's committed text from its
++// virtual preedit. Text excludes MarkedText. Composing means nonempty preedit;
++// an empty preedit ends composition, following Element.Composing. This is not
++// a persistence revision or an application owner/generation token.
++type TextInputSnapshot struct {
++	Text       string
++	MarkedText string
++	Composing  bool
++}
++
++// textInput resolves only committed, presently built string-control identity.
++// It never reads a retained Element between frames. Recycled state/ID or a
++// missing Bind cannot restore the identity of a previously bound editor.
++func (h Handle) textInput(c *Context) (*refState, *state, *widgetTextInput) {
++	rt := c.runtime()
++	if rt == nil || rt.inFrame || rt.textInputClosed {
++		return nil, nil, nil
++	}
++	b := (&h).binding(rt, false)
++	if b == nil || b.closed || b.id == 0 || b.textClient == nil {
++		return nil, nil, nil
++	}
++	s, w := rt.states[b.id], b.textClient
++	if s == nil || s.seen != rt.frame || s.pass != rt.pass || s.editor != w.ed ||
++		s.textClient != w || w.rt != rt || w.id != b.id || w.ed.document != nil ||
++		w.ed.value == nil || w.ed.value != b.textValue || w.processing {
++		return nil, nil, nil
++	}
++	return b, s, w
++}
++
++// syncString follows applyString's conflict rule: an application value changed
++// since the native edit wins. It does not publish native input to the binding.
++func (w *widgetTextInput) syncString() {
++	ed := w.ed
++	before := ed.buf.s
++	if ed.nativeDirty {
++		before = ed.nativeValue
++	}
++	if *ed.value != before {
++		ed.setText(*ed.value)
++		ed.compose, ed.composeCaret, ed.composeSelected = "", 0, TextInputRange{}
++		ed.nativeDirty, ed.nativeValue = false, ""
++	}
++}
++
++func (w *widgetTextInput) snapshot() TextInputSnapshot {
++	return TextInputSnapshot{Text: w.ed.buf.s, MarkedText: w.ed.compose, Composing: w.ed.compose != ""}
++}
++
++// TextInputSnapshot reads a built-in string TextInput/TextArea on the UI thread
++// BETWEEN build frames. It reconciles external value changes and drains input
++// already queued for this editor; it does not unmark or publish the string.
++// No frame or painting is required, including in an occluded window.
++//
++// False means closed, hidden, missing/reused identity, a build in progress,
++// reentrant input processing, or an unsupported binding (TextBuffer/custom
++// TextInputClient). Read-only/disabled controls may be read but are not drained.
++func (h Handle) TextInputSnapshot(c *Context) (TextInputSnapshot, bool) {
++	return h.textSnapshot(c, false)
++}
++
++func (h Handle) textSnapshot(c *Context, finishing bool) (TextInputSnapshot, bool) {
++	b, s, w := h.textInput(c)
++	if w == nil || w.finishing != finishing {
++		return TextInputSnapshot{}, false
++	}
++	value := b.textValue
++	w.syncString()
++	before := *value
++	if s.flags&flagDisabled == 0 && !w.ed.readOnly {
++		w.prepare()
++	}
++	// OnTextKey/clipboard processing can reenter the application or close it.
++	b2, _, w2 := h.textInput(c)
++	if w2 != w || b2.textValue != value {
++		return TextInputSnapshot{}, false
++	}
++	if *value != before {
++		w.ed.nativeDirty, w.ed.nativeValue = true, before
++		w.syncString()
++	}
++	return w.snapshot(), true
++}
++
++// FinishTextEditing drains already-delivered input, commits current preedit,
++// synchronously publishes the string binding, and permanently revokes the old
++// native-client lease. It clears this control's focus and pending focus request.
++// Repeated calls are harmless. A later explicit focus uses a fresh lease.
++//
++// Call on the UI thread BETWEEN build frames, before hiding/removing/closing
++// the editor. False has the same validity/unsupported meanings as Snapshot and
++// also rejects read-only/disabled controls. No render, sleep, or future frame is
++// involved. An external application value wins a native-value conflict.
++//
++// This boundary commits input already delivered to ui and invokes the host
++// via its existing inactive SetTextInput reset/discard path. It is not an
++// acknowledgement of future OS events or a guarantee against process death.
++// Keep application owner/generation and asynchronous-save guards separately.
++func (h Handle) FinishTextEditing(c *Context) (TextInputSnapshot, bool) {
++	b, s, w := h.textInput(c)
++	if w == nil || w.finishing || s.flags&flagDisabled != 0 || w.ed.readOnly {
++		return TextInputSnapshot{}, false
++	}
++	value, rt := b.textValue, w.rt
++	w.finishing = true
++	defer func() { w.finishing = false }()
++	// Invalidate the previous capability before any callback or host reentry.
++	// This does not itself unmark: the explicit sequence below owns that once.
++	if s.textAdapter != nil {
++		s.textAdapter.revoked = true
++	}
++	snapshot, ok := h.textSnapshot(c, true)
++	if !ok {
++		return TextInputSnapshot{}, false
++	}
++	b2, s2, w2 := h.textInput(c)
++	if w2 != w || s2 != s || b2.textValue != value || s.flags&flagDisabled != 0 || w.ed.readOnly {
++		return TextInputSnapshot{}, false
++	}
++	w.UnmarkText()
++	// Unlike native UnmarkText, this is a terminal edit boundary, not the
++	// preedit-end half of a platform's later replacement transaction.
++	w.ed.compositionActive = false
++	if *value != w.ed.buf.s {
++		*value = w.ed.buf.s
++		s.markChanged()
++	}
++	w.ed.nativeDirty, w.ed.nativeValue = false, ""
++	snapshot = w.snapshot()
++	b.requested = false
++	if rt.focused == s.id {
++		rt.focused = 0
++	}
++	rt.updateTextInput()
++	// Host reset/discard may synchronously call application code. Do not return
++	// a live-identity success after that code closed or replaced this editor.
++	b2, s2, w2 = h.textInput(c)
++	if w2 != w || s2 != s || b2.textValue != value || s.flags&flagDisabled != 0 || w.ed.readOnly {
++		return TextInputSnapshot{}, false
++	}
++	// Same identity is not evidence that a host callback left its binding
++	// untouched. Apply the existing external-value-wins rule once more and
++	// return the actual terminal text, not the snapshot taken before the host.
++	w.syncString()
++	snapshot = w.snapshot()
++	rt.requestFrame()
++	return snapshot, true
++}

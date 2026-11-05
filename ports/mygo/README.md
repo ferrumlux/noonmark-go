@@ -17,7 +17,7 @@
 
 ## 开发运行
 
-要求 Go 1.27.3。MyGo 与依赖已锁定。所有缓存、二进制、运行数据和截图必须位于仓库外，build root 必须已存在且为物理绝对路径。
+构建要求 Go 1.27.3、Bash 和 Python 3.10+（运行程序无需这些工具）。MyGo 与依赖已锁定；受支持 scripts 会从官方 ZIP 校验并准备外置 native-input patch，不修改 module cache。裸 Go 命令不包含所需 API，不是支持的构建入口。所有缓存、二进制、运行数据和截图必须位于仓库外，build root 必须已存在且为物理绝对路径。
 
 ```sh
 mkdir -p /absolute/external/noonmark-build
@@ -33,6 +33,8 @@ bash scripts/build
 "$NOONMARK_MYGO_BUILD_ROOT/bin/noonmark-mygo" -prototype
 ```
 
+`scripts/check` 同时执行合成依赖准备门禁及已修复 native-input 定向回归。完整框架 `scripts/check-mygo-native --all-ui` 仍有与未修改基线相同的 TestDiffFrameAllocs 阈值失败，详见 docs/tasks/connect-title-autosave/DEPENDENCY.md；不能称整个框架全绿。
+
 Linux 原生窗口需要 GTK3 和可用 DISPLAY / WAYLAND_DISPLAY。无显示服务器可通过 -render-one 在相同 MyGo 代码上生成离屏帧，但不算真实桌面验证。scripts/cross-build 编译 macOS / Windows / Linux 的 amd64 / arm64 六目标，不代表这些平台已运行。
 
 ## 模块与边界
@@ -41,6 +43,8 @@ Linux 原生窗口需要 GTK3 和可用 DISPLAY / WAYLAND_DISPLAY。无显示服
 - domain-extensions：分类、重复计划生命周期及版本历史，尚未接入运行 UI。
 - domain-codec：候选 v7 规范编解码及安全校验，只用合成 fixture。Swift 互通尚未验证，非空分类 audit 默认拒绝。
 - internal/inputdraft：按原版移植的纯 IME autosave gate，尚未绑定编辑 UI。
+- internal/titlesession：草稿/实际存储确认/生命周期快照状态；拒写保留输入，不能单凭状态允许退出。
+- patches/mygo/native-finalize：可重现的帧间 native snapshot/finalization 修复，UI 接线和三平台 IME 仍待验收。
 - internal/taskapp：仅普通任务的开发会话事务与持久化，包括有专用历史审计的标题编辑 API；编辑 UI 尚未开放，详细安全和容量边界见其 README。
 - docs/migration-audit：完整产品差距与上游测试库存。
 

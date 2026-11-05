@@ -10,3 +10,7 @@ for module in . domain-core domain-extensions domain-codec; do
     "$GO" vet -p=1 -buildvcs=false ./...
   )
 done
+
+# The application depends on both the prepared source identity and native boundary.
+"$SOURCE_ROOT/scripts/check-dependency"
+"$SOURCE_ROOT/scripts/check-mygo-native"
