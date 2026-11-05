@@ -58,3 +58,7 @@ GOBIN=/outside/source/ci-tools/bin GOPATH=/outside/source/ci-tools/gopath GOCACH
 先建立上述外置目录。此次关闭 actionlint 的可选 shellcheck/pyflakes 集成；shell 语法另由 validator 的 `bash -n` 检查。actionlint 曾发现 job-level env 不能使用 runner.temp，已改成步骤内 RUNNER_TEMP 加 GITHUB_ENV。有界日志由同步前台 Python 管道写入，门禁既等待实际命令，也等待日志落盘；原始命令失败和 logger 写入失败都会让 CI 失败。validator 额外验证超过 512 KiB 的输出不会截断控制台、证据末尾固定 256 KiB，以及写入失败会返回非零。所有本地静态检查仍不能代替远端实际 Actions run。
 
 故障与永久门禁登记见 [GO-CI-001](engineering/failure-cases/GO-CI-001.md)。实际强制链为 `.github/workflows/mygo.yml` → `scripts/ci/validate.py` → `scripts/ci/test_runner.py`；含 9 项安全拒绝、同步有界 logger 及 8 项 runner 合成控制流 fixture，不替代真实构建。
+
+## 首次托管运行
+
+2026-11-05，[main commit f2f81df](https://github.com/ferrumlux/noonmark-go/commit/f2f81df2defa7d2d71ca1035371d7089bdc73564) 的真实 push 触发 [Actions run 42083897005](https://github.com/ferrumlux/noonmark-go/actions/runs/42083897005)，18:33 UTC completed/success，全部步骤通过。证据 artifact ID 13442358332，4029 bytes，保留至 2026-11-12。具体 job、hash 与验收边界见 GO-CI-001。这一绿灯只覆盖对应 commit，新业务提交会另起 CI，必须重新核实。正式 tag／release 流程仍须在完整验收与许可包准备后接通。

@@ -39,3 +39,7 @@
 ## 下一批原生 UI
 
 先按上游 TaskContextActions 的结构接真实菜单，保留原版间距及圆角，不添加临时 toolbar 按钮。选定 trace 与 chain 使用不可变动作键进入共享 titleHub commandOnce；通过共享 flush/navigation 队列先确认标题持久化，再写回池事务。事务完成只发布经过确认的只读图，并只清除仍匹配的旧选中项。必须覆盖两窗口重复触发、保存中回池、失败／重试、取消／重开、迟到导航和跨日。菜单仅呈现真实接通动作；未来 undo 需要独立能力批次与审计，而非假按钮。
+
+## 正式集成证据
+
+实现提交：[c984b7a013a0b8ba51faa5cbfc425868f4bcc637](https://github.com/ferrumlux/noonmark-go/commit/c984b7a013a0b8ba51faa5cbfc425868f4bcc637)。2026-11-05 18:28–18:30 UTC，正式副本完整 scripts/check、六目标 cross-build 和真实 Linux amd64 合成 CLI 门禁 exit 0。独立审查的原始反例完整保留；本批尚未包含菜单或 undo，不以该结果代替后续 UI／OS 验收。

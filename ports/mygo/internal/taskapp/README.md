@@ -1,6 +1,6 @@
 # 隔离任务应用服务
 
-当前服务只接入第一批 TaskKernel 的普通任务：任务池新增、今日新增、今天/未来排期、今日完成/撤销、两个标题保存入口及重开时的过去日期结算。重复计划、分类、飞光、子任务编辑与完整上游命令还未接入此运行服务。
+当前服务只接入第一批 TaskKernel 的普通任务：任务池新增、今日新增、今天/未来排期、今日完成/撤销、两个标题保存入口、今天回池／未来取消及重开时的过去日期结算。重复计划、分类、飞光、子任务编辑与完整上游命令还未接入此运行服务。
 
 ## 提交边界
 
@@ -24,8 +24,14 @@
 
 ## 标题编辑的专用保护
 
-`RenameTaskTitle` 与 `SaveTaskTitleInput` 区分显式版本分叉和输入复用，调用方不能用 rename 代替逐字 autosave。标题命令使用独立重放审计，严格冻结历史内容，只容许当前历史定义向本次合法新后继推进三项 metadata。原 `CaptureEmptyHistory` 完全不变；缺失 audit、更多 runtime scope、任意字段豁免均拒绝。详见 `../../docs/tasks/connect-title-edit/TRANSACTION.md`。
+`RenameTaskTitle` 与 `SaveTaskTitleInput` 区分显式版本分叉和输入复用，调用方不能用 rename 代替逐字 autosave。标题命令使用独立重放审计，严格冻结历史内容，只容许当前历史定义向本次合法新后继推进三项 metadata。回池批次进一步收紧 `CaptureEmptyHistory`：冻结所有既有定义、禁止为旧 chain 泛用新增定义，并冻结未锁日的既有回池／取消事实及实际子任务；缺失 audit、更多 runtime scope、任意字段豁免均拒绝。详见 `../../docs/tasks/connect-title-edit/TRANSACTION.md`。
 
 Swift String canonical 等价输入不重写原字符串或消耗磁盘 revision。Service 仍在私有候选中预计算时钟和身份，不能把这个入口理解为不消耗任何计算资源；核心 no-op 本身不读取未使用 clock/ID。日待办标题 UI 已通过 titlesession/titlecoordinator 接入非空约束、IME、700ms debounce、失焦及可取消退出；核心允许空标题不代表 UI 将空白持久化。原生实机与 Swift oracle 仍未验证，详见 ../../docs/tasks/connect-title-autosave/NATIVE-UI.md。
 
 `SaveTraceTitleInput(traceID,title)` 为详情输入提供同锁 trace 路由，先拒绝过期或非 pending 的所选事实，再进行相同标题事务，避免历史回调借同链新 pending 写入当前标题。实际编辑 UI 使用同一事务返回已核实字节的 `SaveTraceTitleInputAcknowledged`，不会拿稍后 Snapshot 或请求字节冒充保存确认。
+
+## 普通任务回池
+
+`ReturnToPool(chainID,traceID)` 在同一服务锁中绑定身份。今天 pending 变成 returnedToPool，保留轨迹并以 settledAt 捕获一个空分类事件；未来 pending 变成 cancelledDraft，带取消身份／日期且无分类事件。两者生成新的池定义，只带回开放子任务，保留 lineage 并重新分配实际／计划身份。后续日结不能重写回池事件时间。专用审计重放精确命令并比较完整 after 图，完整持久化确认后才发布。菜单、undo 和 Swift oracle 不在此 Service 批次。
+
+v2 格式标识没有改变，但新 reader 接受的事实范围扩大；旧 reader 拒绝含回池／取消事实的开发会话。不得删除、覆盖或自动降级这些事实，亦不能把源码回滚视为会话兼容。详细边界见 `../../docs/TASK_RETURN_BATCH.md`。

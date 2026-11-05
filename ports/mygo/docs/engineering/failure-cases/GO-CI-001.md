@@ -1,6 +1,6 @@
 # GO-CI-001：CI context 与有界日志完成条件
 
-状态：本地红→绿已验证；实际 GitHub hosted run 仍待验收。首次发现：2026-11-05 UTC。修复提交：待发布提交回填；不在此宣称已完成远端验收。
+状态：本地红→绿及实际 GitHub hosted run 已通过。首次发现：2026-11-05 UTC。修复提交：[f2f81df2defa7d2d71ca1035371d7089bdc73564](https://github.com/ferrumlux/noonmark-go/commit/f2f81df2defa7d2d71ca1035371d7089bdc73564)。
 
 ## 影响与归因
 
@@ -42,3 +42,11 @@
 ## 发布／回滚
 
 提交应引用 GO-CI-001，并在实际 Actions 完成后回填 commit/run 及结论。若远端环境失败，应保留失败日志与精确 commit，定位后复跑；不可将本地结果改写成 hosted-run 成功。必要时仅回退此独立开发 CI，不改应用数据、签名或安全设置。
+
+## 实际 GitHub 托管验收
+
+[run 42083897005](https://github.com/ferrumlux/noonmark-go/actions/runs/42083897005) 由上述 commit 的 main push 触发，2026-11-05 18:24:20–18:33:22 UTC；run 与 development job 127443770748 均为 completed/success，所有步骤 success。固定工具链安装、workflow 契约、冷缓存实际测试／六目标编译／合成 CLI 和证据上传均已完成，不是仅创建 workflow 或本地推测。
+
+证据 artifact：mygo-development-evidence-42083897005-1，ID 13442358332，压缩包 4029 bytes，SHA256 `b8aaebb885f071d64758ecd32c5f3d7a28fafb9fb904a991d65f9d76de9f7169`，2026-11-12 18:33 UTC 到期。上传路径仍只限定 ci-evidence/*.txt。此验收只覆盖 f2f81df，后续业务提交必须核对各自 Actions 结果；不扩大为六平台桌面、Swift oracle 或正式发行通过。
+
+独立下载核验 artifact：仅 binary-checksums、checks、cross-build、entrypoints、environment、result 六个 .txt，解压共 15459 bytes，ZIP 实算 hash 与 API 相符。实际日志确认四模块强制 race／vet 链、50 preparation、37 native tests、6 个 COMPILED 目标、day／pool 各 2400×1536 渲染与 CLI guards。权限仅 Contents:read 和 Metadata:read。upload-artifact 产生 Node20 被 runner 强制使用 Node24 的弃用 warning，但上传成功；后续升级仍需固定官方 SHA 和重跑契约，不忽略该维护信号。

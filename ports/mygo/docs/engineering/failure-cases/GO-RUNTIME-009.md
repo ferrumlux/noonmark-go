@@ -1,6 +1,6 @@
 # GO-RUNTIME-009：回池终态审计与新身份边界
 
-- 状态：处理中；独立反例已重现，独立审查的修正后 race／vet 已通过，正式集成待完成，未指定修复 commit。
+- 状态：领域／Service 修复已完成正式集成与本地门禁；UI 与跨平台实机验收仍待后续批次。修复提交：[c984b7a013a0b8ba51faa5cbfc425868f4bcc637](https://github.com/ferrumlux/noonmark-go/commit/c984b7a013a0b8ba51faa5cbfc425868f4bcc637)。
 - 首次发现：2026-11-06（新加坡），普通任务回池候选独立审查。
 - 影响：隔离 development 的直接 capture/kernel 调用边界。没有生产资料操作或已知用户数据损坏。正常 Service 随机产生身份可降低碰撞概率，但不能取代 kernel 的身份契约。
 - 引入提交：generic capture 只冻结锁日定义的逻辑来自 `501fdfca858a6c437dca4875aaca4bd260627fbf`；Git author／committer 均为 ferrumlux。真实操作者无法仅凭 Git identity 确认。回池前未锁终态及身份问题来自本批尚未提交的候选，修改者为本轮实施 agent，未伪造 commit 归因。
@@ -26,4 +26,4 @@ kernel 末尾图验证只验证结果，不证明输入身份的来源。现在 
 
 四个原反例为 fast gates；真实 Service 的 `TestReturnCurrentFutureReopenAndSettle`、`TestReturnWriteFailuresNeverPublish` 和 `TestReturnAuditRejectsForgedCandidateAndMissingEvent` 为本批持久化症状 gates，全部由 `scripts/check` 强制执行。此批未增加 UI，故这些不是桌面菜单／OS 交互验收。
 
-修复只在候选源码，不能提前标记生产发布或 UI 对等。回滚只回滚本批源码；wire 仍为 v2，但旧 reader 会 fail-closed 拒绝新增回池／取消事实，不能承诺旧版可继续打开新会话。不得删除、转换、覆盖或自动修补历史会话来迎合旧 reader。集成时补记修复 commit，并保留独立红→绿证据。今后新增 terminal 状态要同时审查锁前冻结、精确命令重放与身份清理前的碰撞证据。
+2026-11-05 18:28–18:30 UTC，正式副本的 `scripts/check`（四模块 race／vet／gofmt、50 项 dependency preparation、37 项 native-input 定向回归）、六目标 `scripts/cross-build` 与实际 Linux amd64 产物 `scripts/test-entrypoints` 全部 exit 0。应用 root race 44.916s，taskapp 14.653s，native-input 1.839s。此结果不是托管 Actions 或桌面菜单验收，不能提前标记生产发布或 UI 对等。回滚只回滚本批源码；wire 仍为 v2，但旧 reader 会 fail-closed 拒绝新增回池／取消事实，不能承诺旧版可继续打开新会话。不得删除、转换、覆盖或自动修补历史会话来迎合旧 reader。保留修复 commit 与独立红→绿证据。今后新增 terminal 状态要同时审查锁前冻结、精确命令重放与身份清理前的碰撞证据。
