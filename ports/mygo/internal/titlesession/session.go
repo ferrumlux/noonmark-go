@@ -13,7 +13,7 @@ import (
 
 	"github.com/ferrumlux/noonmark/ports/mygo/internal/inputdraft"
 
-	"golang.org/x/text/unicode/norm"
+	"github.com/ferrumlux/noonmark/ports/mygo/domain/textcanon"
 )
 
 var (
@@ -458,4 +458,4 @@ func NormalizeTitle(text string) (string, bool) {
 	return text, text != ""
 }
 
-func sameText(a, b string) bool { return a == b || norm.NFC.String(a) == norm.NFC.String(b) }
+func sameText(a, b string) bool { return textcanon.Equivalent(a, b) }

@@ -1,6 +1,6 @@
 module github.com/ferrumlux/noonmark/ports/mygo/domain-codec
 
-go 1.26.0
+go 1.27.3
 
 require (
 	github.com/ferrumlux/noonmark/ports/mygo/domain v0.0.0

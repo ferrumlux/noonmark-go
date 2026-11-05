@@ -9,7 +9,7 @@ package inputdraft
 import (
 	"errors"
 
-	"golang.org/x/text/unicode/norm"
+	"github.com/ferrumlux/noonmark/ports/mygo/domain/textcanon"
 )
 
 // Schedule 描述一次候选保存。DelayMilliseconds 不参与身份验证。
@@ -260,9 +260,9 @@ func (g *Gate) makeSchedule(delay uint64) *Schedule {
 
 func (g *Gate) invalidateSchedule() { g.scheduleSequence++ }
 
-// 仅比较时使用 NFC，保留 Swift String canonical equality，不改原 owner 字节。
+// 共用 canonical equality，不插入 stream-safe CGJ，不改原 owner 字节。
 func sameOwner(a, b string) bool {
-	return a == b || norm.NFC.String(a) == norm.NFC.String(b)
+	return textcanon.Equivalent(a, b)
 }
 
 func sameRequest(a, b PersistenceRequest) bool {

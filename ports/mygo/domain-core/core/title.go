@@ -3,8 +3,9 @@ package core
 
 import (
 	"strings"
+	"unicode/utf8"
 
-	"golang.org/x/text/unicode/norm"
+	"github.com/ferrumlux/noonmark/ports/mygo/domain/textcanon"
 )
 
 // EditTaskTitleInput supplies every external fact needed for a title edit.
@@ -33,7 +34,9 @@ func (k *TaskKernel) SaveTaskTitleInput(in EditTaskTitleInput) error {
 
 func (k *TaskKernel) updateTaskTitle(in EditTaskTitleInput, reuseEditable bool) error {
 	return k.mutate(func(g *TaskGraph) error {
-		if !in.Today.Valid() {
+		// Swift String cannot contain malformed UTF-8. Reject before a
+		// candidate can reach a serializer that substitutes replacement runes.
+		if !in.Today.Valid() || !utf8.ValidString(in.Title) {
 			return ErrInvalidInput
 		}
 		// Foundation whitespace parity still needs an Apple oracle. Keep the
@@ -102,9 +105,9 @@ func (k *TaskKernel) updateTaskTitle(in EditTaskTitleInput, reuseEditable bool) 
 			return ErrNotFound
 		}
 		d := &g.Definitions[current]
-		// Swift String equality is canonical-equivalence aware. Compare NFC
-		// without normalizing either stored value: a no-op preserves its bytes.
-		if norm.NFC.String(d.Title) == norm.NFC.String(title) {
+		// Compare canonical equivalence without stream-safe CGJ insertion.
+		// A no-op preserves stored bytes; invalid UTF-8 never compares equal.
+		if textcanon.Equivalent(d.Title, title) {
 			return nil
 		}
 		if !in.Now.Finite() || in.Now.Before(d.ContentUpdatedAt) {
