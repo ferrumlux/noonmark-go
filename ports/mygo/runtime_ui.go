@@ -15,6 +15,8 @@ import (
 
 // The UI only sees a transaction boundary. A successful command means that its
 // complete candidate graph has been verified and persisted, not merely queued.
+const naturalDayFailureMessage = "日期变化未能安全保存，任务操作已暂停。请保留草稿并检查会话。"
+
 type taskService interface {
 	Snapshot() core.TaskGraph
 	Today() core.LocalDate
@@ -28,6 +30,7 @@ func newRuntimeApp(service taskService) *app {
 	s := newApp()
 	s.runtime = service
 	s.runtimeDate = service.Today()
+	s.runtimeCalendarDate = service.Today()
 	s.runtimeAppliedDay = service.Today()
 	return s
 }
@@ -102,7 +105,7 @@ func rowsFor(g core.TaskGraph, page string, date, today core.LocalDate) []liveRo
 func (s *app) runCommand(fn func() error, clear bool) {
 	if s.refreshDay != nil {
 		if e := s.refreshDay(); e != nil {
-			s.runtimeError = "日期变化未能安全保存，任务操作已暂停。请保留草稿并检查会话。"
+			s.runtimeError = naturalDayFailureMessage
 			s.runtimeNotice = ""
 			return
 		}
@@ -193,8 +196,10 @@ func liveAction(c *ui.Context, key string, x, y, w float32, title, label string,
 func (s *app) runtimeView(c *ui.Context) {
 	if s.refreshDay != nil {
 		if e := s.refreshDay(); e != nil {
-			s.runtimeError = "日期变化未能安全保存，任务操作已暂停。请保留草稿并检查会话。"
+			s.runtimeError = naturalDayFailureMessage
 			s.runtimeNotice = ""
+		} else if s.runtimeError == naturalDayFailureMessage {
+			s.runtimeError = ""
 		}
 		c.After(time.Minute)
 	}
@@ -205,6 +210,10 @@ func (s *app) runtimeView(c *ui.Context) {
 		liveAction(c, "capture-save", w-112, 94, 94, "保存", "保存到任务池", true, func() { s.submitLiveDraft(true) })
 		liveAction(c, "capture-cancel", 20, 94, 54, "取消", "取消快速记录", true, func() { s.dismissUtility("pool", true) })
 		s.liveFeedback(c, 20, 130, w-40)
+		return
+	}
+	if s.page == "calendar" {
+		s.liveCalendarView(c, w, h)
 		return
 	}
 	sw := float32(220)
@@ -413,6 +422,10 @@ func (s *app) observeRuntimeDay(now func() time.Time) {
 			if s.runtimeDate == s.runtimeAppliedDay {
 				s.runtimeDate = applied
 				s.runtimeSelection = ""
+			}
+			if s.runtimeCalendarDate == s.runtimeAppliedDay {
+				s.runtimeCalendarDate = applied
+				s.runtimeCalendarFocus = ""
 			}
 			s.runtimeAppliedDay = applied
 			for _, w := range mygo.Windows() {
