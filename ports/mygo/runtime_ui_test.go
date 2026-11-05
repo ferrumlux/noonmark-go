@@ -228,3 +228,27 @@ func TestLiveUIEvidenceFrames(t *testing.T) {
 	save("live-completed.png")
 	_ = s
 }
+
+func TestLiveUICorruptHistoryRefusesSave(t *testing.T) {
+	s, tt, svc, path := liveTest(t)
+	liveType(t, tt, "first")
+	liveClick(t, tt, "添加任务")
+	before := svc.Snapshot()
+	file := filepath.Join(path, "rev-0000000002/state.json")
+	b, e := os.ReadFile(file)
+	if e != nil {
+		t.Fatal(e)
+	}
+	b[len(b)-1] = '!'
+	if e = os.WriteFile(file, b, 0600); e != nil {
+		t.Fatal(e)
+	}
+	liveType(t, tt, "keep this draft")
+	liveClick(t, tt, "添加任务")
+	if s.runtimeError == "" || s.runtimeNotice != "" || s.draft != "keep this draft" || !reflect.DeepEqual(before, svc.Snapshot()) {
+		t.Fatal("corrupt open session reported success or lost draft")
+	}
+	if _, e = os.Stat(filepath.Join(path, "rev-0000000003")); !os.IsNotExist(e) {
+		t.Fatal("corrupt session reserved another revision")
+	}
+}

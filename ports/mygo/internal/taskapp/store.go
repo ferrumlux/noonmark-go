@@ -43,6 +43,7 @@ type record struct {
 }
 type diskStore struct {
 	root     *os.Root
+	path     string
 	revision int
 	hash     string
 	blocked  bool
@@ -79,7 +80,7 @@ func createStore(path string) (*diskStore, error) {
 	if e != nil {
 		return nil, ErrSession
 	}
-	d := &diskStore{root: r}
+	d := &diskStore{root: r, path: path}
 	if e = d.writeExclusive(markerName, []byte(marker)); e != nil {
 		r.Close()
 		return nil, e
@@ -94,7 +95,7 @@ func openStore(path string) (*diskStore, core.TaskGraph, error) {
 	if e != nil {
 		return nil, core.TaskGraph{}, ErrSession
 	}
-	d := &diskStore{root: r}
+	d := &diskStore{root: r, path: path}
 	fail := func(err error) (*diskStore, core.TaskGraph, error) { r.Close(); return nil, core.TaskGraph{}, err }
 	b, e := d.readRegular(markerName, 128)
 	if e != nil || string(b) != marker {
@@ -244,29 +245,12 @@ func (d *diskStore) commit(g core.TaskGraph) error {
 	if e != nil || len(b) > maxRecordBytes {
 		return ErrLimit
 	}
-	names, e := d.revisions()
+	total, e := d.verifyPrefix(d.revision, d.hash, false)
 	if e != nil {
 		return e
 	}
-	if len(names) != d.revision {
-		return ErrConflict
-	}
-	total := 0
-	for _, n := range names {
-		info, e := d.root.Lstat(n + "/state.json")
-		if e != nil || !info.Mode().IsRegular() {
-			return ErrCorrupt
-		}
-		total += int(info.Size())
-		if total > maxSessionBytes-len(b) {
-			return ErrLimit
-		}
-	}
-	if d.revision > 0 {
-		ready, e := d.readRegular(names[len(names)-1]+"/COMMITTED", 65)
-		if e != nil || string(ready) != d.hash+"\n" {
-			return ErrConflict
-		}
+	if total > maxSessionBytes-len(b) {
+		return ErrLimit
 	}
 	if d.fault != nil {
 		if e := d.fault("before-reserve"); e != nil {
@@ -304,6 +288,14 @@ func (d *diskStore) commit(g core.TaskGraph) error {
 	}
 	if e = syncDirectory(d.root, "."); e != nil {
 		return e
+	}
+	if d.fault != nil {
+		if e := d.fault("after-persist"); e != nil {
+			return ErrIncomplete
+		}
+	}
+	if _, e = d.verifyPrefix(d.revision+1, hash, true); e != nil {
+		return ErrIncomplete
 	}
 	d.revision++
 	d.hash = hash
@@ -361,3 +353,72 @@ func emptySupplement() (v7.Supplement, error) {
 }
 
 const neutralSupplement = `{"preferences":{"backupPolicy":{"destination":"iCloudDrive","frequency":"off"},"dataMode":"localFirst","language":"chinese","localFirstSyncPolicy":{"enabled":false,"endpoint":"localFolder","generateConflictCopy":true,"intervalSeconds":300,"mode":"manual","snapshotRetention":{"indexRetentionDays":30,"retentionIndexesDaily":1}},"settingsPoemDisplayPolicy":{"enabled":false,"text":""},"syncEndpointOptions":[],"theme":"coolGray","themeLanguageUpdatedAt":0,"themeLanguageWriterID":"mygo.development"},"classifications":{"categories":[],"categoryDeletionTombstones":[],"categoryMerges":[],"changeRecords":[],"committedReceiptsByInteractionID":[],"currentByChainID":[],"formatVersion":1,"labelDeletionTombstones":[],"labelMerges":[],"labels":[],"relationHistory":[],"revision":0,"snapshotEventsByTraceID":[],"snapshotsByTraceID":[]}}`
+
+// verifyPrefix binds every saved revision back to this handle's expected head.
+// A digest-only check of the latest COMMITTED file cannot prove that a session
+// remains reopenable: old bytes or the identity marker may have changed.
+func (d *diskStore) verifyPrefix(expectedRevision int, expectedHash string, allowSuccessors bool) (int, error) {
+	if e := pathGuard(d.path); e != nil {
+		return 0, e
+	}
+	info, e := os.Lstat(d.path)
+	if e != nil {
+		return 0, ErrSession
+	}
+	dir, e := d.root.Open(".")
+	if e != nil {
+		return 0, ErrSession
+	}
+	actual, se := dir.Stat()
+	ce := dir.Close()
+	if se != nil || ce != nil || !os.SameFile(info, actual) {
+		return 0, ErrSession
+	}
+	identity, e := d.readRegular(markerName, 128)
+	if e != nil || string(identity) != marker {
+		return 0, ErrSession
+	}
+	names, e := d.revisions()
+	if e != nil {
+		return 0, e
+	}
+	if len(names) < expectedRevision || !allowSuccessors && len(names) != expectedRevision {
+		return 0, ErrConflict
+	}
+	names = names[:expectedRevision]
+	total := 0
+	parent := ""
+	for i, n := range names {
+		b, e := d.readRegular(n+"/state.json", maxRecordBytes)
+		if e != nil {
+			return 0, ErrCorrupt
+		}
+		total += len(b)
+		if total > maxSessionBytes {
+			return 0, ErrLimit
+		}
+		sum := sha256.Sum256(b)
+		digest := hex.EncodeToString(sum[:])
+		ready, e := d.readRegular(n+"/COMMITTED", 65)
+		if e != nil || string(ready) != digest+"\n" {
+			return 0, ErrCorrupt
+		}
+		if _, e = canonical.Parse(b, canonical.Limits{MaxBytes: maxRecordBytes, MaxDepth: 8, MaxNodes: 32}); e != nil {
+			return 0, ErrCorrupt
+		}
+		var rec record
+		dec := json.NewDecoder(bytes.NewReader(b))
+		dec.DisallowUnknownFields()
+		if e = dec.Decode(&rec); e != nil {
+			return 0, ErrCorrupt
+		}
+		if rec.Format != "noonmark-mygo-development-v1" || rec.Revision != i+1 || rec.ParentSHA256 != parent {
+			return 0, ErrCorrupt
+		}
+		parent = digest
+	}
+	if parent != expectedHash {
+		return 0, ErrConflict
+	}
+	return total, nil
+}
