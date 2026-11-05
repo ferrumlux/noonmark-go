@@ -4,6 +4,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"sort"
 	"time"
 
 	"github.com/egoist/mygo"
@@ -90,6 +91,8 @@ type titleEditorKey struct {
 	Session, Generation uint64
 }
 type runtimeTitleEditor struct {
+	subtask            *runtimeSubtaskRow
+	owner              string
 	native             titleNative
 	row                taskview.DayRow
 	reg                coordinator.Registration
@@ -140,7 +143,7 @@ func (a titleServiceAdapter) AdvanceTo(d coordinator.Date) error {
 	return err
 }
 func (a titleServiceAdapter) SaveTraceTitleInputAcknowledged(trace, title string) (string, error) {
-	text, err := a.hub.store.SaveTraceTitleInputAcknowledged(core.DayTraceID(trace), title)
+	text, err := a.hub.saveTitleAcknowledged(trace, title)
 	a.hub.stopOnError(err)
 	a.hub.publishFromLane()
 	return text, err
@@ -168,6 +171,7 @@ func newTitleHub(store titleStore, lane coordinator.Lane, post func(func()), clo
 				return
 			}
 			w.app.titleEditor = nil
+			w.app.subtaskEditors = nil
 			if w.app.titleTarget == target {
 				w.app.titleTarget = ""
 			} else {
@@ -200,14 +204,35 @@ func (h *titleHub) attach(s *app, invalidate, close func()) {
 	s.runtime = h.readView()
 	h.windows[s.titleWindowID] = &titleWindow{app: s, invalidate: invalidate, close: close}
 }
+
+// Preserve deterministic registration/publication order across surfaces. A child
+// has its own immutable object route, while every native surface owns a binding.
+func (s *app) titleEditors() []*runtimeTitleEditor {
+	var out []*runtimeTitleEditor
+	if s.titleEditor != nil {
+		out = append(out, s.titleEditor)
+	}
+	keys := make([]string, 0, len(s.subtaskEditors))
+	for key := range s.subtaskEditors {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	for _, key := range keys {
+		out = append(out, s.subtaskEditors[key])
+	}
+	return out
+}
 func (h *titleHub) changed(reg coordinator.Registration, state titlesession.State) {
 	for _, w := range h.windows {
-		if e := w.app.titleEditor; e != nil && e.registered && e.reg == reg {
+		for _, e := range w.app.titleEditors() {
+			if !e.registered || e.reg != reg {
+				continue
+			}
 			before := e.state
 			e.state = state
 			if before.InFlight && !state.InFlight && !state.Dirty && state.LastError == nil && (e.failure == nil || before.LastError != nil && errors.Is(e.failure, before.LastError)) {
 				e.failure = nil
-				if w.app.runtimeError == titleFailureMessage {
+				if w.app.runtimeError == titleFailureMessage && !w.app.hasTitleFailure() {
 					w.app.runtimeError = ""
 					w.app.runtimeNotice = "已保存到隔离开发会话"
 				}
@@ -220,9 +245,20 @@ func (h *titleHub) changed(reg coordinator.Registration, state titlesession.Stat
 		}
 	}
 }
+func (s *app) hasTitleFailure() bool {
+	for _, e := range s.titleEditors() {
+		if e.failure != nil {
+			return true
+		}
+	}
+	return false
+}
 func (h *titleHub) failed(reg coordinator.Registration, err error) {
 	for _, w := range h.windows {
-		if e := w.app.titleEditor; e != nil && e.reg == reg {
+		for _, e := range w.app.titleEditors() {
+			if e.reg != reg {
+				continue
+			}
 			delete(h.targets, w.app.titleTarget)
 			w.app.titleTarget = ""
 			e.failure = err
@@ -233,26 +269,33 @@ func (h *titleHub) failed(reg coordinator.Registration, err error) {
 	}
 }
 func (h *titleHub) register(s *app) bool {
-	e := s.titleEditor
+	for _, e := range s.titleEditors() {
+		if !h.registerEditor(s, e) {
+			return false
+		}
+	}
+	return true
+}
+func (h *titleHub) registerEditor(s *app, e *runtimeTitleEditor) bool {
 	if e == nil || e.registered {
 		return true
 	}
-	// BeforeClose also calls this, closing the initial-frame/post-registration gap.
 	if _, ok := e.native.Snapshot(); !ok {
 		s.runtimeError = "标题输入尚未能安全读取，已取消离开。"
 		return false
 	}
-	reg, err := h.coordinator.Open(s.titleWindowID, "task:"+string(e.row.ChainID)+":title", string(e.row.TraceID), e.row.Title, &e.native)
+	owner, target, persisted := "task:"+string(e.row.ChainID)+":title", string(e.row.TraceID), e.row.Title
+	if e.subtask != nil {
+		owner, target, persisted = e.owner, e.subtask.target.route(), e.subtask.title
+	}
+	reg, err := h.coordinator.Open(s.titleWindowID, owner, target, persisted, &e.native)
 	if err != nil {
 		s.runtimeError = "标题会话无法安全注册，草稿已保留。"
 		return false
 	}
-	e.reg = reg
-	e.registered = true
+	e.reg, e.registered = reg, true
 	e.identity, _ = h.coordinator.Identity(reg)
 	e.state, _ = h.coordinator.State(reg)
-	// Keep the first native owner stable until the next build; identity is now
-	// captured for every subsequent event, never reconstructed on dispatch.
 	e.key = titleEditorKey{e.identity.OwnerID(), e.key.Session, e.identity.Generation()}
 	_ = h.coordinator.Observe(reg, e.identity)
 	return true
@@ -277,7 +320,7 @@ func (s *app) titleTransition(fn func()) {
 			delete(h.targets, target)
 			return
 		}
-		if !h.register(s) {
+		if !h.register(s) || !s.finalizeSubtaskComposers() {
 			delete(h.targets, target)
 			return
 		}
@@ -330,7 +373,8 @@ func (h *titleHub) beforeClose(s *app) bool {
 	if w == nil {
 		return true
 	}
-	if !h.register(s) {
+	if !h.register(s) || !s.finalizeSubtaskComposers() || !s.subtaskComposersCanClose() {
+		w.invalidate()
 		return false
 	}
 	if w.commands > 0 {
@@ -347,11 +391,13 @@ func (h *titleHub) beforeClose(s *app) bool {
 	s.titleTarget = ""
 	delete(h.windows, s.titleWindowID)
 	s.titleEditor = nil
+	s.subtaskEditors = nil
 	return true
 }
 func (h *titleHub) beforeQuit() bool {
 	for _, w := range h.windows {
-		if !h.register(w.app) {
+		if !h.register(w.app) || !w.app.finalizeSubtaskComposers() || !w.app.subtaskComposersCanClose() {
+			w.invalidate()
 			return false
 		}
 	}
@@ -403,8 +449,9 @@ func (h *titleHub) publish(graph core.TaskGraph, today core.LocalDate) {
 				}
 			}
 		}
+		h.publishSubtaskEditors(s, graph, today)
 		if today != s.runtimeAppliedDay {
-			if s.titleEditor == nil && s.runtimeDate == s.runtimeAppliedDay {
+			if len(s.titleEditors()) == 0 && s.runtimeDate == s.runtimeAppliedDay {
 				s.runtimeDate = today
 				s.runtimeSelection = ""
 				s.runtimeDayFocus = ""
@@ -429,11 +476,11 @@ func (h *titleHub) observeDay() {
 		// Finalize existing input before advancing the domain. A dirty old trace is
 		// NOT backfilled after midnight; the service will reject and retain it.
 		for _, w := range h.windows {
-			if !h.register(w.app) {
+			if !h.register(w.app) || !w.app.finalizeSubtaskComposers() {
 				h.dayQueued = false
 				return
 			}
-			if e := w.app.titleEditor; e != nil {
+			for _, e := range w.app.titleEditors() {
 				if _, ok := e.native.Finish(); !ok {
 					h.dayQueued = false
 					return
@@ -473,16 +520,16 @@ func (h *titleHub) stopOnError(err error) {
 
 // Immutable action keys suppress repeated activation of the same pending
 // operation, not unrelated commands or a later intentional activation.
-func (h *titleHub) commandOnce(s *app, key string, fn func() error, done func(error)) {
+func (h *titleHub) commandOnce(s *app, key string, fn func() error, done func(error)) bool {
 	w := h.windows[s.titleWindowID]
 	if w == nil {
-		return
+		return false
 	}
 	if h.actionPending == nil {
 		h.actionPending = map[string]bool{}
 	}
 	if h.actionPending[key] {
-		return
+		return false
 	}
 	h.actionPending[key] = true
 	h.command(s, fn, false, func(err error) {
@@ -491,6 +538,7 @@ func (h *titleHub) commandOnce(s *app, key string, fn func() error, done func(er
 			done(err)
 		}
 	})
+	return true
 }
 func (s *app) runAction(key string, fn func() error) {
 	if s.titles == nil {

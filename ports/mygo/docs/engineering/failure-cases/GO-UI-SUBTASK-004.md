@@ -1,0 +1,13 @@
+# GO-UI-SUBTASK-004：失败新增后的普通关闭未保留草稿
+
+状态：处理中，端口安全守卫候选待正式整合 commit。首次发现：2026-11-05 20:05 UTC。
+
+- 症状：明确提交Add失败后，composer虽保留文本，但普通Close可销毁窗口，使失败草稿不可再访问；离屏失败composer同样可在Close/Quit丢失。普通关闭没有额外的明确丢弃意图。
+- 来源边界：Swift transient composer有随selection清空的路径，不把本问题冒称Swift回归。父任务明确要求本端口失败防丢稿，本守卫落实该安全契约，不扩展为普通未提交草稿的自动保存或跨重启恢复。
+- 引入位置：本任务未提交的runtime_subtask.go与titleHub退出协调；只追踪pending writer，没有追踪失败Add。没有引入commit；Git author/committer不适用；实际修改为本轮UI工作线程。
+- 红证据：TestReviewSubtaskFailedComposerClose、TestReviewSubtaskFailedComposerOffscreenCloseAndQuit、TestReviewSubtaskFailedComposerExplicitClear 的原始独立副本均红；本副本首项原样红在 evidence/independent-reproduction-red.log。
+- 根因修正：每个按对象绑定的composer保留失败状态。Close/Quit检查所有失败composer，包括离屏；重试成功释放。导航不丢弃草稿，允许回到原对象重试。只有fresh native snapshot证明用户明确清空的失败草稿才允许丢弃，绝不以旧ack、旧frame或超时代替。新definition不会接收旧composer目标。
+- UI解释重试/明确清空路径，失效原对象提供恢复输入区，详见005；不增加原版正常界面不存在的按钮。未提交普通transient draft仍不会自动Add。
+- fast gate：TestReviewSubtaskFailedComposerClose；symptom gates：TestSubtaskUIFailedComposerCloseRetryAndExplicitClear、TestReviewSubtaskFailedComposerOffscreenCloseAndQuit、TestReviewSubtaskFailedComposerExplicitClear；聚合scripts/check。
+- 发布与回滚：正式commit确定后更新案例；候选只在隔离资料中验证。Native finalization会撤销旧focus lease，重试必须重新明确聚焦，不能在失焦状态把Enter当作输入提交。
+- 教训：失败的明确提交与尚未提交的草稿是不同状态。对象未挂载不意味着用户已经丢弃它；安全释放必须来自当前native证据或确认的成功事务。

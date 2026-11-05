@@ -50,6 +50,7 @@ func (s *app) liveDayView(c *ui.Context, w, h float32) {
 	}
 	g := s.runtime.Snapshot()
 	day, e := taskview.ProjectDay(g, s.runtimeDate, s.runtime.Today())
+	day.Rows = s.retainSubtaskParents(day.Rows, g)
 	sw := float32(220)
 	if s.compact {
 		sw = 72
@@ -186,10 +187,32 @@ func (s *app) liveDayMain(c *ui.Context, w, h float32, day taskview.DayPage, gra
 		for _, r := range day.Rows {
 			r := r
 			_, weight := taskTitleStyle(r.Status == core.TraceCompleted)
-			_, textH := dayMeasure(c, "day-row-measure-"+string(r.TraceID), w-40-64, 13, weight, r.Title)
-			rowHeight := max(float32(28), textH) + 16
+			parent := runtimeSubtaskTarget{chain: r.ChainID, trace: r.TraceID}
+			children := s.childRows("day-list", parent)
+			accessory := float32(0)
+			if len(children) > 0 {
+				accessory = subtaskDisclosureWidth(c, string(r.TraceID), len(actualSubtaskRows(s.runtime.Snapshot(), r.ChainID, r.TraceID, s.runtime.Today()))) + 12
+			}
+			borderInset := float32(0)
+			if s.runtimeSelection == string(r.TraceID) {
+				borderInset = 1
+			}
+			_, textH := dayMeasure(c, "day-row-measure-"+string(r.TraceID), w-40-64-accessory-borderInset, 13, weight, r.Title)
+			headerHeight := max(float32(28), textH) + 16
+			rowHeight := headerHeight
+			if s.subtaskExpanded[r.TraceID] && len(children) > 0 {
+				rowHeight += 11 + float32(len(children)-1)*subtaskRowSpacing
+				for _, child := range children {
+					rowHeight += s.subtaskRowHeight(c, w-40-52, "day-list", child)
+				}
+			}
 			canComplete, _ := taskMenuCapabilities(graph, r, day.Today)
-			ui.Box(c.Key("live-row-" + string(r.TraceID))).Height(rowHeight).Width(w - 40).Children(func() { s.liveDayRow(c, w-40, rowHeight, textH, r, canComplete) })
+			ui.Box(c.Key("live-row-" + string(r.TraceID))).Height(rowHeight).Width(w - 40).Children(func() {
+				s.liveDayRow(c, w-40, rowHeight, textH, r, canComplete)
+				if s.subtaskExpanded[r.TraceID] && len(children) > 0 {
+					ui.Box(c).Absolute().Left(40).Top(headerHeight + 1).Width(w - 40 - 52).Children(func() { s.liveSubtaskSection(c, w-40-52, "day-list", parent, false) })
+				}
+			})
 		}
 		if len(day.Rows) == 0 {
 			ui.Box(c).Height(40)
@@ -241,6 +264,19 @@ func (s *app) liveDateStrip(c *ui.Context, w float32, strip taskview.DateStrip) 
 }
 func (s *app) liveDayRow(c *ui.Context, w, h, textH float32, r taskview.DayRow, enabled bool) {
 	id := string(r.TraceID)
+	headerHeight := max(float32(28), textH) + 16
+	children := s.childRows("day-list", runtimeSubtaskTarget{chain: r.ChainID, trace: r.TraceID})
+	accessory := float32(0)
+	if len(children) > 0 {
+		accessory = subtaskDisclosureWidth(c, string(r.TraceID), len(actualSubtaskRows(s.runtime.Snapshot(), r.ChainID, r.TraceID, s.runtime.Today()))) + 12
+	}
+	borderInset := float32(0)
+	if s.runtimeSelection == id {
+		borderInset = 1
+	}
+	_, titleWeight := taskTitleStyle(r.Status == core.TraceCompleted)
+	intrinsic, _ := dayMeasure(c, "day-row-intrinsic-"+id, 0, 13, titleWeight, r.Title)
+	contentWidth := min(intrinsic, max(float32(1), w-64-accessory-borderInset))
 	selected := s.runtimeSelection == id
 	// Native menu choices are delivered on a later frame. Re-key the host on
 	// navigation so a menu opened before leaving cannot act after returning to
@@ -271,7 +307,7 @@ func (s *app) liveDayRow(c *ui.Context, w, h, textH float32, r taskview.DayRow, 
 		if r.Status == core.TraceUnfinished {
 			col = muted
 		}
-		t := txt(c, 52, (h-textH)/2, 13, r.Title, col, weight).Width(w - 64)
+		t := txt(c, 52, (headerHeight-textH)/2, 13, r.Title, col, weight).Width(contentWidth)
 		if r.Status == core.TraceCompleted || r.Status == core.TraceAbandoned {
 			t.Strikethrough()
 		}
@@ -279,7 +315,7 @@ func (s *app) liveDayRow(c *ui.Context, w, h, textH float32, r taskview.DayRow, 
 	if b.Clicked() {
 		s.titleTransition(func() { s.runtimeSelection = id; s.runtimeDayRail = true })
 	}
-	check := ui.ButtonBase(c.Key("live-check-"+id)).Absolute().Left(12).Top((h-28)/2).Size(28, 28).Label("切换完成 " + id).Disabled(!enabled)
+	check := ui.ButtonBase(c.Key("live-check-"+id)).Absolute().Left(12).Top((headerHeight-28)/2).Size(28, 28).Label("切换完成 " + id).Disabled(!enabled)
 	check.Children(func() {
 		circle := box(c, 5, 5, 18, 18, white, 9).Border(1.5, sourceVisual.line2)
 		glyph := ""
@@ -301,6 +337,27 @@ func (s *app) liveDayRow(c *ui.Context, w, h, textH float32, r taskview.DayRow, 
 		s.titleTransition(func() {
 			s.runAction(fmt.Sprintf("complete:%s:%t", r.TraceID, r.Status != core.TraceCompleted), func() error { return s.runtime.SetCompleted(r.TraceID, r.Status != core.TraceCompleted) })
 		})
+	}
+	if len(children) > 0 {
+		disclosureWidth := accessory - 12
+		b := ui.ButtonBase(c.Key("subtask-disclosure-"+id)).Absolute().Left(52+borderInset+contentWidth+12).Top((headerHeight-22)/2).Size(disclosureWidth, 22).Radius(11).Background(sourceVisual.accentSoft).Label("展开子任务 " + id)
+		b.Children(func() {
+			glyph := "chevron-right"
+			if s.subtaskExpanded[r.TraceID] {
+				glyph = "chevron-down"
+			}
+			icon(c, 7, 6.5, 9, glyph, blue)
+			txt(c, 20, 3, 11, subtaskDisclosureText(len(actualSubtaskRows(s.runtime.Snapshot(), r.ChainID, r.TraceID, s.runtime.Today()))), blue, 600).FontFeatures("tnum")
+		})
+		if b.Clicked() {
+			expanded := !s.subtaskExpanded[r.TraceID]
+			s.titleTransition(func() {
+				if s.subtaskExpanded == nil {
+					s.subtaskExpanded = map[core.DayTraceID]bool{}
+				}
+				s.subtaskExpanded[r.TraceID] = expanded
+			})
+		}
 	}
 	if !selected {
 		box(c, 44, h-1, w-44, 1, line.Alpha(.62), 0).PassThrough()
@@ -331,8 +388,11 @@ func (s *app) liveDayDetail(c *ui.Context, w, h float32, day taskview.DayPage) {
 			ui.Box(c).Size(w-28, 28).Children(func() {
 				calendarHeaderButton(c, "day-show-review", 0, 0, 100, "返回日统计", "返回日统计", true, func() { s.titleTransition(func() { s.runtimeSelection = "" }) })
 			})
+			ui.Box(c).Height(14)
+			parent := runtimeSubtaskTarget{chain: selected.ChainID, trace: selected.TraceID}
+			s.liveSubtaskSection(c, w-28, "day", parent, s.canAddSubtask(parent))
 			ui.Box(c).Height(24)
-			ui.Text(c, "子任务及分类尚未接通；完整 Markdown 显示仍待对齐。").FontSize(10.5).TextColor(muted).Width(w - 28)
+			ui.Text(c, "分类、完整 Markdown 与撤销恢复尚未接通；加权进度待对齐。").FontSize(10.5).TextColor(muted).Width(w - 28)
 		})
 		return
 	}

@@ -41,6 +41,9 @@ type app struct {
 	poolPickerEpoch            uint64
 	titles                     *titleHub
 	titleEditor                *runtimeTitleEditor
+	subtaskEditors             map[string]*runtimeTitleEditor
+	subtaskComposers           map[string]*runtimeSubtaskComposer
+	subtaskExpanded            map[core.DayTraceID]bool
 	titleWindowID, titleTarget string
 
 	page                 string
@@ -116,19 +119,24 @@ func group(c *ui.Context, x, y float32, title string, count int, col ui.Color) {
 }
 
 var paths = map[string]string{
-	"dotted":   `<circle cx="12" cy="12" r="10.5" stroke-dasharray="2.5 2.5"/>`,
-	"clock":    `<circle cx="12" cy="12" r="9"/><path d="M12 6v7H7"/>`,
-	"tray":     `<path d="M3 10l5-6h8l5 6v9H3zM3 10h5l2 4h4l2-4h5"/>`,
-	"calendar": `<rect x="4" y="4" width="16" height="17" rx="2"/><path d="M4 9h16M8 3v4m8-4v4M8 12h1m3 0h1m3 0h1M8 16h1m3 0h1m3 0h1"/>`,
-	"repeat":   `<path d="M3 9V6h16l-3-3m3 3l-3 3M21 15v3H5l3 3m-3-3l3-3"/>`,
-	"alert":    `<circle cx="12" cy="12" r="9"/><path d="M12 6v7m0 3v1"/>`,
-	"check":    `<path d="M12 2l3 3h4v4l3 3-3 3v4h-4l-3 3-3-3H5v-4l-3-3 3-3V5h4zM7 12l3 3 6-7"/>`,
-	"spark":    `<path d="M12 3l2 6 6 3-6 2-2 7-2-7-6-2 6-3zM4 2v5m-2-2h5"/>`,
-	"note":     `<rect x="4" y="4" width="16" height="16" rx="2"/><path d="M7 8h10M7 12h10M7 16h6"/>`,
-	"bulb":     `<path d="M8 17c0-5-3-6-3-9a7 7 0 0114 0c0 3-3 5-3 9zM8 20h8m-6 3h4"/>`,
-	"folder":   `<path d="M2 5h7l3 3h10v13H2z" fill="currentColor" stroke="none"/><path d="M2 10h20" stroke="white" stroke-width="1"/>`,
-	"search":   `<circle cx="10" cy="10" r="6"/><path d="M15 15l5 5"/>`,
-	"pin":      `<path d="M9 3h7l-1 6 4 4-5 1-6 7 2-8-5-2 5-3z"/>`,
+	"chevron-right": `<path d="M8 3l9 9-9 9" stroke-width="4"/>`,
+	"chevron-down":  `<path d="M3 8l9 9 9-9" stroke-width="4"/>`,
+	"dotted":        `<circle cx="12" cy="12" r="10.5" stroke-dasharray="2.5 2.5"/>`,
+	"clock":         `<circle cx="12" cy="12" r="9"/><path d="M12 6v7H7"/>`,
+	"tray":          `<path d="M3 10l5-6h8l5 6v9H3zM3 10h5l2 4h4l2-4h5"/>`,
+	"calendar":      `<rect x="4" y="4" width="16" height="17" rx="2"/><path d="M4 9h16M8 3v4m8-4v4M8 12h1m3 0h1m3 0h1M8 16h1m3 0h1m3 0h1"/>`,
+	"repeat":        `<path d="M3 9V6h16l-3-3m3 3l-3 3M21 15v3H5l3 3m-3-3l3-3"/>`,
+	"alert":         `<circle cx="12" cy="12" r="9"/><path d="M12 6v7m0 3v1"/>`,
+	"check":         `<path d="M12 2l3 3h4v4l3 3-3 3v4h-4l-3 3-3-3H5v-4l-3-3 3-3V5h4zM7 12l3 3 6-7"/>`,
+	"spark":         `<path d="M12 3l2 6 6 3-6 2-2 7-2-7-6-2 6-3zM4 2v5m-2-2h5"/>`,
+	"note":          `<rect x="4" y="4" width="16" height="16" rx="2"/><path d="M7 8h10M7 12h10M7 16h6"/>`,
+	"bulb":          `<path d="M8 17c0-5-3-6-3-9a7 7 0 0114 0c0 3-3 5-3 9zM8 20h8m-6 3h4"/>`,
+	"folder":        `<path d="M2 5h7l3 3h10v13H2z" fill="currentColor" stroke="none"/><path d="M2 10h20" stroke="white" stroke-width="1"/>`,
+	"search":        `<circle cx="10" cy="10" r="6"/><path d="M15 15l5 5"/>`,
+	"trash":         `<path d="M4 6h16M9 6V3h6v3M6 6l1 15h10l1-15M10 10v7M14 10v7"/>`,
+	"x":             `<path d="M5 5l14 14M19 5L5 19"/>`,
+	"lock":          `<rect x="5" y="10" width="14" height="12" rx="2" fill="currentColor"/><path d="M8 10V6a4 4 0 018 0v4"/>`,
+	"pin":           `<path d="M9 3h7l-1 6 4 4-5 1-6 7 2-8-5-2 5-3z"/>`,
 }
 var svg = map[string]*ui.SVG{}
 

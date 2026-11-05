@@ -138,8 +138,11 @@ func (s *app) commandResult(err error, clear bool) {
 	}
 	s.runtimeError = ""
 	s.runtimeNotice = "已保存到隔离开发会话"
-	if e := s.titleEditor; e != nil && e.failure != nil {
+	if s.hasTitleFailure() {
 		s.runtimeError = titleFailureMessage
+		s.runtimeNotice = ""
+	} else if s.hasSubtaskComposerFailure() {
+		s.runtimeError = subtaskComposerFailureMessage
 		s.runtimeNotice = ""
 	}
 	for _, w := range mygo.Windows() {
@@ -213,6 +216,12 @@ func liveAction(c *ui.Context, key string, x, y, w float32, title, label string,
 	}
 }
 func (s *app) runtimeView(c *ui.Context) {
+	if s.hasSubtaskComposerFailure() && s.runtimeError == "" {
+		s.runtimeError = subtaskComposerFailureMessage
+	}
+	for _, composer := range s.subtaskComposers {
+		composer.mounted = false
+	}
 	if s.titles != nil {
 		s.titles.observeDay()
 		c.After(time.Minute)
@@ -372,12 +381,16 @@ func (s *app) liveTaskRow(c *ui.Context, w float32, r liveRow) {
 	if r.trace == "" {
 		liveAction(c, "live-schedule-today-"+r.key, w-150, 15, 66, "排到今天", "排到今天 "+r.key, true, func() {
 			date := s.runtime.Today()
-			s.runAction("schedule:"+string(r.chain)+":"+date.String(), func() error { return s.runtime.Schedule(r.chain, date) })
+			s.titleTransition(func() {
+				s.runAction("schedule:"+string(r.chain)+":"+date.String(), func() error { return s.runtime.Schedule(r.chain, date) })
+			})
 		})
 		liveAction(c, "live-schedule-tomorrow-"+r.key, w-75, 15, 66, "排到明天", "排到明天 "+r.key, true, func() {
 			d, e := s.runtime.Today().AddDays(1)
 			if e == nil {
-				s.runAction("schedule:"+string(r.chain)+":"+d.String(), func() error { return s.runtime.Schedule(r.chain, d) })
+				s.titleTransition(func() {
+					s.runAction("schedule:"+string(r.chain)+":"+d.String(), func() error { return s.runtime.Schedule(r.chain, d) })
+				})
 			}
 		})
 	}
@@ -405,6 +418,9 @@ func statusText(s core.TraceStatus) string {
 	return string(s)
 }
 func (s *app) liveRail(c *ui.Context, w, h float32, g core.TaskGraph) {
+	if s.page == "pool" && s.livePoolSubtaskDetail(c, w, h, g) {
+		return
+	}
 	box(c, 0, 0, .7, h, line, 0)
 	txt(c, 17, 20, 12, "当前会话", muted, 600)
 	for i, p := range []struct{ k, n string }{{"day", "今日任务"}, {"pool", "任务池"}, {"upcoming", "未来计划"}, {"completed", "已完成"}} {
