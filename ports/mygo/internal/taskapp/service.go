@@ -245,7 +245,19 @@ func (s *Service) Schedule(chain core.TaskChainID, date core.LocalDate) error {
 		if e != nil {
 			return e
 		}
-		return k.ScheduleFromPool(core.ScheduleFromPoolInput{ChainID: chain, TraceID: core.DayTraceID(ids[0]), DayID: core.DayID(ids[1]), Date: date, Today: s.today, Now: now})
+		subtaskIDs := map[core.PlannedSubtaskID]core.SubtaskID{}
+		for _, d := range k.Snapshot().Definitions {
+			if d.ChainID == chain && d.SupersededAt == nil {
+				for _, p := range d.PlannedSubtasks {
+					child, err := newIDs(1)
+					if err != nil {
+						return err
+					}
+					subtaskIDs[p.ID] = core.SubtaskID(child[0])
+				}
+			}
+		}
+		return k.ScheduleFromPool(core.ScheduleFromPoolInput{ChainID: chain, TraceID: core.DayTraceID(ids[0]), DayID: core.DayID(ids[1]), Date: date, Today: s.today, Now: now, SubtaskIDs: subtaskIDs})
 	})
 }
 func (s *Service) SetCompleted(trace core.DayTraceID, completed bool) error {

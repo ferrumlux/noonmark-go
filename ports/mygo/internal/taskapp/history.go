@@ -15,7 +15,7 @@ import (
 )
 
 // ValidateEmptyHistory validates ONLY the isolated task runtime's empty-catalog
-// settlement history. It is not a rich classification validator or a Swift
+// settlement/ordinary-return history. It is not a rich classification validator or a Swift
 // interoperability claim. All other classification facts fail closed. Unlike
 // codec's empty-audit shortcut, this also rejects missing settlement events.
 func ValidateEmptyHistory(snapshot canonical.Value) error {
@@ -42,12 +42,25 @@ func ValidateEmptyHistory(snapshot canonical.Value) error {
 	}
 	expected := map[string]core.DayTrace{}
 	for _, t := range state.Tasks.Traces {
-		if t.Status != core.TracePending && t.Status != core.TraceCompleted && t.Status != core.TraceUnfinished {
+		if t.Status != core.TracePending && t.Status != core.TraceCompleted && t.Status != core.TraceUnfinished && t.Status != core.TraceReturnedToPool && t.Status != core.TraceCancelledDraft {
 			return historyError("unsupported trace status")
 		}
 		d, ok := days[t.Date]
 		if !ok {
 			return historyError("trace day missing")
+		}
+		if t.Status == core.TraceCancelledDraft {
+			if t.DraftCancelledOn == nil || t.Date.Compare(*t.DraftCancelledOn) <= 0 || t.SettledAt == nil || *t.SettledAt != t.ContentUpdatedAt {
+				return historyError("unsupported cancellation fact")
+			}
+			continue
+		}
+		if t.Status == core.TraceReturnedToPool {
+			if t.SettledAt == nil || *t.SettledAt != t.ContentUpdatedAt || d.LockedAt != nil && d.LockedAt.Before(*t.SettledAt) {
+				return historyError("invalid return clock")
+			}
+			expected[string(t.ID)] = t
+			continue
 		}
 		if d.LockedAt == nil {
 			if t.Status == core.TraceUnfinished {
@@ -81,7 +94,7 @@ func ValidateEmptyHistory(snapshot canonical.Value) error {
 	for id, trace := range expected {
 		stream, ok := streams[id]
 		if !ok || len(stream.Array) != 1 {
-			return historyError("exactly one settlement event required")
+			return historyError("exactly one terminal event required")
 		}
 		event := stream.Array[0]
 		if !historyEqual(event, latest[id]) {
@@ -95,8 +108,12 @@ func ValidateEmptyHistory(snapshot canonical.Value) error {
 			return historyError("event classification/status/trace mismatch")
 		}
 		at := core.Instant(historyUint(o["capturedAt"]))
-		if at != *days[trace.Date].LockedAt {
-			return historyError("capture clock differs from day lock")
+		captureAt := days[trace.Date].LockedAt
+		if trace.Status == core.TraceReturnedToPool {
+			captureAt = trace.SettledAt
+		}
+		if captureAt == nil || at != *captureAt {
+			return historyError("capture clock differs from terminal capture")
 		}
 		rev := historyUint(o["revision"])
 		if rev == 0 || rev > uint64(len(expected)) || revisions[rev] {
@@ -150,6 +167,63 @@ func CaptureEmptyHistory(prior canonical.Value, before, after core.TaskGraph) (c
 	if err != nil {
 		return fail(err)
 	}
+	// Generic transactions create chains, schedule, complete, or settle. They
+	// never edit an existing definition or version an existing chain. Title and
+	// return versioning must prove their precise changes by specialized replay.
+	oldChains := map[string]bool{}
+	for _, chain := range before.Chains {
+		oldChains[string(chain.ID)] = true
+	}
+	definitions := map[string]canonical.Value{}
+	for _, v := range prior.Object["definitions"].Array {
+		definitions[historyID(v.Object["id"])] = v
+	}
+	for _, v := range result.Object["definitions"].Array {
+		id := historyID(v.Object["id"])
+		if old, ok := definitions[id]; ok {
+			if !historyEqual(old, v) {
+				return fail(historyError("generic definition edit requires specialized command audit"))
+			}
+			delete(definitions, id)
+		} else if oldChains[historyID(v.Object["chainID"])] {
+			return fail(historyError("generic definition version requires specialized command audit"))
+		}
+	}
+	if len(definitions) != 0 {
+		return fail(historyError("generic definition removed"))
+	}
+	oldTraces := map[core.DayTraceID]core.DayTrace{}
+	for _, t := range before.Traces {
+		oldTraces[t.ID] = t
+	}
+	for _, t := range after.Traces {
+		if t.Status == core.TraceReturnedToPool || t.Status == core.TraceCancelledDraft {
+			old, ok := oldTraces[t.ID]
+			if !ok || old.Status != t.Status {
+				return fail(historyError("return requires specialized command audit"))
+			}
+		}
+	}
+	// Existing return/cancellation facts are terminal in generic transactions,
+	// even before their date locks. Only their day may acquire a later lock.
+	terminal := map[string]canonical.Value{}
+	for _, v := range prior.Object["traces"].Array {
+		if v.Object["status"].String == string(core.TraceReturnedToPool) || v.Object["status"].String == string(core.TraceCancelledDraft) {
+			terminal[historyID(v.Object["id"])] = v
+		}
+	}
+	for _, v := range result.Object["traces"].Array {
+		id := historyID(v.Object["id"])
+		if old, ok := terminal[id]; ok {
+			if !historyEqual(old, v) {
+				return fail(historyError("terminal return fact changed"))
+			}
+			delete(terminal, id)
+		}
+	}
+	if len(terminal) != 0 {
+		return fail(historyError("terminal return fact removed"))
+	}
 	oldDays := map[core.LocalDate]core.Day{}
 	newDays := map[core.LocalDate]core.Day{}
 	for _, d := range before.Days {
@@ -166,14 +240,14 @@ func CaptureEmptyHistory(prior canonical.Value, before, after core.TaskGraph) (c
 			}
 		}
 	}
-	// Locked traces and their materialised content are immutable in this narrow
+	// Locked and terminal return traces and their materialised content are immutable in this narrow
 	// runtime. Chain clocks/pool notes are deliberately not frozen: a chain can
 	// still have an editable current task. Forward definition supersession is
 	// not supported here and must be implemented as a separate audited command.
 	lockedTraces := map[string]bool{}
 	lockedDefinitions := map[string]bool{}
 	for _, t := range before.Traces {
-		if oldDays[t.Date].LockedAt != nil {
+		if oldDays[t.Date].LockedAt != nil || t.Status == core.TraceReturnedToPool || t.Status == core.TraceCancelledDraft {
 			lockedTraces[string(t.ID)] = true
 			lockedDefinitions[string(t.DefinitionID)] = true
 		}
