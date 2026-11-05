@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# Known-red dependency probe. Never modifies the module cache or reference source.
+set -euo pipefail
+source "$(dirname -- "$0")/environment"
+module_root=$("$GO" list -m -f '{{.Dir}}' github.com/egoist/mygo)
+version=$("$GO" list -m -f '{{.Version}}' github.com/egoist/mygo)
+test "$version" = v0.7.5-0.20261105040656-977ea57e0baf || { echo 'Dependency changed: review this probe before using it' >&2; exit 2; }
+probe_root=$(mktemp -d "$BUILD_ROOT/tmp/title-native-probe.XXXXXXXX")
+# Go deliberately forbids overlays inside GOMODCACHE. Test a disposable copy
+# of the exact pinned module, never rewrite the protected cached dependency.
+cp -a "$module_root" "$probe_root/dependency"
+module_root="$probe_root/dependency"
+cp "$SOURCE_ROOT/docs/tasks/connect-title-autosave/probes/native_input_test.go.txt" "$probe_root/native_input_test.go"
+python3 - "$module_root" "$probe_root" <<'PY'
+import json, pathlib, sys
+module, out = map(pathlib.Path, sys.argv[1:])
+target = module / 'ui' / 'noonmark_native_probe_test.go'
+if target.exists():
+    raise SystemExit('Probe overlay target already exists')
+(out / 'overlay.json').write_text(json.dumps({'Replace': {str(target): str(out / 'native_input_test.go')}}))
+PY
+cd -- "$module_root"
+"$GO" test -mod=readonly -p=1 -race -count=1 -overlay="$probe_root/overlay.json" ./ui -run '^TestNoonmark(NativeBeforeFrame|StagedCloseDrain)Probe$' -v

@@ -1,0 +1,91 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+package ui
+
+import "testing"
+
+func TestNoonmarkNativeBeforeFrameProbe(t *testing.T) {
+	draft := "old"
+	observed := 0
+	var ed Element
+	tt := NewTester(func(c *Context) {
+		ed = TextAreaBase(c.Key("title"), &draft).AutoFocus().Lines(1, 8).Width(250)
+		ed.ObserveInput(func(InputEvent) { observed++ })
+	}, 300, 180)
+	client := tt.h.ime.Client
+	if client == nil {
+		t.Fatal("no native input client")
+	}
+	client.ReplaceText(nil, "已提交")
+	t.Logf("native ReplaceText BEFORE frame bound=%q observerCalls=%d", draft, observed)
+	if draft != "old" || observed != 0 {
+		t.Fatal("probe expectation changed", draft, observed)
+	}
+	tt.Frame()
+	if draft != "old已提交" {
+		t.Fatal(draft)
+	}
+	t.Logf("AFTER frame bound=%q", draft)
+	client.SetMarkedText(nil, "未定", TextInputRange{Start: 2, End: 2})
+	t.Logf("native SetMarkedText BEFORE frame bound=%q observerCalls=%d", draft, observed)
+	if observed != 0 {
+		t.Fatal("direct native client unexpectedly observed")
+	}
+}
+
+func TestNoonmarkStagedCloseDrainProbe(t *testing.T) {
+	for _, kind := range []string{"committed-before-frame", "marked-before-frame", "marked-selection-before-frame"} {
+		t.Run(kind, func(t *testing.T) {
+			draft := "old"
+			phase := 0
+			var captured string
+			tt := NewTester(func(c *Context) {
+				e := TextAreaBase(c.Key("title"), &draft).AutoFocus().Lines(1, 8).Width(250)
+				switch phase {
+				case 1:
+					// Editor must be built before taking focus away. Keep it mounted.
+					c.Root().Focus()
+					phase = 2
+					c.Invalidate()
+				case 2:
+					if e.Composing() {
+						t.Fatal("second drain frame still composing")
+					}
+					captured = draft
+					e.Disabled(true)
+					phase = 3
+				case 3:
+					e.Disabled(true)
+				}
+			}, 300, 180)
+			client := tt.h.ime.Client
+			if kind == "committed-before-frame" {
+				client.ReplaceText(nil, "已提交")
+			} else if kind == "marked-selection-before-frame" {
+				client.SetMarkedText(&TextInputRange{Start: 0, End: 3}, "未定", TextInputRange{Start: 2, End: 2})
+			} else {
+				client.SetMarkedText(nil, "未定", TextInputRange{Start: 2, End: 2})
+			}
+			if draft != "old" {
+				t.Fatal("native unexpectedly immediately publishes")
+			}
+			phase = 1
+			tt.Frame()
+			want := "old已提交"
+			if kind == "marked-before-frame" {
+				want = "old未定"
+			}
+			if kind == "marked-selection-before-frame" {
+				want = "未定"
+			}
+			t.Logf("stage=%d captured=%q want=%q", phase, captured, want)
+			if phase != 3 || captured != want {
+				t.Fatal("staged drain lost input")
+			}
+			client.ReplaceText(nil, "迟到")
+			tt.Frame()
+			if draft != want {
+				t.Fatal("disabled drain barrier accepted late native input")
+			}
+		})
+	}
+}

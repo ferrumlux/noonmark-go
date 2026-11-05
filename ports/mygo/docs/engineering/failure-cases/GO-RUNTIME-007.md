@@ -1,0 +1,12 @@
+# GO-RUNTIME-007：标题退出排空会漏掉替换选区的 marked text
+
+状态：已复现，尚未修复；新标题 UI 未开放，不宣称当前只读 UI 已发生用户数据丢失。
+
+- 首次发现：2026-11-05，connect-title-autosave 依赖接线研究。MyGo 锁定版本为 `977ea57e0baf78da62698ba7371420d192260466`；未定位引入此行为的精确上游 commit 或实际修改者，未知，不能把整个依赖作者当成故障责任人。移植仓库基线 `986cd8d` 尚无标题编辑 UI。
+- 原始症状：原生 TextInputClient.ReplaceText 在帧前已修改 editor，但绑定 draft 仍为旧值，ObserveInput 不会收到这条原生路径。直接在 OnClose/OnBeforeQuit 保存 draft 会漏最后输入。
+- 更强反例：全选旧标题后原生 SetMarkedText 替换选区，未发生新帧就要求退出。保留 editor、root.Focus、后续 pass 收集 draft、Disabled 的两阶段方案仍得到空字符串而不是“未定”。没有真实用户资料，所有文本为最小合成哨兵。
+- 定位证据：ui/runtime.go 每帧可重建三个 pass；ui/value_input.go 的 applyString 在失焦时直接清 ed.compose，帧末 ui/input.go:updateTextInput 才 old.release/UnmarkText，已无法提交清掉的 marked 内容。直接移除 composing 控件也不会产生可用的 FocusLeft flush。
+- 已排除：仅 append marked text 与普通已提交 ReplaceText 的探针通过，不能据此证明选区替换安全；ObserveInput 计数不能覆盖原生 client；固定等待时间或固定帧数不能作为正确性屏障。
+- 可执行红色门禁：`scripts/probe-title-native-input`，将锁定 MyGo 精确源码复制到外置临时构建目录，再用 Go overlay 在原生 client 路径注入最小测试（Go 禁止 overlay 直接替换 module cache），不改参考源码或 module cache。预期 `marked-selection-before-frame` 失败。该门禁是标题 UI 激活前的阻断，不混入当前未启用 UI 的绿色 scripts/check，也不把预期失败改为 pass。
+- 最小测试保存在 `docs/tasks/connect-title-autosave/probes/native_input_test.go.txt`。后续修复必须原样令该症状转绿，再测取消、替换范围、组合选择、Undo、重复关闭、迟到 client、跨窗口与 app quit，不只测试追加输入。
+- 当前处置：保留只读详情；先完成纯 gate 与同锁 trace 路由。框架修复/API 和 native finalize 契约须独立验证，不用新 Save 按钮、sleep 或强行清空 composition 绕过。没有生产发布、没有存储迁移；旧版本无需清理资料。

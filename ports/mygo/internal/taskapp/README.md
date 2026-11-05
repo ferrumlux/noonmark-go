@@ -27,3 +27,5 @@
 `RenameTaskTitle` 与 `SaveTaskTitleInput` 区分显式版本分叉和输入复用，调用方不能用 rename 代替逐字 autosave。标题命令使用独立重放审计，严格冻结历史内容，只容许当前历史定义向本次合法新后继推进三项 metadata。原 `CaptureEmptyHistory` 完全不变；缺失 audit、更多 runtime scope、任意字段豁免均拒绝。详见 `../../docs/tasks/connect-title-edit/TRANSACTION.md`。
 
 Swift String canonical 等价输入不重写原字符串或消耗磁盘 revision。Service 仍在私有候选中预计算时钟和身份，不能把这个入口理解为不消耗任何计算资源；核心 no-op 本身不读取未使用 clock/ID。UI 编辑尚未开放，非空约束、IME、debounce、失焦和退出 flush 属于下一阶段，核心允许空标题不代表 UI 应将空白持久化。
+
+`SaveTraceTitleInput(traceID,title)` 为详情输入提供同锁 trace 路由，先拒绝过期或非 pending 的所选事实，再进行相同标题事务，避免历史回调借同链新 pending 写入当前标题。该 API 尚未暴露编辑 UI。

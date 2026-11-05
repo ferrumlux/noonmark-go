@@ -41,6 +41,39 @@ func (s *Service) SaveTaskTitleInput(chain core.TaskChainID, title string) error
 func (s *Service) editTitle(chain core.TaskChainID, title string, mode titleMode) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	return s.editTitleLocked(chain, title, mode)
+}
+
+// SaveTraceTitleInput is the Day detail adapter. Check the selected trace, not
+// merely whether its chain has some other editable trace. Keep this check and
+// the complete title transaction under one lock to prevent stale UI callbacks
+// from modifying a current task through an immutable historical detail.
+func (s *Service) SaveTraceTitleInput(trace core.DayTraceID, title string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.closed {
+		return ErrSession
+	}
+	if s.disk.blocked {
+		return ErrIncomplete
+	}
+	for _, tr := range s.graph.Traces {
+		if tr.ID != trace {
+			continue
+		}
+		if tr.Date.Compare(s.today) < 0 {
+			return core.ErrImmutableHistory
+		}
+		if tr.Status != core.TracePending {
+			return core.ErrInvalidTransition
+		}
+		return s.editTitleLocked(tr.ChainID, title, titleInput)
+	}
+	return core.ErrNotFound
+}
+
+// Caller owns s.mu for both any route validation and the complete transaction.
+func (s *Service) editTitleLocked(chain core.TaskChainID, title string, mode titleMode) error {
 	if s.closed {
 		return ErrSession
 	}
