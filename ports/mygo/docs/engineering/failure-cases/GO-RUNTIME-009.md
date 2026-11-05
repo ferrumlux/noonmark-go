@@ -1,6 +1,6 @@
 # GO-RUNTIME-009：回池终态审计与新身份边界
 
-- 状态：领域／Service 修复已完成正式集成与本地门禁；UI 与跨平台实机验收仍待后续批次。修复提交：[c984b7a013a0b8ba51faa5cbfc425868f4bcc637](https://github.com/ferrumlux/noonmark-go/commit/c984b7a013a0b8ba51faa5cbfc425868f4bcc637)。
+- 状态：领域／Service 修复已完成正式集成与本地门禁；原生菜单已由后续 GO-RUNTIME-010 批次接通，跨平台实机验收仍待完成。修复提交：[c984b7a013a0b8ba51faa5cbfc425868f4bcc637](https://github.com/ferrumlux/noonmark-go/commit/c984b7a013a0b8ba51faa5cbfc425868f4bcc637)。
 - 首次发现：2026-11-06（新加坡），普通任务回池候选独立审查。
 - 影响：隔离 development 的直接 capture/kernel 调用边界。没有生产资料操作或已知用户数据损坏。正常 Service 随机产生身份可降低碰撞概率，但不能取代 kernel 的身份契约。
 - 引入提交：generic capture 只冻结锁日定义的逻辑来自 `501fdfca858a6c437dca4875aaca4bd260627fbf`；Git author／committer 均为 ferrumlux。真实操作者无法仅凭 Git identity 确认。回池前未锁终态及身份问题来自本批尚未提交的候选，修改者为本轮实施 agent，未伪造 commit 归因。

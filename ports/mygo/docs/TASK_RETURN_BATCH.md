@@ -43,3 +43,5 @@
 ## 正式集成证据
 
 实现提交：[c984b7a013a0b8ba51faa5cbfc425868f4bcc637](https://github.com/ferrumlux/noonmark-go/commit/c984b7a013a0b8ba51faa5cbfc425868f4bcc637)。2026-11-05 18:28–18:30 UTC，正式副本完整 scripts/check、六目标 cross-build 和真实 Linux amd64 合成 CLI 门禁 exit 0。独立审查的原始反例完整保留；本批尚未包含菜单或 undo，不以该结果代替后续 UI／OS 验收。
+
+后续 UI 接线提交 [6dfc5a1](https://github.com/ferrumlux/noonmark-go/commit/6dfc5a1e6a3b76b58b78402655f89e5775f55d39) 已实现原生任务行菜单及安全回调边界；本文件前述“无菜单”仅描述领域批次交付范围。最新 UI 范围与验收见 [VERIFY](tasks/connect-return-menu/VERIFY.md)，仍没有回池 undo。

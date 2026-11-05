@@ -49,3 +49,7 @@ UI 回滚不能转换或删除已写入的回池事实。原 Service 批次的�
 最终六目标交叉编译全部通过（linux／windows／darwin × amd64／arm64），development CLI 的创建、重开、重复创建拒绝和未指定身份启动拒绝均通过，渲染 day／pool 各 2400×1536。记录分别为外置 `cross-build-final.log` 和 `cli-final.log`，不是补丁前预跑日志。交叉编译不等于目标系统运行验收。
 
 额外完整框架 UI 全套的独立运行终态：1174 个顶层测试通过，仅既有 `TestDiffFrameAllocs` 失败（steady 3 / warm 9，对阈值 2，373.006s）。仅带原 0001／0002 的基线重跑同测试，也得到完全相同的 3／9（146.908s）。未改阈值、未跳过，不能宣称全框架全绿；记录见依赖说明的 `native-all-ui.log` 与 `baseline-diff-allocs.log`。
+
+## 正式整合
+
+实现提交 [6dfc5a1e6a3b76b58b78402655f89e5775f55d39](https://github.com/ferrumlux/noonmark-go/commit/6dfc5a1e6a3b76b58b78402655f89e5775f55d39)。2026-11-05 18:52–18:58 UTC，正式副本完整 scripts/check、六目标cross-build、真实Linux development CLI全部exit0。应用main race52.980s，native ui2.707s、root1.046s；51项依赖测试通过。15个候选文件hash未变，正式回池前后截图与候选逐字节一致。后续hosted CI须核对新精确提交，尚不借用旧main的绿灯。

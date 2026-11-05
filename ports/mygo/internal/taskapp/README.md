@@ -35,3 +35,5 @@ Swift String canonical 等价输入不重写原字符串或消耗磁盘 revision
 `ReturnToPool(chainID,traceID)` 在同一服务锁中绑定身份。今天 pending 变成 returnedToPool，保留轨迹并以 settledAt 捕获一个空分类事件；未来 pending 变成 cancelledDraft，带取消身份／日期且无分类事件。两者生成新的池定义，只带回开放子任务，保留 lineage 并重新分配实际／计划身份。后续日结不能重写回池事件时间。专用审计重放精确命令并比较完整 after 图，完整持久化确认后才发布。菜单、undo 和 Swift oracle 不在此 Service 批次。
 
 v2 格式标识没有改变，但新 reader 接受的事实范围扩大；旧 reader 拒绝含回池／取消事实的开发会话。不得删除、覆盖或自动降级这些事实，亦不能把源码回滚视为会话兼容。详细边界见 `../../docs/TASK_RETURN_BATCH.md`。
+
+回池菜单现由后续 UI 批次接入：共享标题队列先最终化／保存，再以不可变 chain+trace 键执行本 Service；原生菜单生命周期另有外置 MyGo 修复。UI 验证见 `../../docs/tasks/connect-return-menu/VERIFY.md`，不改变上述事务或 reader 边界。

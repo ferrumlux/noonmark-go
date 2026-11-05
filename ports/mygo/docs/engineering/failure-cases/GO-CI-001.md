@@ -50,3 +50,5 @@
 证据 artifact：mygo-development-evidence-42083897005-1，ID 13442358332，压缩包 4029 bytes，SHA256 `b8aaebb885f071d64758ecd32c5f3d7a28fafb9fb904a991d65f9d76de9f7169`，2026-11-12 18:33 UTC 到期。上传路径仍只限定 ci-evidence/*.txt。此验收只覆盖 f2f81df，后续业务提交必须核对各自 Actions 结果；不扩大为六平台桌面、Swift oracle 或正式发行通过。
 
 独立下载核验 artifact：仅 binary-checksums、checks、cross-build、entrypoints、environment、result 六个 .txt，解压共 15459 bytes，ZIP 实算 hash 与 API 相符。实际日志确认四模块强制 race／vet 链、50 preparation、37 native tests、6 个 COMPILED 目标、day／pool 各 2400×1536 渲染与 CLI guards。权限仅 Contents:read 和 Metadata:read。upload-artifact 产生 Node20 被 runner 强制使用 Node24 的弃用 warning，但上传成功；后续升级仍需固定官方 SHA 和重跑契约，不忽略该维护信号。
+
+第二次真实 [run 42086088522](https://github.com/ferrumlux/noonmark-go/actions/runs/42086088522)／job127451446276 在2026-11-05约18:49 UTC全部success，environment精确记录 `f478b7668c0543a8ac459742708a70cb8214dc1f`。artifact13444800237实下载仅六个预期.txt，解压15459 bytes、ZIP4045 bytes，SHA256 `2ae104b48f3b4579db2ff0f5f35e0ea322e8cf232bda8531dc7dc4b755ab527a` 与API一致；仍无权限／上传范围扩张。新菜单批次尚需独立核实后续run。
