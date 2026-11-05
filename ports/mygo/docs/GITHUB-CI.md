@@ -64,3 +64,7 @@ GOBIN=/outside/source/ci-tools/bin GOPATH=/outside/source/ci-tools/gopath GOCACH
 2026-11-05，[main commit f2f81df](https://github.com/ferrumlux/noonmark-go/commit/f2f81df2defa7d2d71ca1035371d7089bdc73564) 的真实 push 触发 [Actions run 42083897005](https://github.com/ferrumlux/noonmark-go/actions/runs/42083897005)，18:33 UTC completed/success，全部步骤通过。证据 artifact ID 13442358332，4029 bytes，保留至 2026-11-12。具体 job、hash 与验收边界见 GO-CI-001。这一绿灯只覆盖对应 commit，新业务提交会另起 CI，必须重新核实。正式 tag／release 流程仍须在完整验收与许可包准备后接通。
 
 第二次 [run 42086088522](https://github.com/ferrumlux/noonmark-go/actions/runs/42086088522) 已核实在精确 main `f478b7668c0543a8ac459742708a70cb8214dc1f` 全部成功，覆盖回池领域／Service。此时仍是50项准备／37项原生门禁；新菜单批次扩为本页开头的51／82+1，必须由它自己的后续 run 验收，不能沿用前次绿灯。
+
+第三次 [run 42089982652](https://github.com/ferrumlux/noonmark-go/actions/runs/42089982652) 在精确 `c619c7824f1cb16c4bf25ebc57e14e86a634e659` 全部成功，覆盖原生回池菜单与扩展后的51项依赖、82个UI和1个root原生门禁。artifact 13445945533，ZIP SHA256 `04074bfe987457a7e62fbcb471fd41084d6fb387fb2dc3e1e886025a271cc194`。
+
+第四次 [run 42096453574](https://github.com/ferrumlux/noonmark-go/actions/runs/42096453574) 于2026-11-05 19:56 UTC在精确 `b5b93453135514b31b9e55e6a8582f470b9563c0` 全部成功，覆盖Unicode标题安全修复。已核对job 127487642637每步成功、四模块race/vet、textcanon、51项依赖、原生门禁、六目标编译及Linux CLI。下载artifact 13449605661，ZIP4826B，SHA256 `77addf4358fd7020983d081a87e003d60de1c5701035e79d934593ed66d95ece`；内含6个有界txt，共21284B，无缓存、会话或二进制。运行token仅Contents/Metadata read。Node20旧action由runner转Node24的弃用警告仍存在，但上传已成功。该次不覆盖后续子任务与发布准备变更，后续head另验。

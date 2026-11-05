@@ -15,8 +15,14 @@
 
 ## 执行记录
 
-初轮 core race1.284s、Service现有全套race17.439s通过。独立事务审查在单独副本执行新增Service回归4.460s通过；Add非pending父项错误类别原例为红。修正后正式候选core race1.300s，TestSubtask|TestReview Service race7.244s通过。后续完整 scripts/check、六目标与Linux CLI的最终结果须在整合后补入，不以本段focused通过代替。
+初轮 core race1.284s、Service现有全套race17.439s通过。独立事务审查在单独副本执行新增Service回归4.460s通过；Add非pending父项错误类别原例为红。修正后正式候选core race1.300s，TestSubtask|TestReview Service race7.244s通过。后续完整验收已执行，结果见下节；本段focused通过不替代完整验收。
 
 上游源码测试库存146条是宽匹配候选，不是146条已执行Swift测试。没有Swift工具链、原生显示服务器或macOS/Windows实机，不宣称平台完全对等。
 
 独立复核：原副本原例仍exit1；修正副本原例、日期矩阵与locked×past×completed组合race1.029s、Service全部TestSubtask/TestReview race6.450s通过。额外九命令×四故障阶段和并发确认/反向墙钟测试race5.495s通过。全部原拒绝操作验证graph不变。
+
+## 完整整合
+
+实现提交 [cfa4f575990e5c93a05d65b00ad523b6e837bf49](https://github.com/ferrumlux/noonmark-go/commit/cfa4f575990e5c93a05d65b00ad523b6e837bf49)。候选与正式副本的 scripts/check、六目标cross-build、Linux development CLI均全部exit0。正式执行2026-11-05 19:53–19:56 UTC，main race54.731s、taskapp24.366s、core1.277s、native ui2.715s/root1.046s；51项依赖准备门禁全部通过。day/pool各2400×1536离屏输出，不是原生OS验收。
+
+13个冻结候选文件哈希全部匹配，另仅调整运行README状态说明。完整日志外置保存为 `noonmark-subtask-integrated-{check,cross,entry}.log`；候选buildroot保留各阶段原始日志和源码SHA256清单。新head的GitHub CI须另外实际运行核对，本段不借用Unicode批次的绿灯。

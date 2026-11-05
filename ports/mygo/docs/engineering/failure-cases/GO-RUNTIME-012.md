@@ -15,3 +15,5 @@
 同轮独立审查找到源undo产生历史definition别名的合法路径。两个独立绿探针 `TestReviewUndoContinuationAliasCoreEdit` 与 `TestReviewUndoContinuationAliasServiceScope` 分别证明core合法编辑、Service在既有unsupported cancellation fact处拒绝；未证明新增历史保护在当前支持子集额外误拒。报告保留边界，未移除fence或扩张undo功能。准备的Swift测试未运行，不称oracle通过。
 
 完整门禁入口 scripts/check；跨平台编译不替代实机。原始红与独立绿日志外置保存；最终整合提交和完整执行结果见 [验收记录](../../tasks/connect-subtask-core/VERIFY.md)。
+
+整合实现提交：[`cfa4f575990e5c93a05d65b00ad523b6e837bf49`](https://github.com/ferrumlux/noonmark-go/commit/cfa4f575990e5c93a05d65b00ad523b6e837bf49)。正式完整门禁、六编译和Linux CLI均exit0；没有为错误类别放宽数据不变量。

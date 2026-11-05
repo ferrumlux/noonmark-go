@@ -38,4 +38,4 @@ build root `/tmp/noonmark-unicode-build`：
 
 实现提交 [ab46ea6580fffd9cabb0e97b2a84b6c38c5a14f5](https://github.com/ferrumlux/noonmark-go/commit/ab46ea6580fffd9cabb0e97b2a84b6c38c5a14f5)。2026-11-05 19:33–19:39 UTC，正式副本完整 scripts/check、六目标cross-build和Linux development CLI全部exit0。应用main race56.101s、taskapp16.035s、core1.278s、textcanon1.556s；native ui2.632s、root1.051s。51项依赖准备测试通过，day/pool离屏帧各2400×1536。16个冻结候选文件哈希全部一致，另仅追加统一门禁登记与registry目录。
 
-正式记录为外置 `noonmark-unicode-integrated-{check,cross,entry}.log`。此时新提交的 hosted CI 待实际触发和终态核对，不能借用 c619c78 的绿色结果。
+正式记录为外置 `noonmark-unicode-integrated-{check,cross,entry}.log`。新精确main b5b9345 的 hosted CI 已实际完成，run 42096453574 于19:56 UTC全部成功；job和证据ZIP已核对，详见GITHUB-CI.md。没有借用 c619c78 的绿色结果。
