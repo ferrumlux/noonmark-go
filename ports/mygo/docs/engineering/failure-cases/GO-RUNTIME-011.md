@@ -31,8 +31,10 @@ canonical decomposition + 完整 canonical ordering 构成 NFD；同一 Unicode 
 - gate：`TestStreamSafeCollisionCannotRouteAnotherOwner`；非法UTF-8 owner fail-closed。
 - session：`TestStreamSafeCollisionDraftIsNotSwallowed`、`TestStreamSafeCollisionNewInputDuringSaveIsRetained`；错误CGJ回包不能确认，正确回包才清理in-flight。
 - 实际 MyGo Tester UI：`TestTitleUIStreamSafeCollisionSavesDistinctDraft`、`TestTitleUIStreamSafeCollisionNewerInputDuringSave`。
-- 统一由 `scripts/check` 执行；补充单行登记在本任务 `gates.tsv`，由集成方合入正式总表，不覆盖并行任务内容。
+- 统一由 `scripts/check` 执行；本任务 `gates.tsv` 单行已合入正式总表，registry包含textcanon，不覆盖并行任务内容。
 
 独立 Linux ICU76 对9001个共同字符输入对做NFD对账（固定种子），包括反例、随机长combining runs、Hangul与真实CGJ。它是独立规范佐证，不是 Swift/Apple oracle，也不宣称 Unicode16/17 全字符互通。
 
 仅隔离 development/e2e 合成资料，外置 buildroot；生产、iCloud、Keychain、AI 均未启用。六目标编译不是各平台实机验收，headless Tester 不是操作系统输入法实机。修复不要求数据迁移；回滚代码会重新暴露静默丢编辑，应连同测试和三个调用点整体审阅。
+
+修复实现提交：[`ab46ea6580fffd9cabb0e97b2a84b6c38c5a14f5`](https://github.com/ferrumlux/noonmark-go/commit/ab46ea6580fffd9cabb0e97b2a84b6c38c5a14f5)。正式完整门禁、六编译和Linux CLI均通过，详见[验收记录](../../tasks/fix-unicode-title/VERIFY.md)。

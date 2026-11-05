@@ -1,13 +1,13 @@
 # Unicode 标题比较修复验收
 
-隔离基线：`c619c7824f1cb16c4bf25ebc57e14e86a634e659`。只在 `unicode-title-work` 变更，没有修改正式树、Swift 或 MyGo 原仓库，没有 push。案例 [GO-RUNTIME-011](../../engineering/failure-cases/GO-RUNTIME-011.md) 记录引入提交、原始反例、证明、永久门禁和风险。
+隔离基线：`c619c7824f1cb16c4bf25ebc57e14e86a634e659`。先在独立候选验证，再逐文件哈希核对后合入正式副本；Swift 与 MyGo 原仓库未修改。案例 [GO-RUNTIME-011](../../engineering/failure-cases/GO-RUNTIME-011.md) 记录引入提交、原始反例、证明、永久门禁和风险。
 
 ## 源码交付
 
 - 新共用包 `domain-core/textcanon`：`Equivalent(a,b string) bool`，非法UTF-8 fail-closed，不重写输入字节。
 - 三个比较点 `core/title.go`、`internal/inputdraft/gate.go`、`internal/titlesession/session.go` 替换stream-safe整串NFC。
 - 三个独立domain模块最低Go同步1.27.3，保持Unicode17，不改任何依赖版本或sum。
-- 五层 `*_streamsafe_test.go` 与共用包测试形成永久门禁。总表由集成方追加本目录 `gates.tsv` 的单行，避免覆盖并行工作。
+- 五层 `*_streamsafe_test.go` 与共用包测试形成永久门禁。本目录 `gates.tsv` 单行已追加正式总表，注册测试同时纳入 textcanon；没有覆盖并行工作。
 
 ## 已验证
 
@@ -30,6 +30,12 @@ build root `/tmp/noonmark-unicode-build`：
 - `evidence/check-final-utf8.log`：最终整仓gofmt/race/vet/依赖与native门禁。
 - `evidence/cross-final-utf8.log`、`evidence/entrypoints-final-utf8.log`：编译与Linux CLI。
 
-完整 `scripts/check` 的最终退出状态以交付报告为准；日志内任何红色均不得以focused通过替代。构建环境使用显式Go1.27.3、GOTOOLCHAIN=local、官方GOPATH和外置GOCACHE；生成资料均为development/e2e合成资料。生产/iCloud/Keychain/AI未启用。
+候选及正式完整 `scripts/check` 均已 exit0；原始红日志保留，不以focused通过替代完整验收。构建环境使用显式Go1.27.3、GOTOOLCHAIN=local、官方GOPATH和外置GOCACHE；生成资料均为development/e2e合成资料。生产/iCloud/Keychain/AI未启用。
 
 仍未验证：Apple/Swift动态oracle、真实操作系统IME与macOS/Windows实机。没有数据迁移，不将离屏Tester或六编译冒称完整平台对等。
+
+## 正式整合
+
+实现提交 [ab46ea6580fffd9cabb0e97b2a84b6c38c5a14f5](https://github.com/ferrumlux/noonmark-go/commit/ab46ea6580fffd9cabb0e97b2a84b6c38c5a14f5)。2026-11-05 19:33–19:39 UTC，正式副本完整 scripts/check、六目标cross-build和Linux development CLI全部exit0。应用main race56.101s、taskapp16.035s、core1.278s、textcanon1.556s；native ui2.632s、root1.051s。51项依赖准备测试通过，day/pool离屏帧各2400×1536。16个冻结候选文件哈希全部一致，另仅追加统一门禁登记与registry目录。
+
+正式记录为外置 `noonmark-unicode-integrated-{check,cross,entry}.log`。此时新提交的 hosted CI 待实际触发和终态核对，不能借用 c619c78 的绿色结果。
