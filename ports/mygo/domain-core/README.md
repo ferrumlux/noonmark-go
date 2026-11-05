@@ -1,6 +1,6 @@
 # Noonmark Go 领域内核第一批
 
-这是可以单独合并的第一批 Go 代码，不是完整 Noonmark 替代品。源自 `quboliu/noonmark` commit `43e6eefaae3a04be89cab3e234d470111afd80ef`，保留 AGPL-3.0 LICENSE 与 NOTICE。本目录不依赖 MyGo、第三方 Go 包、用户资料或网络。
+这是可以单独合并的第一批 Go 代码，不是完整 Noonmark 替代品。源自 `quboliu/noonmark` commit `43e6eefaae3a04be89cab3e234d470111afd80ef`，保留 AGPL-3.0 LICENSE 与 NOTICE。本目录不依赖 MyGo、用户资料或运行时网络。标题规范等价比较使用已锁定的 `golang.org/x/text/unicode/norm`，不会重写储存字节。
 
 ## 已实现
 
@@ -10,7 +10,8 @@
 - `ValidateTaskGraph` 检查本批实体的身份、时钟、状态事实、父引用、定义版本/当前项/后继环、计划子任务、活动trace唯一性、priority槽、延期/延续/变更链接、子任务lineage/顺序/因果环、取消身份与附言墓碑。
 - `TaskKernel` 提供串行、深复制、验证后发布的基础命令：创建入池、排期、完成、撤销今日完成、日结。失败不会留下半个状态；Snapshot返回深复制。
 - `DayTodo` 正确区分用户可见状态、movement事实与内部取消，并过滤同日新事实已替代的旧延期源；默认置顶/待办/终态排序。
-- 本次有34个顶层测试/模糊测试入口，91个通过事件（包括子测试与seed），覆盖率90.5%。Linux amd64上的race检测、vet与5秒fuzz通过。
+- 新增显式 `RenameTaskTitle` 与输入保存 `SaveTaskTitleInput`，按历史引用决定定义分叉或复用；标题、详情、计划子任务与历史引用受到保护。详见 `../docs/tasks/connect-title-edit/CORE.md`。
+- 测试数量以当前 `scripts/check` 运行结果为准，不沿用首批旧计数或覆盖率。
 
 ## 明确边界
 
@@ -24,7 +25,7 @@
 
 ## 接口与合并方式
 
-模块：`github.com/ferrumlux/noonmark/ports/mygo/domain`，包：`core`。Go最低声明1.23；当前验证工具链为Go1.27.3 linux/amd64。
+模块：`github.com/ferrumlux/noonmark/ports/mygo/domain`，包：`core`。Go最低声明1.26.0（x/text v0.43.0 的最低要求）；当前验证工具链为Go1.27.3 linux/amd64。
 
 可以整体放到`ports/mygo/domain/`，主模块添加本地replace；也可把`core/`整体迁至主模块的领域目录并调整import路径。不要复制`.cache/`、`coverage.out`或跨平台测试二进制。保留LICENSE/NOTICE，后续提交按英文commit规范。
 

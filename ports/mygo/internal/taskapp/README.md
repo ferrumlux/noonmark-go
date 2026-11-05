@@ -1,10 +1,10 @@
 # 隔离任务应用服务
 
-当前服务只接入第一批 TaskKernel 的普通任务：任务池新增、今日新增、今天/未来排期、今日完成/撤销及重开时的过去日期结算。重复计划、分类、飞光、子任务编辑与完整上游命令还未接入此运行服务。
+当前服务只接入第一批 TaskKernel 的普通任务：任务池新增、今日新增、今天/未来排期、今日完成/撤销、两个标题保存入口及重开时的过去日期结算。重复计划、分类、飞光、子任务编辑与完整上游命令还未接入此运行服务。
 
 ## 提交边界
 
-每个命令在完整 task + classification history clone 上执行，经过领域验证、无条件 empty-history audit 与候选 v7 编解码规范化，再写入新 revision。整个写入和回读确认成功后才替换内存快照。UI 不乐观发布未保存事实。重复完成、过去/未来完成、无效标题及错误排期沿用领域拒绝条件。
+每个命令在完整 task + classification history clone 上执行，经过领域验证、无条件 empty-history audit 与候选 v7 编解码规范化，再写入新 revision。标题 no-op 不新增 revision，但仍检查既有磁盘 prefix，不能绕过损坏或冲突检查。整个写入和回读确认成功后才替换内存快照。UI 不乐观发布未保存事实。重复完成、过去/未来完成、无效标题及错误排期沿用领域拒绝条件。
 
 磁盘目录必须由 Create 以 exclusive mkdir 新建，并带固定 development marker。Open 只接受该身份，不访问默认用户目录、production、iCloud 或 Keychain。路径及祖先 symlink 被拒绝；读写使用 os.Root 限制目录边界，文件还须为普通文件并保持读取前后身份一致。调用者应传入物理绝对路径。
 
@@ -21,3 +21,9 @@
 跨日结算与空分类历史在一个候选快照中验证和提交。打开、每分钟轮询及每次命令前检查自然日；失败不发布任务、audit 或 today 任一部分。手动历史选择保留；尚未实现/验证原版全部系统时区、唤醒和 locale 通知。没有一年演示故事、SQLite 或加密 AI sidecar，因此不能称为上游正式互动演示基线。
 
 旧 v1 development session 不包含完整结算 audit，因此按开发 clean-cut 拒绝打开而不迁移，原文件全部保留。请创建全新 v2 session。通用 v7 codec 本身仍默认拒绝非空 audit；当前 runtime 的审计函数只证明受限空 catalog 子集，任何更丰富分类事实仍 fail-closed。
+
+## 标题编辑的专用保护
+
+`RenameTaskTitle` 与 `SaveTaskTitleInput` 区分显式版本分叉和输入复用，调用方不能用 rename 代替逐字 autosave。标题命令使用独立重放审计，严格冻结历史内容，只容许当前历史定义向本次合法新后继推进三项 metadata。原 `CaptureEmptyHistory` 完全不变；缺失 audit、更多 runtime scope、任意字段豁免均拒绝。详见 `../../docs/tasks/connect-title-edit/TRANSACTION.md`。
+
+Swift String canonical 等价输入不重写原字符串或消耗磁盘 revision。Service 仍在私有候选中预计算时钟和身份，不能把这个入口理解为不消耗任何计算资源；核心 no-op 本身不读取未使用 clock/ID。UI 编辑尚未开放，非空约束、IME、debounce、失焦和退出 flush 属于下一阶段，核心允许空标题不代表 UI 应将空白持久化。

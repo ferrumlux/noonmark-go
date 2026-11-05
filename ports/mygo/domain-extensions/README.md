@@ -9,7 +9,7 @@
 - `classification/`：低层 catalog 与关系历史、命令执行、显式 trace 快照、重放验证。
 - `recurrence/`：重复计划事实、创建／转换／修订／跳过／停止／完成目标结算、模板内容／分类版本和轨迹投影。
 - `integration/`：仅测试。展示在私有 candidate 上同时准备父模板和子任务分类，最终验证后才发布，以及为什么删除分类必须检查父模板全部历史版本。
-- 标准库实现，不依赖 MyGo、HTTP、SQLite、CGO 或平台 UI。
+- 本层使用标准库与 core，间接依赖 core 的锁定 x/text；Go 最低 1.26.0。不依赖 MyGo、HTTP、SQLite、CGO 或平台 UI。
 
 没有修改第一批、Swift 参考仓库或 `prototype`。没有读取、定位或使用 production、iCloud、Keychain 或实际个人资料。
 

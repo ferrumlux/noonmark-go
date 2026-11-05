@@ -40,7 +40,7 @@ Linux 原生窗口需要 GTK3 和可用 DISPLAY / WAYLAND_DISPLAY。无显示服
 - domain-core：TaskChain / Definition / Trace、精确时间与历史不变量。
 - domain-extensions：分类、重复计划生命周期及版本历史，尚未接入运行 UI。
 - domain-codec：候选 v7 规范编解码及安全校验，只用合成 fixture。Swift 互通尚未验证，非空分类 audit 默认拒绝。
-- internal/taskapp：仅普通任务的开发会话事务与持久化，详细安全和容量边界见其 README。
+- internal/taskapp：仅普通任务的开发会话事务与持久化，包括有专用历史审计的标题编辑 API；编辑 UI 尚未开放，详细安全和容量边界见其 README。
 - docs/migration-audit：完整产品差距与上游测试库存。
 
 还未完成 SQLite schema 19、同步、AI、全局快捷键、子任务与完整编辑/分类/重复/飞光运行接线、原生时区/唤醒通知完整对等、真实一年互动演示及原生三平台验收。当前文件后端不能替代生产存储；不得打开、探测或迁移实际用户数据。
