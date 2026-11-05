@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+# Same entrypoint locally and on an ordinary Ubuntu hosted runner.
+set -euo pipefail
+APP=$(cd -- "$(dirname -- "$0")/../.." && pwd -P)
+: "${NOONMARK_MYGO_BUILD_ROOT:?Set an existing, empty external directory}"
+ROOT=$(cd -- "$NOONMARK_MYGO_BUILD_ROOT" && pwd -P)
+REPO=$(cd -- "$APP/../.." && pwd -P)
+case "$ROOT/" in "$REPO/"*) echo 'CI build root must be external' >&2; exit 2;; esac
+test -z "$(find "$ROOT" -mindepth 1 -maxdepth 1 -print -quit)" || { echo 'CI requires a genuinely empty build root' >&2; exit 2; }
+export NOONMARK_MYGO_BUILD_ROOT="$ROOT" GOCACHE="$ROOT/go-cache" GOPATH="$ROOT/go-path"
+export GOMODCACHE="$GOPATH/pkg/mod" GOPROXY=https://proxy.golang.org GOSUMDB=sum.golang.org
+export GOTOOLCHAIN=local GOENV=off GOTELEMETRY=off PYTHONDONTWRITEBYTECODE=1
+export LIBGL_ALWAYS_SOFTWARE=1 EGL_PLATFORM=surfaceless
+export XDG_CACHE_HOME="$ROOT/xdg-cache"
+mkdir -p "$ROOT/ci-evidence" "$ROOT/tmp" "$XDG_CACHE_HOME"
+export TMPDIR="$ROOT/tmp"
+GO=${NOONMARK_GO:-go}
+test "$("$GO" env GOVERSION)" = go1.27.3
+# Keep each persisted log under 256 KiB, while streaming all output to CI.
+run() {
+  local name=$1; shift
+  "$@" 2>&1 | python3 -B "$APP/scripts/ci/capture.py" "$ROOT/ci-evidence/$name.txt"
+}
+{
+  printf 'Source commit: %s\n' "${GITHUB_SHA:-local-candidate}"
+  "$GO" version
+  python3 --version
+  printf 'Fresh module and build caches; public proxy and checksum database; no restored cache.\n'
+  printf 'Six targets are compile-only; Linux CLI headless rendering is not desktop or IME validation.\n'
+  printf 'Full-framework allocation suite is excluded, not passed; check-mygo-native uses its supported targeted pattern.\n'
+  font=$(fc-match --format='%{family}\n' 'Noto Sans CJK SC')
+  test "$font" = 'Noto Sans CJK SC' || { echo "Required CJK font unavailable" >&2; exit 2; }
+  printf 'Font: %s\n' "$font"
+} > "$ROOT/ci-evidence/environment.txt"
+run checks bash "$APP/scripts/check"
+run cross-build bash "$APP/scripts/cross-build"
+export NOONMARK_MYGO_BINARY="$ROOT/bin/noonmark-mygo-linux-amd64"
+run entrypoints bash "$APP/scripts/test-entrypoints"
+(cd "$ROOT/bin" && sha256sum noonmark-mygo-*) > "$ROOT/ci-evidence/binary-checksums.txt"
+printf 'All supported development gates passed. No release or non-Linux runtime claim.\n' | tee "$ROOT/ci-evidence/result.txt"

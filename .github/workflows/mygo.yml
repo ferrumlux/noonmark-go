@@ -1,0 +1,45 @@
+name: MyGo development checks
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  development:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      PYTHONDONTWRITEBYTECODE: '1'
+      PIP_DISABLE_PIP_VERSION_CHECK: '1'
+      LIBGL_ALWAYS_SOFTWARE: '1'
+      EGL_PLATFORM: surfaceless
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6, verified 2026-11-05
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6, verified 2026-11-05
+        with:
+          go-version: '1.27.3'
+          cache: false
+      - name: Install Linux headless rendering prerequisites
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y python3-venv gcc libc6-dev fontconfig fonts-noto-cjk libgtk-3-0t64 libpango-1.0-0 libpangocairo-1.0-0 libpangoft2-1.0-0 libcairo2 libepoxy0 libegl1 libgl1-mesa-dri
+          export NOONMARK_MYGO_BUILD_ROOT="$RUNNER_TEMP/noonmark-mygo"
+          printf 'NOONMARK_MYGO_BUILD_ROOT=%s\n' "$NOONMARK_MYGO_BUILD_ROOT" >> "$GITHUB_ENV"
+          mkdir -p "$NOONMARK_MYGO_BUILD_ROOT"
+          python3 -m venv "$RUNNER_TEMP/noonmark-ci-python"
+          "$RUNNER_TEMP/noonmark-ci-python/bin/pip" install --no-cache-dir -r ports/mygo/scripts/ci/requirements.txt
+      - name: Validate workflow contract
+        run: '"$RUNNER_TEMP/noonmark-ci-python/bin/python" -B ports/mygo/scripts/ci/validate.py'
+      - name: Fresh-cache tests, six builds and synthetic CLI guards
+        run: bash ports/mygo/scripts/ci/run
+      - name: Upload bounded development evidence only
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4, verified 2026-11-05
+        with:
+          name: mygo-development-evidence-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/noonmark-mygo/ci-evidence/*.txt
+          if-no-files-found: warn
+          retention-days: 7
