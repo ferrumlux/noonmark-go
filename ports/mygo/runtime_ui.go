@@ -138,6 +138,9 @@ func (s *app) runCommand(fn func() error, clear bool) {
 	}
 }
 func (s *app) submitLiveDraft(pool bool) {
+	if s.runtimePoolPicker {
+		return
+	}
 	title := strings.TrimSpace(s.draft)
 	if title == "" {
 		s.runtimeError = "请输入任务标题。"
@@ -215,6 +218,7 @@ func (s *app) runtimeView(c *ui.Context) {
 	}
 	if s.page == "day" {
 		s.liveDayView(c, w, h)
+		s.livePoolPicker(c)
 		return
 	}
 	if s.page == "calendar" {

@@ -46,7 +46,7 @@ func calendarDiskSignature(t *testing.T, path string) map[string][32]byte {
 func TestLiveCalendarNavigationIsReadOnly(t *testing.T) {
 	s, tt, svc, path := liveTest(t)
 	liveType(t, tt, "真实月历任务")
-	liveClick(t, tt, "添加任务")
+	liveSubmit(t, tt)
 	before := svc.Snapshot()
 	files := calendarDiskSignature(t, path)
 	liveClick(t, tt, "切换到日历")
@@ -123,7 +123,7 @@ func TestLiveCalendarSettlementAndRestart(t *testing.T) {
 	s, tt, svc, path := liveTest(t)
 	for _, title := range []string{"昨日完成", "昨日未完成"} {
 		liveType(t, tt, title)
-		liveClick(t, tt, "添加任务")
+		liveSubmit(t, tt)
 	}
 	trace := svc.Snapshot().Traces[0].ID
 	liveClick(t, tt, "切换完成 "+string(trace))
@@ -240,7 +240,7 @@ func TestLiveCalendarEvidenceFrames(t *testing.T) {
 	tt := ui.NewTester(s.view, 1200, 768)
 	for i := 0; i < 8; i++ {
 		liveType(t, tt, fmt.Sprintf("合成月历：第%d项任务，验证长标题不越过格线", i+1))
-		liveClick(t, tt, "添加任务")
+		liveSubmit(t, tt)
 	}
 	liveClick(t, tt, "切换完成 "+string(svc.Snapshot().Traces[0].ID))
 	liveClick(t, tt, "切换到日历")

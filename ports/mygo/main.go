@@ -51,6 +51,8 @@ type app struct {
 	runtimeSelection     string
 	runtimeDayRail       bool
 	runtimeDayFocus      string
+	runtimePoolPicker    bool
+	runtimePoolFocus     string
 	runtimeCalendarDate  core.LocalDate
 	runtimeCalendarRail  bool
 	runtimeCalendarFocus string

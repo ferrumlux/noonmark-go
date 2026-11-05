@@ -107,7 +107,7 @@ func TestSourceVisualEvidenceFrames(t *testing.T) {
 	s, tt, svc, _ := liveTest(t)
 	for _, title := range []string{"合成：整理评审材料", "合成：确认明天议程", "合成：准备发布说明"} {
 		liveType(t, tt, title)
-		liveClick(t, tt, "添加任务")
+		liveSubmit(t, tt)
 	}
 	liveClick(t, tt, "切换完成 "+string(svc.Snapshot().Traces[0].ID))
 	save := func(name string) {

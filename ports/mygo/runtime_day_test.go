@@ -275,7 +275,7 @@ func TestLiveDayEvidenceFrames(t *testing.T) {
 	tt := ui.NewTester(s.view, 1200, 768)
 	for _, title := range []string{"合成：整理今日评审材料", "合成：核对明日计划", "合成：完成回归验证"} {
 		liveType(t, tt, title)
-		liveClick(t, tt, "添加任务")
+		liveSubmit(t, tt)
 	}
 	liveClick(t, tt, "切换完成 "+string(svc.Snapshot().Traces[0].ID))
 	saveCalendarTestEvidence(t, s, "live-day-strip-2x.png", 1200, 768)

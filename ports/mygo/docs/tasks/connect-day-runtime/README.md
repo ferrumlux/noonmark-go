@@ -31,3 +31,5 @@ task-id: connect-day-runtime。级别 P（新增写命令，沿用现有聚合�
 - 另一审阅者独立只读检查未来服务/投影、最小960×720、日期与长详情滚动，通过后亲自查看2×复盘图。先前future统计疑点经上游noReview分支核对撤销，不添加原版没有的行为。
 - 2×离屏图保存在外置 noonmark-day-build/evidence：strip、review、future、history、long-selected-min，均已实际查看；日期条/输入/右栏不重叠。截图是合成会话，不是正式Swift fixture。SF字体/图标、完整AX、动画/手势、主题/语言设置及实机尚未对等验证。
 - 原版quick-add旁是任务池选择器，目前仍是明确可用的添加按钮。日期picker、视图配置、分类/标签/子任务编辑、复盘/AI与真实存储同步仍待接通。不得称本批等于完整复刻或发行版。
+
+后续 connect-pool-picker 批次已用真实任务池选择器替换本批保留的Day添加按钮，恢复原版Enter快速新增与右侧“从任务池排期…”入口；上文保留为本批历史记录，不再代表当前差异。

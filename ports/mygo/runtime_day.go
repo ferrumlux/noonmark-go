@@ -32,7 +32,7 @@ func (s *app) selectRuntimeDate(date core.LocalDate, focus bool) {
 	}
 }
 func (s *app) liveDayView(c *ui.Context, w, h float32) {
-	if focus := ui.FocusedValue(c, &s.runtimeDayFocus); focus != "" {
+	if focus := ui.FocusedValue(c, &s.runtimeDayFocus); focus != "" && !s.runtimePoolPicker {
 		if d, e := core.ParseLocalDate(focus); e == nil {
 			for _, key := range []struct {
 				key  ui.Key
@@ -161,8 +161,11 @@ func (s *app) liveDayMain(c *ui.Context, w, h float32, day taskview.DayPage) {
 				if day.IsFuture {
 					placeholder = "为这一天排期"
 				}
-				ui.TextInputBase(c.Key("live-task-input"), &s.draft).Absolute().Size(w-112, 37).FontSize(12.5).Padding(8.5, 10).Background(sourceVisual.controlFill).Border(1, line.Alpha(.72)).Radius(8).Label("开发任务标题").Placeholder(placeholder).OnSubmit(func() { s.submitLiveDraft(false) })
-				calendarHeaderButton(c, "day-add", w-96, 4, 56, "添加", "添加任务", true, func() { s.submitLiveDraft(false) })
+				pickerText := "从任务池排期…"
+				pickerWidth, _ := dayMeasure(c, "day-picker-width", 0, 12, 400, pickerText)
+				pickerWidth += 20
+				ui.TextInputBase(c.Key("live-task-input"), &s.draft).Absolute().Size(w-40-pickerWidth-8, 37).FontSize(12.5).Padding(8.5, 10).Background(sourceVisual.controlFill).Border(1, line.Alpha(.72)).Radius(8).Label("开发任务标题").Placeholder(placeholder).OnSubmit(func() { s.submitLiveDraft(false) })
+				calendarHeaderButton(c, "day-from-pool", w-40-pickerWidth, 0, pickerWidth, pickerText, "从任务池排期", true, s.openPoolPicker)
 			})
 		}
 		if s.runtimeNotice != "" && s.runtimeError == "" {

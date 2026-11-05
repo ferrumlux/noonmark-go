@@ -38,13 +38,18 @@ func liveType(t *testing.T, tt *ui.Tester, title string) {
 	liveClick(t, tt, "开发任务标题")
 	tt.Type(title)
 }
+func liveSubmit(t *testing.T, tt *ui.Tester) {
+	t.Helper()
+	liveClick(t, tt, "开发任务标题")
+	tt.Key(0, ui.KeyEnter)
+}
 func TestLiveUICommandsPersistAcrossRestart(t *testing.T) {
 	s, tt, svc, path := liveTest(t)
 	if !tt.HasText("这一天没有留下任务。") || tt.HasText("修复登录阻断问题") {
 		t.Fatal("static facts leaked into live session")
 	}
 	liveType(t, tt, "合成：编写发布说明")
-	liveClick(t, tt, "添加任务")
+	liveSubmit(t, tt)
 	g := svc.Snapshot()
 	if len(g.Traces) != 1 || s.draft != "" || s.runtimeError != "" || !tt.HasText("合成：编写发布说明") {
 		t.Fatal("create via UI did not persist")
@@ -96,7 +101,7 @@ func TestLiveUICommandsPersistAcrossRestart(t *testing.T) {
 }
 func TestLiveUIDraftsErrorsCancelAndRepeatedClicks(t *testing.T) {
 	s, tt, svc, path := liveTest(t)
-	liveClick(t, tt, "添加任务")
+	liveSubmit(t, tt)
 	if len(svc.Snapshot().Chains) != 0 || s.runtimeError == "" {
 		t.Fatal("blank title accepted")
 	}
@@ -105,8 +110,8 @@ func TestLiveUIDraftsErrorsCancelAndRepeatedClicks(t *testing.T) {
 	if s.draft != "保留草稿" {
 		t.Fatal("navigation lost unsaved draft")
 	}
-	liveClick(t, tt, "添加任务")
-	liveClick(t, tt, "添加任务")
+	liveSubmit(t, tt)
+	liveSubmit(t, tt)
 	if len(svc.Snapshot().Chains) != 1 {
 		t.Fatal("repeated submit duplicated task")
 	}
@@ -115,7 +120,7 @@ func TestLiveUIDraftsErrorsCancelAndRepeatedClicks(t *testing.T) {
 	if e := os.Mkdir(filepath.Join(path, "unexpected"), 0700); e != nil {
 		t.Fatal(e)
 	}
-	liveClick(t, tt, "添加任务")
+	liveSubmit(t, tt)
 	if s.draft != "磁盘失败时保留" || s.runtimeError == "" || !reflect.DeepEqual(before, svc.Snapshot()) {
 		t.Fatal("failed save lost draft or published")
 	}
@@ -131,7 +136,7 @@ func TestLiveUIDraftsErrorsCancelAndRepeatedClicks(t *testing.T) {
 func TestLiveUIDateAndUnsupportedPagesDoNotInventData(t *testing.T) {
 	s, tt, svc, _ := liveTest(t)
 	liveType(t, tt, "今日事项")
-	liveClick(t, tt, "添加任务")
+	liveSubmit(t, tt)
 	liveClick(t, tt, "后一天")
 	if s.runtimeDate.Day != 6 || !tt.HasText("这一天没有留下任务。") {
 		t.Fatal("future date projection")
@@ -204,7 +209,7 @@ func TestLiveUIEvidenceFrames(t *testing.T) {
 	s, tt, svc, _ := liveTest(t)
 	for _, title := range []string{"合成：整理评审材料", "合成：确认明天议程", "合成：准备发布说明"} {
 		liveType(t, tt, title)
-		liveClick(t, tt, "添加任务")
+		liveSubmit(t, tt)
 	}
 	liveClick(t, tt, "切换完成 "+string(svc.Snapshot().Traces[0].ID))
 	save := func(name string) {
@@ -223,7 +228,7 @@ func TestLiveUIEvidenceFrames(t *testing.T) {
 	save("live-day.png")
 	liveClick(t, tt, "切换到任务池")
 	liveType(t, tt, "合成：稍后处理的想法")
-	liveClick(t, tt, "添加任务")
+	liveSubmit(t, tt)
 	save("live-pool.png")
 	liveClick(t, tt, "切换到已完成")
 	save("live-completed.png")
@@ -233,7 +238,7 @@ func TestLiveUIEvidenceFrames(t *testing.T) {
 func TestLiveUICorruptHistoryRefusesSave(t *testing.T) {
 	s, tt, svc, path := liveTest(t)
 	liveType(t, tt, "first")
-	liveClick(t, tt, "添加任务")
+	liveSubmit(t, tt)
 	before := svc.Snapshot()
 	file := filepath.Join(path, "rev-0000000002/state.json")
 	b, e := os.ReadFile(file)
@@ -245,7 +250,7 @@ func TestLiveUICorruptHistoryRefusesSave(t *testing.T) {
 		t.Fatal(e)
 	}
 	liveType(t, tt, "keep this draft")
-	liveClick(t, tt, "添加任务")
+	liveSubmit(t, tt)
 	if s.runtimeError == "" || s.runtimeNotice != "" || s.draft != "keep this draft" || !reflect.DeepEqual(before, svc.Snapshot()) {
 		t.Fatal("corrupt open session reported success or lost draft")
 	}
@@ -259,14 +264,14 @@ func TestLiveUINaturalDayAdvancesBeforeCommands(t *testing.T) {
 	at := time.Date(2026, 11, 5, 23, 59, 0, 0, time.UTC)
 	s.observeRuntimeDay(func() time.Time { return at })
 	liveType(t, tt, "yesterday")
-	liveClick(t, tt, "添加任务")
+	liveSubmit(t, tt)
 	at = at.Add(2 * time.Minute)
 	tt.Frame()
 	if s.runtimeDate.Day != 6 || svc.Today().Day != 6 || svc.Snapshot().Traces[0].Status != core.TraceUnfinished || !tt.HasText("2026年11月6日") {
 		t.Fatal("day boundary not applied before view")
 	}
 	liveType(t, tt, "today")
-	liveClick(t, tt, "添加任务")
+	liveSubmit(t, tt)
 	g := svc.Snapshot()
 	if len(g.Traces) != 2 || g.Traces[1].Date.Day != 6 {
 		t.Fatal("new command used yesterday")
@@ -287,7 +292,7 @@ func TestLiveUIBoundaryFailureBlocksCommandsAndPreservesDraft(t *testing.T) {
 	at := time.Date(2026, 11, 5, 23, 59, 0, 0, time.UTC)
 	s.observeRuntimeDay(func() time.Time { return at })
 	liveType(t, tt, "original")
-	liveClick(t, tt, "添加任务")
+	liveSubmit(t, tt)
 	liveType(t, tt, "unsaved next day draft")
 	before := svc.Snapshot()
 	if e := os.Remove(filepath.Join(path, "SESSION_IDENTITY")); e != nil {
@@ -295,7 +300,7 @@ func TestLiveUIBoundaryFailureBlocksCommandsAndPreservesDraft(t *testing.T) {
 	}
 	at = at.Add(2 * time.Minute)
 	tt.Frame()
-	liveClick(t, tt, "添加任务")
+	liveSubmit(t, tt)
 	if svc.Today() != liveTestDay || s.runtimeDate != liveTestDay || s.draft != "unsaved next day draft" || s.runtimeError == "" || !reflect.DeepEqual(before, svc.Snapshot()) {
 		t.Fatal("boundary failure partially published or allowed mutation")
 	}
