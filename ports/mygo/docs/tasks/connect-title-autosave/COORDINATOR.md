@@ -1,0 +1,15 @@
+# 标题应用协调器
+
+日期：2026-11-06（新加坡）。本批先接可测试的 internal/titlecoordinator，不改变实际只读UI；MyGo/Service真实接线另行验证。
+
+设计：单一FIFO保存lane只读不可变trace/text/request，实际执行时采样自然日，AdvanceTo成功后才调用同事务字节ack。UI串行阶段拥有session/native/timer，worker只通过异步Post交还结果；UI不等待worker。相同job保留deadline、0ms立即在安全阶段pump。普通blur保留源RequestFlush；导航先Lifecycle确认再变更视图，这是与Swift先导航后retiring保存的明确安全差异。
+
+每次真正BeforeClose/BeforeQuit必须新native最终化；不会用旧clean布尔或timeout放行。注册表epoch和currentIntent防同步hook新增/移除editor漏检；变动最多异步重新验证一次，持续变动明确失败，不无限spin。ReleaseClosed若发现新dirty恢复close意图并推进保存，completion只能重入真实Close。clean历史trace禁止再写但允许fresh确认后关闭/转readonly；dirty/inflight/失败草稿仍保留。
+
+SynchronizePersistedText接已核实有序publication，先读真实native，dirty/IME/inflight不被覆盖。每entry publication token防nested B->hook C->outer B将新值退回；旧调用安全no-op。来源没有版本/顺序证明的延迟Snapshot不可冒充已核实更新。Native.Replace必须由真实适配器再次核验最新native输入，不能只写应用draft假称成功。
+
+五项独立反例原样保留（只改package/import/gofmt）：quit漏新注册、release漏新注册、clean历史永久拒关、release新dirty无进度、nested有序publication倒退。最终候选48项测试race/vet通过，覆盖率92.0%，独立复审原5反例通过。核心实现改包名前hash4f620d0477616296c6e5845d23de2a88369e96a980572eba4a00c9abee868ef9。
+
+必须由真实应用补足：pending注册关闭窗口、native帧间未绑定输入与Replace证明、统一普通命令保存lane及在途退出保护、自然日后旧draft可见、跨窗发布顺序、真实Close/Quit、持久化故障及重开。现有mock通过不等于上述已接通，更不等于三平台实机/IME/Swift oracle。
+
+正式集成验证：scripts/check通过，应用主包race34.022s、titlecoordinator48测试race1.015s，其余未改包使用测试缓存；全模块vet/gofmt、50项依赖门禁、37项prepared-native回归与vet通过。六目标编译、development CLI新建/重开/拒绝复用通过。外置证据为evidence/title-coordinator-{check,cross,entrypoints}-final.log。此批没有启用编辑UI，不以mock替代下一批实际接线。

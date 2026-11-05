@@ -10,7 +10,7 @@
 
 脚本 check-mygo-native 默认执行定向回归，--all-ui 执行完整ui race。probe-title-native-input明确切回未修改官方依赖，保留原始红例，不能拿基线失败冒充修复失败。check-dependency执行合成prepare门禁。
 
-证据分开记录：隔离overlay最终37项定向测试、race/vet、两个非使用样例release文件大小不变；完整ui race338.880s只有TestDiffFrameAllocs失败，steady3/within9与未改基线相同，diff滚动113对基线112。没有改阈值或宣称框架全绿。prepared正式路径与全应用复核结果待下节追加。真实三平台IME、非Linux实机、Swift oracle和应用退出流程尚未验收。
+证据分开记录：隔离overlay最终37项定向测试、race/vet、两个非使用样例release文件大小不变；完整ui race338.880s只有TestDiffFrameAllocs失败，steady3/within9与未改基线相同，diff滚动113对基线112。没有改阈值或宣称框架全绿。prepared正式路径与全应用复核结果见下节。真实三平台IME、非Linux实机、Swift oracle和应用退出流程尚未验收。
 
 ## 正式入口验证结果
 
