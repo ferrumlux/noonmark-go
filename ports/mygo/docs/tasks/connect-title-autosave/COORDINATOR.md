@@ -13,3 +13,9 @@ SynchronizePersistedText接已核实有序publication，先读真实native，dir
 必须由真实应用补足：pending注册关闭窗口、native帧间未绑定输入与Replace证明、统一普通命令保存lane及在途退出保护、自然日后旧draft可见、跨窗发布顺序、真实Close/Quit、持久化故障及重开。现有mock通过不等于上述已接通，更不等于三平台实机/IME/Swift oracle。
 
 正式集成验证：scripts/check通过，应用主包race34.022s、titlecoordinator48测试race1.015s，其余未改包使用测试缓存；全模块vet/gofmt、50项依赖门禁、37项prepared-native回归与vet通过。六目标编译、development CLI新建/重开/拒绝复用通过。外置证据为evidence/title-coordinator-{check,cross,entrypoints}-final.log。此批没有启用编辑UI，不以mock替代下一批实际接线。
+
+## 真实 UI 接线前的在途回归修正
+
+真实输入与重复关闭的接线测试发现：旧标题保存尚在途时，新输入可能产生已到期的候选。协调器若此刻再次 BeginPersistence，会把正常的单一在途门禁拒绝误当失败，并清除待完成的关闭意图。现 pump 保留该候选，等待当前请求完成后再按最新 native 快照推进；不跳过输入读取，也不允许并行写入。
+
+新增独立回归覆盖 close、quit、navigation、普通 blur 及 observe 五种重复路径，断言 A 与 AB 各自按序提交，旧确认不能提前关闭，最新意图最终继续。修改前 observe 路径实际复现三次 ErrNotReady；修改后全部协调器测试及 race/vet 通过。证据为 evidence/title-inflight-review-red.log 和 title-inflight-{check,cross,entrypoints}-final.log。此修正仍不单独宣称实际 UI 或原生平台验收完成。

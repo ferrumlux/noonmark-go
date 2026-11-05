@@ -279,7 +279,11 @@ func (c *Coordinator) EndEditing(r Registration) error {
 	return nil
 }
 func (c *Coordinator) pump(e *entry) {
-	if c.find(e.reg) != e || !c.usable(e) || e.job == nil || c.cfg.Clock.Now().Before(e.deadline) {
+	// A newer draft may already carry a due (including zero-delay) candidate
+	// while the previous captured write still owns the gate. Preserve that job
+	// until completion; attempting it early is not a persistence failure and
+	// must not cancel the user's pending close, quit or navigation intent.
+	if c.find(e.reg) != e || !c.usable(e) || e.flight != nil || e.job == nil || c.cfg.Clock.Now().Before(e.deadline) {
 		return
 	}
 	b := e.session.BeginPersistence(*e.job)
