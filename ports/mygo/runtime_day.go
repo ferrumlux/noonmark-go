@@ -381,17 +381,12 @@ func (s *app) liveDayDetail(c *ui.Context, w, h float32, day taskview.DayPage) {
 		selected = &s.titleEditor.row
 	}
 	if selected != nil {
-		txt(c, 14, 18, 12, "任务详情", muted, 600)
+		txt(c, 14, 18, detailHeaderSize, "任务详情", sourceVisual.text3, 600).LetterSpacing(.8)
+		s.detailCloseButton(c, w-74, 14)
 		ui.Scroll(c.Key("day-task-detail-scroll")).Absolute().Left(14).Top(56).Size(w-28, h-70).Children(func() {
 			s.liveTitle(c, w-28, *selected)
-			ui.Box(c).Height(16)
-			ui.Text(c, statusText(selected.Status)).FontSize(11.5).TextColor(sourceVisual.text3).Label("日任务详情状态")
-			ui.Box(c).Height(10)
-			ui.Text(c, day.Selected.String()).FontSize(11).TextColor(muted)
-			ui.Box(c).Height(18)
-			ui.Box(c).Size(w-28, 28).Children(func() {
-				calendarHeaderButton(c, "day-show-review", 0, 0, 100, "返回日统计", "返回日统计", true, func() { s.titleTransition(func() { s.runtimeSelection = "" }) })
-			})
+			ui.Box(c).Height(14)
+			liveDetailMetadata(c, w-28, *selected, day.Selected)
 			ui.Box(c).Height(14)
 			s.liveDetailProgress(c, w-28, selected.TraceID)
 			ui.Box(c).Height(14)

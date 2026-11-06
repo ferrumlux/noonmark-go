@@ -234,7 +234,7 @@ func TestTitleUINewerInputDuringSave(t *testing.T) {
 	}
 }
 func TestTitleUINavigationFlush(t *testing.T) {
-	for _, label := range []string{"后一天", "收起日待办详情", "返回日统计", "切换到任务池", "从任务池排期"} {
+	for _, label := range []string{"后一天", "收起日待办详情", "关闭任务详情", "切换到任务池", "从任务池排期"} {
 		t.Run(label, func(t *testing.T) {
 			f := newTitleFixture(t, true)
 			f.edit("离开前标题")

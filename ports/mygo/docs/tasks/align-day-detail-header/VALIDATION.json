@@ -1,0 +1,32 @@
+{
+  "checked_at_utc": "2026-11-06T12:08:59.337444+00:00",
+  "candidate_commit": "ff4901ac0726061694f5793f93151090e2796d7a",
+  "candidate_tree": "e7385e528b4107c42195730ff052e69e5bfd5eb2",
+  "base_commit": "cf9a77f8015f4dcf579e23c582fa53385091a7a6",
+  "candidate_manifest_files": 584,
+  "candidate_manifest_sha256": "1749d7d3994246b47272869f33b9a89f8b5adbcefc05ff786f3be09c226a83fc",
+  "candidate_full_check_exit": 0,
+  "candidate_root_race_seconds": 591.15,
+  "candidate_taskapp_race_seconds": 274.06,
+  "candidate_other_modules": "通过，部分命中既有缓存；不称冷缓存全集",
+  "candidate_six_target_compile_exit": 0,
+  "candidate_linux_cli_exit": 0,
+  "integration_source_test_script_module_manifest_files_exact": 334,
+  "integration_focused_race_exit": 0,
+  "integration_header_close_registry_seconds": 45.301,
+  "integration_freeze_seconds": 1.027,
+  "integration_root_vet_exit": 0,
+  "log_sha256": {
+    "candidate_complete_check": "4fe429ba48aa4746de1f10d6f9efbbed095fd5ad70cb75e642129dc61fe6d83c",
+    "candidate_six_targets": "16b77a766c7f784346b6ba9d1b7075ac37a034d1de8d81502b31d3469953ac20",
+    "candidate_cli": "592a36c63945a13f6ea856e77c3485b4fcd5d68d0cedb58c5c8c261fdd7f1477",
+    "integration_focused": "7dbf4d4851616f1ff379d6f5221711a6613b657188dabb1441590793b8bc1aa7"
+  },
+  "limits": [
+    "正式同步及同head hosted CI在本回执之后另核",
+    "只核原版源码配方和Linux真实Service合成离屏，不是macOS同状态像素golden",
+    "六目标编译不是六平台运行",
+    "没有真实OS IME、签名或发行验收",
+    "没有新增Slider、描述/分类UI、RecoveryClose或领域/存储语义"
+  ]
+}

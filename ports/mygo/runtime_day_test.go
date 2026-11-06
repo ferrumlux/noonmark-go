@@ -233,15 +233,15 @@ func TestLiveDayVeryLongDetailScrollsToControls(t *testing.T) {
 	tt.SetSize(960, 720)
 	before, _ := tt.Find("收起日待办详情")
 	tt.Scroll(850, 500, 0, 8000)
-	button, ok := tt.Find("返回日统计")
-	if !ok || button.H != 28 || button.Y < 56 || button.Y+button.H > 706 {
+	button, ok := tt.Find("关闭任务详情")
+	if !ok || button.H != 28 || button.Y != before.Y || button.Y+button.H > 56 {
 		t.Fatal("long detail controls unreachable", button)
 	}
 	after, _ := tt.Find("收起日待办详情")
 	if before != after {
 		t.Fatal("rail toggle scrolled away")
 	}
-	liveClick(t, tt, "返回日统计")
+	liveClick(t, tt, "关闭任务详情")
 	if s.runtimeSelection != "" || !tt.HasText("每日复盘") {
 		t.Fatal("cannot return from long detail")
 	}

@@ -1,6 +1,6 @@
 # GO-SERVICE-HEALTH-001：已发现的 prefix 异常可被旧入口遗忘
 
-状态：处理中。本地候选修复commit 71b81f01951b9a8cada87fa3fa4c2612f6c53b60 的完整聚合、独立盲测及源码审查通过；共同基线已整合独立测试并完成完整检查、六目标编译及隔离CLI，修复提交和对应hosted CI仍待同步核验。未启用手动滑杆或恢复关闭。
+状态：已修复。正式修复 commit cf9a77f8015f4dcf579e23c582fa53385091a7a6 已同步；精确该提交 hosted CI run 42207724372 的完整日志和真实产物验证通过。手动滑杆与恢复关闭仍未启用。
 
 ## 症状、证据与来源
 
@@ -29,3 +29,9 @@ verifyPrefix是纯读校验，失败不一定设置disk.blocked；旧Service没�
 - 聚合：scripts/check原样保留，TestFailureGateRegistry验证登记。作者固定71b81f0全scripts/check通过；正式eb共同基线整合后，固定577文件SHA/mode前后全匹配，root/UI race524.419秒、taskapp race259.443秒以及其余模块、vet、Unicode、依赖/native全部通过。六目标编译和Linux隔离CLI创建/重开/复用守卫通过。独立10测试整合race3.720秒，作者专项及冻结门禁race6.261秒，登记gate race1.507秒；均实际退出0，不以静态登记代替执行。
 
 不更改core/codec/磁盘wire、fault四时点、提交确认顺序、vNext/v3、UI/hub/coordinator。回退只撤销此未发布代码批次，不删除/修复/重写任何失败会话资料。旧对象关闭不是UI RecoveryClose或恢复文件协议。
+
+## Hosted 闭环
+
+2026-11-06 11:25:57 UTC，精确 cf9a77f8 的 [run 42207724372](https://github.com/ferrumlux/noonmark-go/actions/runs/42207724372) 全部10步成功。artifact 13498821489 实际下载6198 bytes，SHA256 1a3d9d83bc3a3b7bae6d6b300b62dc62d69b569f8e605d5e917f66b0da1beab8，与GitHub digest及上传日志一致。六文本CRC通过，三个执行报告全文按序对应完整888行日志。结构化证据见 ../../tasks/service-typed-outcome/HOSTED-CI-42207724372.json。
+
+本次证明四模块race/vet、Unicode16、固定依赖定向native门禁、六目标编译和Linux合成headless/CLI通过；应用日志是包级，非逐项Service测试列表。没有本次Swift执行、非Linux实机、桌面IME、完整框架allocation或正式发行结论。

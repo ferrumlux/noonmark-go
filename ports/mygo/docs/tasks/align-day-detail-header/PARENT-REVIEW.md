@@ -1,0 +1,13 @@
+# 详情顶部整合源码复核
+
+固定候选0031d27cc748c75ec047c5fd09b01c6fe9f5fa0d，基线cf9a77f8。补丁SHA256 7e50554c08b3f255dfabb1b4629b7d860616b799b503bb0f7621ab87fdd58f64。初始整合582个tracked文件与候选逐字节及mode一致，未重写产品/测试。
+
+已独立逐项读取runtime_detail_header.go、runtime_day.go差异、旧测试入口变更、新几何/颜色/日期/像素用例、关闭交互测试；核固定TaskDetail/DetailPrimitives/WorkspaceUIPrimitives配方与AppCopy状态字样，并实际查看旧及新同原题/原子任务的2×截图。胶囊点、padding、字号、日期行及xmark沿固定源码；8 DIP默认HStack间距、矢量xmark和固定header滚动结构明确为适配边界。关闭仍仅经titleTransition，保存/失败/retirement逻辑没有改写。
+
+最初0e0f3fa候选新增七个跨包LocalDate无键literal，go vet实际判红。0031仅改Year/Month/Day键，日期值、断言、生产源码不变；旧checkpoint与patch保留。修正后的vet、Header/Close race40.271秒及六目标/CLI复跑已过，完整聚合仍由最终回执确认，不借最初候选的未完成检查宣称通过。
+
+本整合另回填上一Service修复的精确cf9a77f8 hosted CI，且将本UI案例保持处理中。未新增Slider、描述/分类假控件、领域或存储改变。未取得同状态Mac详情截图、真实OS IME或完整平台验收。
+
+0031完整检查实际在旧生产冻结门禁判红；完整清单核对仅runtime_day.go和visual_tokens.go两项已审UI更新。追加ff4901ac严格两个old/new/path三元组overlay，旧manifest与Service overlay逐字不改，历史suffix原循环保留。独立核三元组源码hash、逐行helper及缺项/额外/重复/未审hash/路径/基线负例，产品源码未再次改变。最终候选全聚合正在执行，整合未据旧红误记通过。
+
+最终回执已读：ff4901完整检查退出0，root591.150秒/taskapp274.060秒；584文件候选清单逐项相同，清单SHA256 1749d7d3994246b47272869f33b9a89f8b5adbcefc05ff786f3be09c226a83fc。整合334个Go/脚本/模块/冻结清单与候选逐字一致，三个领域模块与cf9a77f保持原样。独立整合Header/Close/registry race45.301秒、冻结边界race1.027秒及root vet通过。旧两份冻结清单仍与cf9a77f逐字一致。

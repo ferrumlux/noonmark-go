@@ -16,6 +16,7 @@ func sourceRGB(r, g, b float64) ui.Color {
 var sourceVisual = struct {
 	background, panel, panel2, sidebar, text1, text2, text3, placeholder, terminal ui.Color
 	line, line2, chip, controlFill, hover, accent, accentSoft, success, warning    ui.Color
+	okSoft, warnSoft                                                               ui.Color
 }{
 	background: sourceRGB(.994, .993, .991), panel: sourceRGB(1, 1, 1),
 	panel2: sourceRGB(.984, .984, .987), sidebar: sourceRGB(.982, .981, .978),
@@ -28,6 +29,7 @@ var sourceVisual = struct {
 	hover: sourceRGB(.977, .979, .984), accent: sourceRGB(.16, .38, .78),
 	accentSoft: sourceRGB(.93, .955, 1), success: sourceRGB(.04, .45, .30),
 	warning: sourceRGB(.706, .302, .204),
+	okSoft:  sourceRGB(.91, .98, .95), warnSoft: sourceRGB(1, .937, .922),
 }
 
 // WorkspaceShellViews.swift:145–186 and MacUIIconMetrics. DIP, not pixels.
