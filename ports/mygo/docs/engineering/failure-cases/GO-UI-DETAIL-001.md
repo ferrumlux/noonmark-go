@@ -35,3 +35,7 @@ Service 合成12子任务、长标题、pending/completed/unfinished、100%、�
 首次完整0031检查：root/UI race591.475秒通过，taskapp283.257秒在TestHistoryEditFrozenProduction真实判红，尚未走到后续模块。没有修改原历史冻结manifest；正式整合追加两项已审UI的严格版本overlay，保留不相关文件和command suffix冻结。最终全检以ff4901ac的回执为准。
 
 最终验收：ff4901完整scripts/check退出0，root/UI race591.150秒、taskapp274.060秒；其余模块含缓存命中，vet、Unicode、依赖51项与默认native全通过。六目标编译及隔离Linux持久化CLI通过。整合副本独立Header/Close/registry race45.301秒、冻结/Service overlay race1.027秒及root vet通过；整合后只有文档闭环差异，未另称重跑全集。证据哈希见同任务VALIDATION.json。
+
+## 状态登记纠正
+
+346d775同步后的完整diff复核发现：本轮整合脚本未按case ID限定状态字串替换，误将10个旧案例的status换成本UI候选文字。Git identity为ferrumlux，实际来源是本轮已记录的整合操作；测试入口、执行脚本、生产源码及数据没有因此改变。现按cf9a77f逐行恢复所有旧条目，仅保留已有Service CI闭环与本UI条目更新。新增TestDayDetailGateEvidenceScope真实读取登记文件，旧346d版本先判红；负例证明其它case不得冒用ff4901证据，正确UI条目可通过，已进入scripts/check与本案例fast gate。后续批次按case ID修改并完整核对diff，不能用无范围replace。
