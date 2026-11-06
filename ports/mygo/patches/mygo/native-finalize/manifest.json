@@ -157,6 +157,20 @@
           "after": "af54e5101aec557f0dede941eb46202dfff136fa968a431a850ee31ba65c5d9d"
         }
       }
+    },
+    {
+      "file": "0007-selected-layout-regression-tests.patch",
+      "sha256": "2fe59ea28a4d61362036ec44fccba6df8113a72c338496d334cde6492dcbd6f9",
+      "files": {
+        "ui/layoutcache_test.go": {
+          "before": "8975f74c341ee6a865097783f73c83b64b9b17fb357b5b105d2eceb92ba2484f",
+          "after": "0131bc977333d19ffd67f76ad5cec235549d3017386e5233603fe43f1e0faa42"
+        },
+        "ui/noonmark_selected_layout_test.go": {
+          "before": null,
+          "after": "65f63eddae3ee9a801ad466e771f8b2c4a17e68208a1ac8379e2a86d1decc4d0"
+        }
+      }
     }
   ]
 }

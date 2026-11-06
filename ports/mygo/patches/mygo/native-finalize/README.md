@@ -19,3 +19,7 @@
 0005-selected-access.patch 与 0006-selected-access-regression-tests.patch 独立追加，0001–0004 保持原字节。Selected 不再将 Button 伪装为 Checked；新增独立已设置标记区分 false 与未设置，保留明确 Checked/Mixed、原按钮角色、点击及键盘。原有 Tab/TreeItem/Row/ListItem 在没有明确 Checked 时仍保留旧 AccessChecked wire alias，保持既有测试及消费者；新语义由 AccessSelected/AccessSelectionKnown 表达。三个 native adapter 同步读取，不只修改 Tester。
 
 永久快速门禁 scripts/check-selected-access；scripts/check 的 root tests 与 check-mygo-native 同时覆盖。组件门禁依赖独立延期日期组件批次，整合时须一同保留。详见 docs/tasks/repair-selected-access/DESIGN.md。无原生 OS 或 Swift 实机验收声明。
+
+## Selected 布局登记与回归门禁
+
+0007-selected-layout-regression-tests.patch 仅更新测试：把不被布局读取的 node.selected 登记为 other，并以真实 Selected 状态切换比较启用/禁用布局缓存的几何、计算次数及access tree。生产源码与原0001–0006字节不变；不包含native recovery研究补丁。默认check-mygo-native现强制覆盖TestLayoutInputs及LayoutCache全组。来源、症状及验证见 GO-MYGO-LAYOUT-001 和 docs/tasks/repair-selected-layout/VERIFY.md。

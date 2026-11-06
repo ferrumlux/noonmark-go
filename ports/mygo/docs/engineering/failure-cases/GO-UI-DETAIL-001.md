@@ -1,6 +1,6 @@
 # GO-UI-DETAIL-001：Day 详情顶部偏离固定源码
 
-状态：已修复（本地症状与相关回归）。精确修复候选ff4901ac0726061694f5793f93151090e2796d7a已完成整套检查；整合代码与候选一致，独立整合专项通过。正式同步和该提交的hosted CI另核，不是桌面或发行验收。首次确认：2026-11-06。
+状态：已修复（本地症状与相关回归）。精确修复候选ff4901ac0726061694f5793f93151090e2796d7a已完成整套检查；整合代码与候选一致，独立整合专项通过。正式同步293b22cc及其hosted CI已核验通过，不是桌面或发行验收。首次确认：2026-11-06。
 
 ## 症状与归因
 
@@ -28,7 +28,7 @@ fast gate：TestDetailHeaderSourceGeometry、TestDetailHeaderStatusColorsAndHidd
 
 Service 合成12子任务、长标题、pending/completed/unfinished、100%、历史只读，在1200×768与960×720、1×/2×离屏渲染；另125 DIP窄栏换行。独立导航覆盖失败、重复、迟到、键盘、已送达 native composition 与25子任务长滚动。真实 OS IME、macOS相同状态截图、SF Symbols及continuous曲线仍未验；不声称平台对等或像素相同。
 
-候选仅本地审查，不触发CI/发布；回滚整个候选提交恢复旧视觉入口，不需数据迁移。
+原候选阶段只本地审查；后续293b22cc已同步并取得精确head的CI成功。未正式发布；回滚整个UI改动恢复旧视觉入口，不需数据迁移。
 
 固定 header + 正文 Scroll 是本端既有结构，未验证 Swift 祖先容器的整个布局/滚动契约。此案不将局部配方对齐扩大成完整详情布局验收。
 
@@ -39,3 +39,7 @@ Service 合成12子任务、长标题、pending/completed/unfinished、100%、�
 ## 状态登记纠正
 
 346d775同步后的完整diff复核发现：本轮整合脚本未按case ID限定状态字串替换，误将10个旧案例的status换成本UI候选文字。Git identity为ferrumlux，实际来源是本轮已记录的整合操作；测试入口、执行脚本、生产源码及数据没有因此改变。现按cf9a77f逐行恢复所有旧条目，仅保留已有Service CI闭环与本UI条目更新。新增TestDayDetailGateEvidenceScope真实读取登记文件，旧346d版本先判红；负例证明其它case不得冒用ff4901证据，正确UI条目可通过，已进入scripts/check与本案例fast gate。后续批次按case ID修改并完整核对diff，不能用无范围replace。
+
+## 精确正式提交的CI闭环
+
+293b22cc12b9b039888b37da70753caaa11d9b71的run42216531244／attempt1于12:38:49 UTC成功。实际读取完整日志、下载6,181字节artifact并核对GitHub digest、ZIP CRC及全部六成员；四模块race/vet、Unicode16、依赖51项、目标native、六目标编译及Linux隔离CLI通过。记录见同任务CI-CLOSEOUT.json。没有将该结果扩大为完整MyGo框架、Swift快照、真实桌面／OS IME或发行验收。

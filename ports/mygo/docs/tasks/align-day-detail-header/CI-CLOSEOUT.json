@@ -1,0 +1,60 @@
+{
+  "head": "293b22cc12b9b039888b37da70753caaa11d9b71",
+  "tree": "868bf131fd07ce8af99157508f112a19924df991",
+  "run": 42216531244,
+  "run_url": "https://github.com/ferrumlux/noonmark-go/actions/runs/42216531244",
+  "attempt": 1,
+  "status": "completed",
+  "conclusion": "success",
+  "updated_at": "2026-11-06T12:38:49Z",
+  "job": 127887828241,
+  "job_url": "https://github.com/ferrumlux/noonmark-go/actions/runs/42216531244/job/127887828241",
+  "job_head_and_attempt_verified": true,
+  "job_started_at": "2026-11-06T12:17:29Z",
+  "job_completed_at": "2026-11-06T12:38:49Z",
+  "all_steps_success": true,
+  "artifact": 13503205169,
+  "artifact_name": "mygo-development-evidence-42216531244-1",
+  "artifact_url": "https://github.com/ferrumlux/noonmark-go/actions/runs/42216531244/artifacts/13503205169",
+  "artifact_bytes": 6181,
+  "artifact_sha256": "3188dff0aa9c8146291210872df719341520346e576dabdd199463d215916837",
+  "digest_matches_github_metadata_and_upload_log": true,
+  "zip_crc_test_passes": true,
+  "members": {
+    "binary-checksums.txt": {
+      "bytes": 566,
+      "sha256": "8eeabbb5ce85637b226b86a0ba48fe4d2a38306ab932264b9e490ab830b6250e",
+      "zip_crc32": "37787b2a"
+    },
+    "cross-build.txt": {
+      "bytes": 311,
+      "sha256": "7bed62843e3f9d285c48874fe77f7410fc874c913bdaf23f8eefa957e5f92877",
+      "zip_crc32": "0643bb59"
+    },
+    "checks.txt": {
+      "bytes": 25730,
+      "sha256": "2ab75fa50485208e1e9e7ca4e4951c5a850cf225e46df39797594d9d64221324",
+      "zip_crc32": "a5fe40ef"
+    },
+    "entrypoints.txt": {
+      "bytes": 188,
+      "sha256": "592a36c63945a13f6ea856e77c3485b4fcd5d68d0cedb58c5c8c261fdd7f1477",
+      "zip_crc32": "bd547894"
+    },
+    "environment.txt": {
+      "bytes": 416,
+      "sha256": "61257144c338f450509ae9aaf47057ffdfdcde6ea37e5556ef8f68232e8c4754",
+      "zip_crc32": "8cafed96"
+    },
+    "result.txt": {
+      "bytes": 79,
+      "sha256": "9bb488611c363033e09212059f40ce3decd34f7b476b403085f37498ee25ace9",
+      "zip_crc32": "475ab082"
+    }
+  },
+  "job_log_sha256": "170e89b82025a94fcdbf113282e2f4422effa9f402e0f6bb11af07e038b643e9",
+  "limits": [
+    "六目标仅编译，Linux离屏及CLI是合成隔离资料",
+    "没有新Swift快照互通、完整MyGo UI、真实桌面/IME、签名或发行验收"
+  ]
+}

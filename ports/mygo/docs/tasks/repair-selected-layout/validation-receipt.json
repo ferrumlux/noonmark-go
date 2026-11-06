@@ -1,0 +1,106 @@
+{
+  "r2_source_commit": "2b9376c7faf91fb4e4d2d5e10728e10bbd4f0640",
+  "r2_manifest_sha256": "07b12b58dd1b40087c91186f6a2a4974991488d7e42383819068948fb7233232",
+  "r2_aggregate_exit": 0,
+  "r2_full_ui_exit": 1,
+  "r2_full_ui_only_failure": "TestDiffFrameAllocs",
+  "r3_manifest_sha256": "a98fe0ac78b3b7b17c758354d9b422ecbf1fdc98fc0753403dba87c64d0b268a",
+  "r3_checks": {
+    "dependency_51": 0,
+    "default_native_race_vet": 0,
+    "root_selected_and_symptom_wrapper": 0,
+    "diff_check": 0
+  },
+  "r3_repeated_full_aggregate": false,
+  "r3_repeated_full_ui": false,
+  "r3_repeated_cross_build": false,
+  "all_2197_prepared_files_identical_to_r2": true,
+  "original_six_patches_unchanged": true,
+  "application_production_go_unchanged": true,
+  "logs": {
+    "aggregate-early-exit.log": {
+      "sha256": "dfd9eaf1ef0c24a01ef45c5b0fd01fe03ae5c068934817d6dc381623b89853fc",
+      "bytes": 1275
+    },
+    "aggregate.log": {
+      "sha256": "d16ea34600587b0eef262c30046774ec54ea31836872df82cc1a53d4a9695e97",
+      "bytes": 27248
+    },
+    "commented-native-command.log": {
+      "sha256": "5f4131e389a11828bdec4c4bce5c8b0e4826c54070ead91cfa3fd6a069285ceb",
+      "bytes": 1983
+    },
+    "cross-build.log": {
+      "sha256": "16b77a766c7f784346b6ba9d1b7075ac37a034d1de8d81502b31d3469953ac20",
+      "bytes": 270
+    },
+    "default-native.log": {
+      "sha256": "366ae2cce53952f1ef7dcd210a2621d54bc752bcdb3d2d57176eefa54fd80197",
+      "bytes": 15409
+    },
+    "dependency.log": {
+      "sha256": "88e52e07152c584d171b687dc4272e17e670fe59134cf88a00f75907cb864ae9",
+      "bytes": 5057
+    },
+    "focused.log": {
+      "sha256": "a8a3f8b31a54ceba2c9351a8f54578bbed02dceec209a8f71837ecbe07f26c74",
+      "bytes": 747
+    },
+    "full-ui-race.log": {
+      "sha256": "c2ab266a2e97c7f8f224c50773ba47963bde47882fb3bf1984dd11ba0272f677",
+      "bytes": 142923
+    },
+    "green-patch-whitespace.log": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    "guard-focused.log": {
+      "sha256": "71ecfa0292afb05fd402967c25f4a1331c5e92b971a9d6638d37253b982553b7",
+      "bytes": 998
+    },
+    "native-early-exit.log": {
+      "sha256": "30003d93cd2ffdad379ff91fc201506d08c588d2a58c27f52ca15a241c9534f1",
+      "bytes": 2024
+    },
+    "r3-dependency.log": {
+      "sha256": "a89d4ac2f9df2dab2572dd3e308ae60608128271312b683dcd94e9e43a868546",
+      "bytes": 5057
+    },
+    "r3-native.log": {
+      "sha256": "52cd8faa2f17b0501beda14ff0e5af2fb66be5a60138d10e22c0925a1da3f0b3",
+      "bytes": 15409
+    },
+    "r3-root-selected.log": {
+      "sha256": "278ec5254adce85c20536e7fed0e2235713783df3956c3f8091dee036feadd09",
+      "bytes": 1332
+    },
+    "red-layoutinputs.log": {
+      "sha256": "a7c869d478974f3897e1e501d8fe400bf5a5e0e21b7c165ed5a1d2b4c18fb416",
+      "bytes": 217
+    },
+    "red-patch-whitespace.log": {
+      "sha256": "d2322154736f9cc9a344cf1741f55ba97e8ec6cc02470dcc2b936918a835e817",
+      "bytes": 1317
+    },
+    "root-focused.log": {
+      "sha256": "74db1493ec4c99a5a7513c78303e6bec940ff71208be8579f77f523a5f7e837c",
+      "bytes": 1332
+    },
+    "status.log": {
+      "sha256": "aa4d89af92bd06b7b79c953bba11faede78c51b9303448e64838c02daae7c12c",
+      "bytes": 737
+    },
+    "test-development-wire-alias.log": {
+      "sha256": "735c5d140259b9e9b4b2cdf9020e6b8ccf4e67dc42f4525ab262991e330c6084",
+      "bytes": 2208
+    },
+    "wrong-filter.log": {
+      "sha256": "e2d97839391c91c68db72b163623b720e4c065ff7e127f6c967562280b98dc65",
+      "bytes": 1871
+    },
+    "zero-matching-tests.log": {
+      "sha256": "71792b462f14a2bbdf1ead26a3e9be32a1cebf9d88d800398ca6d0e185b4eaf2",
+      "bytes": 3655
+    }
+  }
+}

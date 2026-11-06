@@ -1,0 +1,36 @@
+{
+  "baseline_commit": "cf9a77f8015f4dcf579e23c582fa53385091a7a6",
+  "baseline_dependency": "/workspace/scratch/586e77bd59a6/noonmark-recovery-20261106/selected-layout-build/noonmark-patched-dependencies-v1/59740551bb0f137e9d7d3738b69f92decc46ae815ef331a5677d4db19677f583/mygo",
+  "candidate_dependency": "/workspace/scratch/586e77bd59a6/noonmark-recovery-20261106/selected-layout-build/noonmark-patched-dependencies-v1/cd12f77ecf61e73910a61831967fa1a9d908a33a7d5f0b0c6a69dd9902838c4d/mygo",
+  "original_patches_sha256": {
+    "0006-selected-access-regression-tests.patch": "67fa246685ed116bafde0f0fd56ddacd4cb42da0854b0cb9221374b651645c38",
+    "0003-native-menu-lifetime.patch": "4f0b68766d62dbfd32ad897eb3549219987a7cc20525b1a7cc8f0790fe013338",
+    "0001-native-finalize.patch": "fe612bda88e6baa1da4727a01758211cb8111913cad21bde469d0ce56a6b5744",
+    "0002-native-finalize-regression-tests.patch": "eb25eb9e29214a2ea53988babd0b1b97fa50541ef3d21f3d7d07a1e506b1157f",
+    "0004-native-menu-regression-tests.patch": "ea849842dadf223ab82c77fa3d31f367652f455b8a00821ea90508345420086e",
+    "0005-selected-access.patch": "ab7aa8f5be93e4260eddff35728c86792a95d8a16f0b11dd56a396c10a09966a"
+  },
+  "changed_existing_dependency_files": [
+    "ui/layoutcache_test.go"
+  ],
+  "added_dependency_files": [
+    "ui/noonmark_selected_layout_test.go"
+  ],
+  "all_other_dependency_file_count": 2195,
+  "production_files_unchanged": true,
+  "baseline_manifest_sha256": "e80ed46c22a2346a011b7755d39a42df000c3e6dbdf647079f669f77a7f6696f",
+  "candidate_manifest_sha256": "a98fe0ac78b3b7b17c758354d9b422ecbf1fdc98fc0753403dba87c64d0b268a",
+  "candidate_patch_sha256": "2fe59ea28a4d61362036ec44fccba6df8113a72c338496d334cde6492dcbd6f9",
+  "previous_r2": {
+    "candidate_dependency": "/workspace/scratch/586e77bd59a6/noonmark-recovery-20261106/selected-layout-build/noonmark-patched-dependencies-v1/31605b1806085a808ed679f16060811453037e9c6d30b7cabf4480d2811ef095/mygo",
+    "candidate_manifest_sha256": "07b12b58dd1b40087c91186f6a2a4974991488d7e42383819068948fb7233232",
+    "candidate_patch_sha256": "31787f176622c295bb457a1e731302be293d97c2e55594bbf4d9faf34ad1a194"
+  },
+  "r3_serialization": {
+    "unified_context": 0,
+    "all_2197_prepared_files_byte_identical_to_r2": true,
+    "old_full_aggregate_manifest_sha256": "07b12b58dd1b40087c91186f6a2a4974991488d7e42383819068948fb7233232",
+    "old_full_aggregate_source_commit": "2b9376c7faf91fb4e4d2d5e10728e10bbd4f0640",
+    "old_full_aggregate_exit": 0
+  }
+}

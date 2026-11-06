@@ -1,0 +1,81 @@
+--- a/ui/layoutcache_test.go
++++ b/ui/layoutcache_test.go
+@@ -459 +459 @@
+-		"checked expanded busy current vertical tip highlighted keepOpen accValue accRange hasRange accFill accStep barInset scrollBase hideScrollbars keepScrollbars barsFrom snap snapAlign " +
++		"checked selected expanded busy current vertical tip highlighted keepOpen accValue accRange hasRange accFill accStep barInset scrollBase hideScrollbars keepScrollbars barsFrom snap snapAlign " +
+--- /dev/null
++++ b/ui/noonmark_selected_layout_test.go
+@@ -0,0 +1,73 @@
++package ui
++
++import (
++	"reflect"
++	"testing"
++	"time"
++
++	"github.com/egoist/mygo/internal/platform"
++)
++
++// Selected affects paint/access/focus, not geometry. Exercise the public setter
++// without overriding its paint side effects, against a genuinely uncached run.
++func TestNoonmarkSelectedLayoutCache(t *testing.T) {
++	for _, role := range []Role{RoleButton, RoleTab, RoleTreeItem, RoleRow, RoleListItem} {
++		t.Run(roleNameForSelectedLayout(role), func(t *testing.T) {
++			selected := false
++			view := func(c *context) {
++				coreColumn(c).Fill().Children(func() {
++					coreButtonBase(c).Role(role).Label("Selection").Size(100, 40).Selected(selected).Children(func() {
++						coreText(c, "Stable content")
++					})
++				})
++			}
++			start := time.Unix(1e9, 0)
++			cached, fresh := lcTester(view, 200, 100, start), lcTester(view, 200, 100, start)
++			fresh.rt.noLayoutCache = true
++			for _, tt := range []*Tester{cached, fresh} {
++				tt.send(platform.SurfaceEvent{Kind: platform.AccessibilityOn})
++			}
++			for frame, on := range []bool{false, true, false, true, false} {
++				selected = on
++				before, freshBefore := cached.rt.computed, fresh.rt.computed
++				cached.Frame()
++				fresh.Frame()
++				if n := cached.rt.computed - before; n != 0 {
++					t.Fatalf("frame %d selected=%v: recomputed %d layouts", frame, on, n)
++				}
++				if fresh.rt.computed == freshBefore {
++					t.Fatal("uncached control did not compute layout")
++				}
++				if d := sameBoxes(cached.rt.c.root, fresh.rt.c.root, "root"); d != "" {
++					t.Fatalf("frame %d selected=%v: %s", frame, on, d)
++				}
++				if !reflect.DeepEqual(cached.h.access, fresh.h.access) {
++					t.Fatalf("frame %d: cached/uncached accessibility trees differ", frame)
++				}
++				for _, tt := range []*Tester{cached, fresh} {
++					n := accessNode(t, tt.h.access, platform.AccessRole(role-RoleGroup), "Selection")
++					if n.Selected() != on || n.States&platform.AccessSelectionKnown == 0 || (n.States&platform.AccessChecked != 0) != (role != RoleButton && on) {
++						t.Fatalf("frame %d selected=%v: stale or conflated access state %+v", frame, on, n)
++					}
++				}
++			}
++		})
++	}
++}
++
++func roleNameForSelectedLayout(role Role) string {
++	switch role {
++	case RoleButton:
++		return "button"
++	case RoleTab:
++		return "tab"
++	case RoleTreeItem:
++		return "tree_item"
++	case RoleRow:
++		return "row"
++	case RoleListItem:
++		return "list_item"
++	default:
++		panic("unexpected role")
++	}
++}

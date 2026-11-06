@@ -5,3 +5,6 @@ Downstream modifications dated 2026-11-05: independent Selected state and
 macOS, Windows, Linux accessibility adapters; synthetic regression tests.
 Application remains AGPL-3.0-only. Patches 0001 through 0004 are unchanged.
 No upstream endorsement or native operating-system acceptance is claimed.
+Downstream test-only modification dated 2026-11-06: patch 0007 records the
+Selected non-layout field and compares cached/uncached layout and access state.
+Patches 0001 through 0006 and all production source bytes remain unchanged.

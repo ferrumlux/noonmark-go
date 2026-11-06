@@ -1,0 +1,39 @@
+{
+  "base": "293b22cc12b9b039888b37da70753caaa11d9b71",
+  "candidate": "feab6d94c06752ee9732755c7eb8b12e84cab6fb",
+  "manifest_sha256": "a98fe0ac78b3b7b17c758354d9b422ecbf1fdc98fc0753403dba87c64d0b268a",
+  "combined_scripts_check": {
+    "exit": 0,
+    "started_utc": "2026-11-06T12:34:26Z",
+    "completed_utc": "2026-11-06T12:53:21.758164+00:00",
+    "log_sha256": "94cb5c727a9406dbfd805f0d623830e255d1bbf1e053b8c387dfc91e5622f674",
+    "log_bytes": 27260,
+    "root_seconds": 591.96,
+    "taskapp_seconds": 267.106,
+    "targeted_native_seconds": 72.748,
+    "host_popup_seconds": 1.047
+  },
+  "scope": "293b22 Day header and Service plus final Selected gate sources; documentation closed after run",
+  "full_framework_ui_known_failure": "TestDiffFrameAllocs; only prior candidate full-framework run, no threshold or skip change",
+  "hosted_ci_for_this_combination": "not yet run",
+  "real_desktop_ime_and_release": "not accepted",
+  "post_documentation_checks": {
+    "final-focused.log": {
+      "exit": 0,
+      "bytes": 53,
+      "sha256": "de7539ed0211f46bb773400b9c174264c249d3cf3781e57eac9f6a65ce93cb85"
+    },
+    "final-vet.log": {
+      "exit": 0,
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "final-cross.log": {
+      "exit": 0,
+      "bytes": 270,
+      "sha256": "16b77a766c7f784346b6ba9d1b7075ac37a034d1de8d81502b31d3469953ac20"
+    }
+  },
+  "six_target_compile_verified": true,
+  "six_target_runtime_verified": false
+}
