@@ -1,0 +1,506 @@
+{
+  "task_id": "optimize-day-todo-read",
+  "base_commit": "3346d052e5a3b7ee536f7b5dd0560d31a7147438",
+  "base_tree": "a43f13f95ddb6d1b80996c965983327c65c2c396",
+  "scope": "原基线跟踪的非测试Go源码；历史evidence manifest保持原字节",
+  "files": [
+    {
+      "path": "ports/mygo/domain-codec/canonical/canonical.go",
+      "old_sha256": "6076f80103b6ea549df109a45722138918a42dd11c6c69757adbfbcb5cc100e8",
+      "new_sha256": "6076f80103b6ea549df109a45722138918a42dd11c6c69757adbfbcb5cc100e8",
+      "changed": false
+    },
+    {
+      "path": "ports/mygo/domain-codec/v7/codec.go",
+      "old_sha256": "edc36d23ff17a70323f6261588cd18862fc5bc47cb83f4fc2a6594e0015b0030",
+      "new_sha256": "edc36d23ff17a70323f6261588cd18862fc5bc47cb83f4fc2a6594e0015b0030",
+      "changed": false
+    },
+    {
+      "path": "ports/mygo/domain-codec/v7/domain.go",
+      "old_sha256": "4af550065b1b81e850392bfc967ec75703dde52219052000701c08221c0ed0bf",
+      "new_sha256": "4af550065b1b81e850392bfc967ec75703dde52219052000701c08221c0ed0bf",
+      "changed": false
+    },
+    {
+      "path": "ports/mygo/domain-codec/v7/references.go",
+      "old_sha256": "ab0f3793a273dc079f06e9f2a0319b9ed4878dc61a21d0ad9bd1aae716e1a71b",
+      "new_sha256": "ab0f3793a273dc079f06e9f2a0319b9ed4878dc61a21d0ad9bd1aae716e1a71b",
+      "changed": false
+    },
+    {
+      "path": "ports/mygo/domain-codec/v7/schema.go",
+      "old_sha256": "b1523e115faf9f17e160bea12559521781c71d99b5b0cd861d297ec784ec0323",
+      "new_sha256": "b1523e115faf9f17e160bea12559521781c71d99b5b0cd861d297ec784ec0323",
+      "changed": false
+    },
+    {
+      "path": "ports/mygo/domain-core/core/carryover.go",
+      "old_sha256": "8e18447e5db674a4a0922ef14834c0c8a5b576f0d32424310c77dbee3ded7dd1",
+      "new_sha256": "8e18447e5db674a4a0922ef14834c0c8a5b576f0d32424310c77dbee3ded7dd1",
+      "changed": false
+    },
+    {
+      "path": "ports/mygo/domain-core/core/clone.go",
+      "old_sha256": "4876f2f2b8c0a1811f0789da55451ec70928257fd7ad64c2d2f6972ec8180916",
+      "new_sha256": "121b2254886f84507929e5f99936b638ddf2ab5524a635cf7fe5383afc9ff76d",
+      "changed": true
+    },
+    {
+      "path": "ports/mygo/domain-core/core/history_chain.go",
+      "old_sha256": "9ef3cc08e08ff42bdb39679b792b7f2a929e049905ee95e834a4c2f022b546b8",
+      "new_sha256": "9ef3cc08e08ff42bdb39679b792b7f2a929e049905ee95e834a4c2f022b546b8",
+      "changed": false
+    },
+    {
+      "path": "ports/mygo/domain-core/core/kernel.go",
+      "old_sha256": "9998149755425448eca175ec9947f266d2c7ecaed5af43e7096392583050c32c",
+      "new_sha256": "009a5b4a659fbf008224be72966a3b28dc0dbab1fd1fc200152bbcb0c92989d6",
+      "changed": true
+    },
+    {
+      "path": "ports/mygo/domain-core/core/manual_progress.go",
+      "old_sha256": "d070a1961971edb757006d0f7d45a00abdc6901c45a15a50f1639c1a4ab9736a",
+      "new_sha256": "d070a1961971edb757006d0f7d45a00abdc6901c45a15a50f1639c1a4ab9736a",
+      "changed": false
+    },
+    {
+      "path": "ports/mygo/domain-core/core/models.go",
+      "old_sha256": "29932e0e54907cc2803fcea5214b3ebc1aa7361113bc3496e78414fba573e3fe",
+      "new_sha256": "29932e0e54907cc2803fcea5214b3ebc1aa7361113bc3496e78414fba573e3fe",
+      "changed": false
+    },
+    {
+      "path": "ports/mygo/domain-core/core/progress.go",
+      "old_sha256": "0538241a8226b915e35567f04ce3c433a90106ac3be1b3671d2ea033e8f5d381",
+      "new_sha256": "0538241a8226b915e35567f04ce3c433a90106ac3be1b3671d2ea033e8f5d381",
+      "changed": false
+    },
+    {
+      "path": "ports/mygo/domain-core/core/return.go",
+      "old_sha256": "7796773b44d637896da39b7832496882cbe04fe9148a585bc71c9de50d7d865a",
+      "new_sha256": "7796773b44d637896da39b7832496882cbe04fe9148a585bc71c9de50d7d865a",
+      "changed": false
+    },
+    {
+      "path": "ports/mygo/domain-core/core/subtask_edit.go",
+      "old_sha256": "543a7e8afd577cabff28498adc882b46dee2eee3d4d21c796b09e926d312fef5",
+      "new_sha256": "543a7e8afd577cabff28498adc882b46dee2eee3d4d21c796b09e926d312fef5",
+      "changed": false
+    },
+    {
+      "path": "ports/mygo/domain-core/core/time.go",
+      "old_sha256": "838c0cba9cd1e1ff56d02d0fed6c9be1aba62b1afcafe2f5809919b56ed03588",
+      "new_sha256": "838c0cba9cd1e1ff56d02d0fed6c9be1aba62b1afcafe2f5809919b56ed03588",
+      "changed": false
+    },
+    {
+      "path": "ports/mygo/domain-core/core/title.go",
+      "old_sha256": "e19459cbebb852deef094592ca72b87c99cad1aa88ba5703b3edb6eca025aebe",
+      "new_sha256": "e19459cbebb852deef094592ca72b87c99cad1aa88ba5703b3edb6eca025aebe",
+      "changed": false
+    },
+    {
+      "path": "ports/mygo/domain-core/core/validation.go",
+      "old_sha256": "6b698793f32a963ca092ea2ff5867c8dda6004303b4cb01a595f535778c8e9c3",
+      "new_sha256": "6b698793f32a963ca092ea2ff5867c8dda6004303b4cb01a595f535778c8e9c3",
+      "changed": false
+    },
+    {
+      "path": "ports/mygo/domain-core/textcanon/equivalent.go",
+      "old_sha256": "77fec6a319149765ff9fd27211189de6fdf24143ad412f052d5a276fa7755199",
+      "new_sha256": "77fec6a319149765ff9fd27211189de6fdf24143ad412f052d5a276fa7755199",
+      "changed": false
+    },
+    {
+      "path": "ports/mygo/domain-extensions/classification/canonical16/canonical.go",
+      "old_sha256": "8f7d41647d9edea7a0367756727ee5bebb1d5a46e2c3be92264df21ca4b4ed81",
+      "new_sha256": "8f7d41647d9edea7a0367756727ee5bebb1d5a46e2c3be92264df21ca4b4ed81",
+      "changed": false
+    },
+    {
+      "path": "ports/mygo/domain-extensions/classification/canonical16/grapheme.go",
+      "old_sha256": "6212f93db1910c04675d25695dec8fa9c62074ef0e669187ef3b7e3ca4848f48",
+      "new_sha256": "6212f93db1910c04675d25695dec8fa9c62074ef0e669187ef3b7e3ca4848f48",
+      "changed": false
+    },
+    {
+      "path": "ports/mygo/domain-extensions/classification/canonical16/internal/probe/main.go",
+      "old_sha256": "e0ab22d5179767e0e2a73038072e475ba2f7be69e5c11303c6510a8fc713e188",
+      "new_sha256": "e0ab22d5179767e0e2a73038072e475ba2f7be69e5c11303c6510a8fc713e188",
+      "changed": false
+    },
+    {
+      "path": "ports/mygo/domain-extensions/classification/canonical16/normalize.go",
+      "old_sha256": "0823b75ff362dc465b79f6fe85efa961b475152a29bfd95f3a1acff94d8724e2",
+      "new_sha256": "0823b75ff362dc465b79f6fe85efa961b475152a29bfd95f3a1acff94d8724e2",
+      "changed": false
+    },
+    {
+      "path": "ports/mygo/domain-extensions/classification/canonical16/tables_generated.go",
+      "old_sha256": "39c0bba7e56b499ab71457dfe0c5e3ed81d76211ae2f9009c2d82f689bf912dd",
+      "new_sha256": "39c0bba7e56b499ab71457dfe0c5e3ed81d76211ae2f9009c2d82f689bf912dd",
+      "changed": false
+    },
+    {
+      "path": "ports/mygo/domain-extensions/classification/engine.go",
+      "old_sha256": "a3818ec6c2b5d9dda8c6d0f24b3ccd267d4b735b88708a33dd8c3b91823942b0",
+      "new_sha256": "a3818ec6c2b5d9dda8c6d0f24b3ccd267d4b735b88708a33dd8c3b91823942b0",
+      "changed": false
+    },
+    {
+      "path": "ports/mygo/domain-extensions/classification/types.go",
+      "old_sha256": "8f3b69452f107397c489d6094142c753b82133a583a4fea55d7164b1af7494ad",
+      "new_sha256": "8f3b69452f107397c489d6094142c753b82133a583a4fea55d7164b1af7494ad",
+      "changed": false
+    },
+    {
+      "path": "ports/mygo/domain-extensions/recurrence/commands.go",
+      "old_sha256": "0bb04f2b515879e711df676141f037a2736f64d2962d04473d528087be490c85",
+      "new_sha256": "0bb04f2b515879e711df676141f037a2736f64d2962d04473d528087be490c85",
+      "changed": false
+    },
+    {
+      "path": "ports/mygo/domain-extensions/recurrence/content.go",
+      "old_sha256": "a51785be2720c33b004e6b6a60b56d383940c20c2b79b0370333b389da7c8882",
+      "new_sha256": "a51785be2720c33b004e6b6a60b56d383940c20c2b79b0370333b389da7c8882",
+      "changed": false
+    },
+    {
+      "path": "ports/mygo/domain-extensions/recurrence/series.go",
+      "old_sha256": "a3114151a697c03b1ca1e26455c26c8cc3eb65d1afa8082212c9c7a51c20eac6",
+      "new_sha256": "a3114151a697c03b1ca1e26455c26c8cc3eb65d1afa8082212c9c7a51c20eac6",
+      "changed": false
+    },
+    {
+      "path": "ports/mygo/domain-extensions/recurrence/state.go",
+      "old_sha256": "a3f6e9d4e3831269df02f5ceb7dfc0839847f13b52e74eeb80211a1d568ebf57",
+      "new_sha256": "a3f6e9d4e3831269df02f5ceb7dfc0839847f13b52e74eeb80211a1d568ebf57",
+      "changed": false
+    },
+    {
+      "path": "ports/mygo/internal/inputdraft/gate.go",
+      "old_sha256": "82e431c832d5a3580eef691303fe2a0c3958363b990456b0752b0165d5a5013f",
+      "new_sha256": "82e431c832d5a3580eef691303fe2a0c3958363b990456b0752b0165d5a5013f",
+      "changed": false
+    },
+    {
+      "path": "ports/mygo/internal/taskapp/carryover.go",
+      "old_sha256": "1ee3f1deb2d1478f32a7120e1ae59b39bf025f24b1cfb999f5519427c78c23b4",
+      "new_sha256": "1ee3f1deb2d1478f32a7120e1ae59b39bf025f24b1cfb999f5519427c78c23b4",
+      "changed": false
+    },
+    {
+      "path": "ports/mygo/internal/taskapp/history.go",
+      "old_sha256": "2b4d9e8b189fcbc178be022415766ba92e773776349ac6de749efab1a660cc46",
+      "new_sha256": "2b4d9e8b189fcbc178be022415766ba92e773776349ac6de749efab1a660cc46",
+      "changed": false
+    },
+    {
+      "path": "ports/mygo/internal/taskapp/history_command_vnext.go",
+      "old_sha256": "90e22cf119936f446913e9441b0e4cbbedd02ba97d9da9d79917b72798a92363",
+      "new_sha256": "90e22cf119936f446913e9441b0e4cbbedd02ba97d9da9d79917b72798a92363",
+      "changed": false
+    },
+    {
+      "path": "ports/mygo/internal/taskapp/history_command_vnext_budget.go",
+      "old_sha256": "035c27d97ef66e97f7d0cbb1d534368a327ff6c36411e144f9c0320e851b4b38",
+      "new_sha256": "035c27d97ef66e97f7d0cbb1d534368a327ff6c36411e144f9c0320e851b4b38",
+      "changed": false
+    },
+    {
+      "path": "ports/mygo/internal/taskapp/history_edit_command_vnext.go",
+      "old_sha256": "d46a60bdd96577d3f4c6e3dbed9fb62c0e5fc02261fae0ef4cbf1e2d2b35a257",
+      "new_sha256": "d46a60bdd96577d3f4c6e3dbed9fb62c0e5fc02261fae0ef4cbf1e2d2b35a257",
+      "changed": false
+    },
+    {
+      "path": "ports/mygo/internal/taskapp/history_edit_command_vnext_budget.go",
+      "old_sha256": "8e09e8d0d2c32813681e7be45d9ac33cecda74112a6a6567ed1b904eb9cdadd1",
+      "new_sha256": "8e09e8d0d2c32813681e7be45d9ac33cecda74112a6a6567ed1b904eb9cdadd1",
+      "changed": false
+    },
+    {
+      "path": "ports/mygo/internal/taskapp/history_lifecycle_command_vnext.go",
+      "old_sha256": "acd9060443ca1c160c72cc8346d8074ac2737de7c5e9b537fc7757caef41b4dd",
+      "new_sha256": "acd9060443ca1c160c72cc8346d8074ac2737de7c5e9b537fc7757caef41b4dd",
+      "changed": false
+    },
+    {
+      "path": "ports/mygo/internal/taskapp/history_remaining_command_vnext.go",
+      "old_sha256": "c1cdb7bccd6f724ff405c9cd01b91acd3b3c3cb7a4124936523e48e2a1a1cc75",
+      "new_sha256": "c1cdb7bccd6f724ff405c9cd01b91acd3b3c3cb7a4124936523e48e2a1a1cc75",
+      "changed": false
+    },
+    {
+      "path": "ports/mygo/internal/taskapp/history_remaining_command_vnext_budget.go",
+      "old_sha256": "2aecf0a24d73ea55c17530a439923efab63298f81016747e2b2c15f6fce77dfe",
+      "new_sha256": "2aecf0a24d73ea55c17530a439923efab63298f81016747e2b2c15f6fce77dfe",
+      "changed": false
+    },
+    {
+      "path": "ports/mygo/internal/taskapp/history_remaining_fences.go",
+      "old_sha256": "70290117c1b8557014ff89154d7ff05aee4cee60ac2e859bf4448eacd28ab110",
+      "new_sha256": "70290117c1b8557014ff89154d7ff05aee4cee60ac2e859bf4448eacd28ab110",
+      "changed": false
+    },
+    {
+      "path": "ports/mygo/internal/taskapp/history_subtask_command_vnext.go",
+      "old_sha256": "2093c2b7793fabf2f2ecb06243d4a06328ba50f36d9ebe369c89877c75a83c23",
+      "new_sha256": "2093c2b7793fabf2f2ecb06243d4a06328ba50f36d9ebe369c89877c75a83c23",
+      "changed": false
+    },
+    {
+      "path": "ports/mygo/internal/taskapp/history_subtask_command_vnext_budget.go",
+      "old_sha256": "ee585652cdcc2044ab65b015faec7948f077d53885a2521dcfcc2b8a02db311e",
+      "new_sha256": "ee585652cdcc2044ab65b015faec7948f077d53885a2521dcfcc2b8a02db311e",
+      "changed": false
+    },
+    {
+      "path": "ports/mygo/internal/taskapp/history_vnext.go",
+      "old_sha256": "d59969205f42ac832a8824fb0cb2266869c43eeaf28f867d8565879bd16ecd86",
+      "new_sha256": "d59969205f42ac832a8824fb0cb2266869c43eeaf28f867d8565879bd16ecd86",
+      "changed": false
+    },
+    {
+      "path": "ports/mygo/internal/taskapp/history_vnext_builder.go",
+      "old_sha256": "bc3713653051869c918f666407da75b96a3c3096d7b406975c29ac59a8caa64d",
+      "new_sha256": "bc3713653051869c918f666407da75b96a3c3096d7b406975c29ac59a8caa64d",
+      "changed": false
+    },
+    {
+      "path": "ports/mygo/internal/taskapp/history_vnext_machine.go",
+      "old_sha256": "44ce117f37f7705c5ece5380b8cfe88c429b18b3868266cd9f7a8e21f5be8715",
+      "new_sha256": "44ce117f37f7705c5ece5380b8cfe88c429b18b3868266cd9f7a8e21f5be8715",
+      "changed": false
+    },
+    {
+      "path": "ports/mygo/internal/taskapp/manual_progress.go",
+      "old_sha256": "849f14865a00553725b7b7a65e139aff56453cb31b020431e3a8bf69fa434291",
+      "new_sha256": "849f14865a00553725b7b7a65e139aff56453cb31b020431e3a8bf69fa434291",
+      "changed": false
+    },
+    {
+      "path": "ports/mygo/internal/taskapp/outcome.go",
+      "old_sha256": "782adfca20295b48d78b53c86cf3f1840a2cbf50c55ac015fd25bb99fcc64331",
+      "new_sha256": "782adfca20295b48d78b53c86cf3f1840a2cbf50c55ac015fd25bb99fcc64331",
+      "changed": false
+    },
+    {
+      "path": "ports/mygo/internal/taskapp/return.go",
+      "old_sha256": "f362bfd4c6a3430e8fcc57f571612cf50d305dcf6e078704c9236b5031a441a3",
+      "new_sha256": "f362bfd4c6a3430e8fcc57f571612cf50d305dcf6e078704c9236b5031a441a3",
+      "changed": false
+    },
+    {
+      "path": "ports/mygo/internal/taskapp/schedule_audit.go",
+      "old_sha256": "1cf056caf72c9f5311fa06419c806e1c2170ff78ea9311784c45868dbb822a05",
+      "new_sha256": "1cf056caf72c9f5311fa06419c806e1c2170ff78ea9311784c45868dbb822a05",
+      "changed": false
+    },
+    {
+      "path": "ports/mygo/internal/taskapp/service.go",
+      "old_sha256": "4b0f4beb5c7c40137c3a2e3bd41330685cb9814550cb2711916fff5679dd33ab",
+      "new_sha256": "4b0f4beb5c7c40137c3a2e3bd41330685cb9814550cb2711916fff5679dd33ab",
+      "changed": false
+    },
+    {
+      "path": "ports/mygo/internal/taskapp/store.go",
+      "old_sha256": "08f8f67c1a4b59a3c305b6eeb98e31086ddf365b58ece4565a202942abc60bea",
+      "new_sha256": "08f8f67c1a4b59a3c305b6eeb98e31086ddf365b58ece4565a202942abc60bea",
+      "changed": false
+    },
+    {
+      "path": "ports/mygo/internal/taskapp/subtask.go",
+      "old_sha256": "47ec56a67091e1598625cd44864b2a5bda3b73254dfeba38eff11001f31e2374",
+      "new_sha256": "47ec56a67091e1598625cd44864b2a5bda3b73254dfeba38eff11001f31e2374",
+      "changed": false
+    },
+    {
+      "path": "ports/mygo/internal/taskapp/sync_unix.go",
+      "old_sha256": "c377703308d4beb7b834c90a05ba58d485ddc4095c619487c9264e6f59bce124",
+      "new_sha256": "c377703308d4beb7b834c90a05ba58d485ddc4095c619487c9264e6f59bce124",
+      "changed": false
+    },
+    {
+      "path": "ports/mygo/internal/taskapp/sync_windows.go",
+      "old_sha256": "cd7f652bd2973520ed6184fd0036a07146d536743c2cef7db7524d883c56bad7",
+      "new_sha256": "cd7f652bd2973520ed6184fd0036a07146d536743c2cef7db7524d883c56bad7",
+      "changed": false
+    },
+    {
+      "path": "ports/mygo/internal/taskapp/title.go",
+      "old_sha256": "132d046aa2e0a80952bf0dc1fbedde45a0f7fe91bfda424847553188837a0e43",
+      "new_sha256": "132d046aa2e0a80952bf0dc1fbedde45a0f7fe91bfda424847553188837a0e43",
+      "changed": false
+    },
+    {
+      "path": "ports/mygo/internal/taskview/calendar.go",
+      "old_sha256": "a31828243474932a1423d24b9739719533f47efe0875bf6dacc9ea550b2d7373",
+      "new_sha256": "a31828243474932a1423d24b9739719533f47efe0875bf6dacc9ea550b2d7373",
+      "changed": false
+    },
+    {
+      "path": "ports/mygo/internal/taskview/day.go",
+      "old_sha256": "4c836a9a49e414e5fdabed601545f304b2ac9fb4271a1e912e1693b3d5f60632",
+      "new_sha256": "4c836a9a49e414e5fdabed601545f304b2ac9fb4271a1e912e1693b3d5f60632",
+      "changed": false
+    },
+    {
+      "path": "ports/mygo/internal/taskview/history.go",
+      "old_sha256": "403a3b7167bc080d7d45b47f481339fb539120f40bda71a9d586c01b084ec539",
+      "new_sha256": "403a3b7167bc080d7d45b47f481339fb539120f40bda71a9d586c01b084ec539",
+      "changed": false
+    },
+    {
+      "path": "ports/mygo/internal/taskview/pool.go",
+      "old_sha256": "21a3978884e54f3ee9650bf2aea1bbdbe628afde0aae43a3ff38de5d16c8b459",
+      "new_sha256": "21a3978884e54f3ee9650bf2aea1bbdbe628afde0aae43a3ff38de5d16c8b459",
+      "changed": false
+    },
+    {
+      "path": "ports/mygo/internal/titlecoordinator/coordinator.go",
+      "old_sha256": "32758ca3d4ef31b7352a96235b03395c082b17494d0e8398ade8c902b488f055",
+      "new_sha256": "32758ca3d4ef31b7352a96235b03395c082b17494d0e8398ade8c902b488f055",
+      "changed": false
+    },
+    {
+      "path": "ports/mygo/internal/titlecoordinator/lane.go",
+      "old_sha256": "d456939dec42e332d58d42c3247ac3c17e4888a5b540901ed820ede7970a3450",
+      "new_sha256": "d456939dec42e332d58d42c3247ac3c17e4888a5b540901ed820ede7970a3450",
+      "changed": false
+    },
+    {
+      "path": "ports/mygo/internal/titlecoordinator/retirement.go",
+      "old_sha256": "67ca786b2d38be30468aeb048eddc2f6bacbb5360fa867d1b4105c97ad872081",
+      "new_sha256": "67ca786b2d38be30468aeb048eddc2f6bacbb5360fa867d1b4105c97ad872081",
+      "changed": false
+    },
+    {
+      "path": "ports/mygo/internal/titlesession/session.go",
+      "old_sha256": "c53f7500d24c4930957e5666fa0acac015a45aedf6de76b2e60b574a4bb46f9f",
+      "new_sha256": "c53f7500d24c4930957e5666fa0acac015a45aedf6de76b2e60b574a4bb46f9f",
+      "changed": false
+    },
+    {
+      "path": "ports/mygo/main.go",
+      "old_sha256": "a678fc92870f94e841520ad31ddb4cfa9099ee7ed4508b83f8b8791d2a33f6c5",
+      "new_sha256": "a678fc92870f94e841520ad31ddb4cfa9099ee7ed4508b83f8b8791d2a33f6c5",
+      "changed": false
+    },
+    {
+      "path": "ports/mygo/native_text_boundary.go",
+      "old_sha256": "b3c40b0fc31ea4d1c7d7b3b7bf81754a95f8062403dfe0da18b099faad8b380d",
+      "new_sha256": "b3c40b0fc31ea4d1c7d7b3b7bf81754a95f8062403dfe0da18b099faad8b380d",
+      "changed": false
+    },
+    {
+      "path": "ports/mygo/pages_memo.go",
+      "old_sha256": "0bb11c05626446fe48ff0f3a31c75d06267a9bb5116f3cb0005b0842507b6f8a",
+      "new_sha256": "0bb11c05626446fe48ff0f3a31c75d06267a9bb5116f3cb0005b0842507b6f8a",
+      "changed": false
+    },
+    {
+      "path": "ports/mygo/pages_plan.go",
+      "old_sha256": "50f3312fb82b2d4b50f056b63e076ab52a009f713bb72e6a0cb80b7d8eee36b6",
+      "new_sha256": "50f3312fb82b2d4b50f056b63e076ab52a009f713bb72e6a0cb80b7d8eee36b6",
+      "changed": false
+    },
+    {
+      "path": "ports/mygo/pages_settings.go",
+      "old_sha256": "eaf2f6444fdbfd4da72d178c2915345a6d93bfde438e800d1d7edc14345d088a",
+      "new_sha256": "eaf2f6444fdbfd4da72d178c2915345a6d93bfde438e800d1d7edc14345d088a",
+      "changed": false
+    },
+    {
+      "path": "ports/mygo/runtime_calendar.go",
+      "old_sha256": "7ca34c19a40a63d2fda2e131b724c94a976b29800251981a401d460b990b1f19",
+      "new_sha256": "7ca34c19a40a63d2fda2e131b724c94a976b29800251981a401d460b990b1f19",
+      "changed": false
+    },
+    {
+      "path": "ports/mygo/runtime_carryover_actions.go",
+      "old_sha256": "de26415a56c6e1e6a1b9313e162f57fa959379bac32c2e590ebbd55e672e1e54",
+      "new_sha256": "de26415a56c6e1e6a1b9313e162f57fa959379bac32c2e590ebbd55e672e1e54",
+      "changed": false
+    },
+    {
+      "path": "ports/mygo/runtime_carryover_picker.go",
+      "old_sha256": "18788b691e87eaaed48f41fedf72d9f2603a40a0384cc6ad9e6fbd1fe5140b64",
+      "new_sha256": "18788b691e87eaaed48f41fedf72d9f2603a40a0384cc6ad9e6fbd1fe5140b64",
+      "changed": false
+    },
+    {
+      "path": "ports/mygo/runtime_day.go",
+      "old_sha256": "151c3d221670c2b20445eee3d24fd21cbae070c5c46b127678be5224052defb5",
+      "new_sha256": "151c3d221670c2b20445eee3d24fd21cbae070c5c46b127678be5224052defb5",
+      "changed": false
+    },
+    {
+      "path": "ports/mygo/runtime_detail_header.go",
+      "old_sha256": "8123c27534ab1b061a3398237d495c8bfedc8648c77b4feed98b7eb9821955e6",
+      "new_sha256": "8123c27534ab1b061a3398237d495c8bfedc8648c77b4feed98b7eb9821955e6",
+      "changed": false
+    },
+    {
+      "path": "ports/mygo/runtime_navigation.go",
+      "old_sha256": "a968c158acfe602608d1553bade3a956063515e20179ce1c41c2acf723a1836f",
+      "new_sha256": "a968c158acfe602608d1553bade3a956063515e20179ce1c41c2acf723a1836f",
+      "changed": false
+    },
+    {
+      "path": "ports/mygo/runtime_pool_picker.go",
+      "old_sha256": "50398ff81e9d2f9ff7dca2b7f0a50dc2b03a0d2dd0f15c34cd13cbca81bc7cc7",
+      "new_sha256": "50398ff81e9d2f9ff7dca2b7f0a50dc2b03a0d2dd0f15c34cd13cbca81bc7cc7",
+      "changed": false
+    },
+    {
+      "path": "ports/mygo/runtime_progress.go",
+      "old_sha256": "d64c08e9ce3c693ccd12c49fa3f1110e6681abf3c697ccf793772500bc25105d",
+      "new_sha256": "d64c08e9ce3c693ccd12c49fa3f1110e6681abf3c697ccf793772500bc25105d",
+      "changed": false
+    },
+    {
+      "path": "ports/mygo/runtime_subtask.go",
+      "old_sha256": "94d27e3a93e68a3e3f1937174b1d6d4729658417181a8491cce86562bb6e2737",
+      "new_sha256": "94d27e3a93e68a3e3f1937174b1d6d4729658417181a8491cce86562bb6e2737",
+      "changed": false
+    },
+    {
+      "path": "ports/mygo/runtime_task_menu.go",
+      "old_sha256": "aa98c460ed7162b89cfbcf35164cfeb8218e5565da4c3944f757c115db942151",
+      "new_sha256": "aa98c460ed7162b89cfbcf35164cfeb8218e5565da4c3944f757c115db942151",
+      "changed": false
+    },
+    {
+      "path": "ports/mygo/runtime_title.go",
+      "old_sha256": "3786b40e6a275ab4eaacdd4667e196bfb4f91ba8c1f45d9e472f74e3a7b2759e",
+      "new_sha256": "3786b40e6a275ab4eaacdd4667e196bfb4f91ba8c1f45d9e472f74e3a7b2759e",
+      "changed": false
+    },
+    {
+      "path": "ports/mygo/runtime_title_disposal.go",
+      "old_sha256": "464b3894b3bba341f30460d15f37e92ce7526c0ed0e730bfeacc9290a3db4155",
+      "new_sha256": "464b3894b3bba341f30460d15f37e92ce7526c0ed0e730bfeacc9290a3db4155",
+      "changed": false
+    },
+    {
+      "path": "ports/mygo/runtime_ui.go",
+      "old_sha256": "651c10203e515dd772fe0b5fd8f2badc1b77b66bcec5fa431f983027660f344e",
+      "new_sha256": "651c10203e515dd772fe0b5fd8f2badc1b77b66bcec5fa431f983027660f344e",
+      "changed": false
+    },
+    {
+      "path": "ports/mygo/scripts/swift-name-compare/probe.go",
+      "old_sha256": "75b0d2f5f283046442c2a714580b1c16711bbea4d37172dc6d6a3d378ab39012",
+      "new_sha256": "75b0d2f5f283046442c2a714580b1c16711bbea4d37172dc6d6a3d378ab39012",
+      "changed": false
+    },
+    {
+      "path": "ports/mygo/visual_tokens.go",
+      "old_sha256": "5e29c91578efa267ed790913dd5027660104a8a4e3c77b1d2ed91a8a65a980f8",
+      "new_sha256": "5e29c91578efa267ed790913dd5027660104a8a4e3c77b1d2ed91a8a65a980f8",
+      "changed": false
+    }
+  ]
+}

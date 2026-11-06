@@ -101,6 +101,10 @@ func TestHistoryEditFrozenProduction(t *testing.T) {
 	must(t, e)
 	expected, e = daySnapshotFrozenOverlay(expected, string(snapshotOverlay))
 	must(t, e)
+	readOverlay, e := os.ReadFile("../../docs/tasks/optimize-day-todo-read/FROZEN-PRODUCTION-OVERLAY-v1.tsv")
+	must(t, e)
+	expected, e = dayReadFrozenOverlay(expected, string(readOverlay))
+	must(t, e)
 	for _, line := range strings.Split(strings.TrimSpace(string(rows)), "\n") {
 		parts := strings.Split(line, "\t")
 		if len(parts) != 2 {

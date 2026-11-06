@@ -19,6 +19,19 @@ func cloneNotes(ns []TaskNoteEntry) []TaskNoteEntry {
 	}
 	return out
 }
+func cloneDayTrace(t DayTrace) DayTrace {
+	t.PinOrder = clonePtr(t.PinOrder)
+	t.DescriptionText = clonePtr(t.DescriptionText)
+	t.NoteEntries = cloneNotes(t.NoteEntries)
+	t.ManualProgressPercent = clonePtr(t.ManualProgressPercent)
+	t.CarriedFromTraceID = clonePtr(t.CarriedFromTraceID)
+	t.ChangedToTraceID = clonePtr(t.ChangedToTraceID)
+	t.CompletedAt = clonePtr(t.CompletedAt)
+	t.SettledAt = clonePtr(t.SettledAt)
+	t.DraftCancellationID = clonePtr(t.DraftCancellationID)
+	t.DraftCancelledOn = clonePtr(t.DraftCancelledOn)
+	return t
+}
 func (g TaskGraph) Clone() TaskGraph {
 	out := TaskGraph{}
 	if g.Days != nil {
@@ -55,17 +68,7 @@ func (g TaskGraph) Clone() TaskGraph {
 		out.Traces = make([]DayTrace, len(g.Traces))
 	}
 	for i, t := range g.Traces {
-		t.PinOrder = clonePtr(t.PinOrder)
-		t.DescriptionText = clonePtr(t.DescriptionText)
-		t.NoteEntries = cloneNotes(t.NoteEntries)
-		t.ManualProgressPercent = clonePtr(t.ManualProgressPercent)
-		t.CarriedFromTraceID = clonePtr(t.CarriedFromTraceID)
-		t.ChangedToTraceID = clonePtr(t.ChangedToTraceID)
-		t.CompletedAt = clonePtr(t.CompletedAt)
-		t.SettledAt = clonePtr(t.SettledAt)
-		t.DraftCancellationID = clonePtr(t.DraftCancellationID)
-		t.DraftCancelledOn = clonePtr(t.DraftCancelledOn)
-		out.Traces[i] = t
+		out.Traces[i] = cloneDayTrace(t)
 	}
 	if g.Subtasks != nil {
 		out.Subtasks = make([]Subtask, len(g.Subtasks))

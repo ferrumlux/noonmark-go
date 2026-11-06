@@ -373,26 +373,30 @@ func (k *TaskKernel) SettleTaskDays(today LocalDate, now Instant) error {
 // DayTodo excludes movement-source rows and internal cancellation facts. Default
 // priority presentation puts pending rows first, with pinned pending rows first.
 func (k *TaskKernel) DayTodo(date LocalDate) []DayTrace {
-	g := k.Snapshot()
-	newestByChain := map[TaskChainID]Instant{}
-	for _, t := range g.Traces {
-		if t.Date == date && t.Status.FormsDayHistory() {
-			old, exists := newestByChain[t.ChainID]
-			if !exists || t.CreatedAt.After(old) {
-				newestByChain[t.ChainID] = t.CreatedAt
+	out := func() []DayTrace {
+		k.mu.RLock()
+		defer k.mu.RUnlock()
+		newestByChain := map[TaskChainID]Instant{}
+		for _, t := range k.graph.Traces {
+			if t.Date == date && t.Status.FormsDayHistory() {
+				old, exists := newestByChain[t.ChainID]
+				if !exists || t.CreatedAt.After(old) {
+					newestByChain[t.ChainID] = t.CreatedAt
+				}
 			}
 		}
-	}
-	var out []DayTrace
-	for _, t := range g.Traces {
-		if t.Date != date || !t.Status.VisibleInDayTodo() {
-			continue
+		var out []DayTrace
+		for _, t := range k.graph.Traces {
+			if t.Date != date || !t.Status.VisibleInDayTodo() {
+				continue
+			}
+			if t.Status == TraceDeferred && newestByChain[t.ChainID].After(t.CreatedAt) {
+				continue
+			}
+			out = append(out, cloneDayTrace(t))
 		}
-		if t.Status == TraceDeferred && newestByChain[t.ChainID].After(t.CreatedAt) {
-			continue
-		}
-		out = append(out, t)
-	}
+		return out
+	}()
 	sort.Slice(out, func(i, j int) bool {
 		a, b := out[i], out[j]
 		if (a.Status == TracePending) != (b.Status == TracePending) {
