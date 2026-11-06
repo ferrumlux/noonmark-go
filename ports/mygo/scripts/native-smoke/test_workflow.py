@@ -9,6 +9,7 @@ import collect
 import consume
 import smoke
 from test_smoke import elf, SHA
+import test_smoke
 import yaml  # already-pinned CI validation dependency; never installed by consumer
 
 ROOT = Path(__file__).resolve().parents[4]
@@ -152,6 +153,54 @@ class Contracts(unittest.TestCase):
         with patch.object(smoke, 'native_host', return_value='linux/arm64'), self.assertRaises(ValueError):
             consume.consume(artifact, work, 'linux/amd64', SHA, SHA, '123', '1', '2')
         self.assertEqual(json.loads((work / 'stage.json').read_bytes())['stage'], 'native-host')
+
+    def test_host_query_failure_is_preserved_before_application(self):
+        binary = self.root / 'binary'
+        binary.write_bytes(elf())
+        artifact = self.root / 'artifact'
+        smoke.pack(binary, artifact, 'linux/amd64', SHA, '123', '1')
+        work = self.root / 'host-query-failure'
+        def fail_query(facts):
+            facts.update(method='synthetic-test-only', queries=[{'name': 'hw.optional.arm64',
+                'returncode': -1, 'errno': 13, 'size': 4, 'value': None}])
+            raise ValueError('synthetic host query error')
+        with patch.object(smoke, 'native_host', side_effect=fail_query), patch.object(smoke, 'smoke') as application:
+            with self.assertRaisesRegex(ValueError, 'synthetic host query error'):
+                consume.consume(artifact, work, 'linux/amd64', SHA, SHA, '123', '1', '1')
+            application.assert_not_called()
+        result = json.loads((work / 'stage.json').read_bytes())
+        self.assertFalse(result['passed'])
+        self.assertEqual(result['stage'], 'native-host')
+        self.assertEqual(result['host_query']['queries'][0]['errno'], 13)
+        self.assertEqual(result['failure'], 'synthetic host query error')
+
+    def test_native_failure_registry(self):
+        folder = ROOT / 'ports/mygo/docs/engineering/failure-cases'
+        lines = (folder / 'native-smoke-gates.tsv').read_text().strip().splitlines()
+        self.assertEqual(lines[0].split('\t'), ['case_id', 'fast_gate', 'symptom_gate', 'aggregate', 'status'])
+        cases = {}
+        for line in lines[1:]:
+            row = line.split('\t')
+            self.assertEqual(len(row), 5)
+            case, fast, symptom, aggregate, status = row
+            self.assertNotIn(case, cases)
+            self.assertTrue((folder / (case + '.md')).is_file())
+            for name in fast.split(';'):
+                owner, method = name.split('.')
+                self.assertTrue(method.startswith('test_'))
+                self.assertTrue(callable(getattr({'Fixtures': test_smoke.Fixtures, 'Contracts': Contracts}[owner], method)))
+            self.assertEqual(set(symptom.split(';')), {'darwin/amd64', 'darwin/arm64'})
+            self.assertEqual(aggregate, '.github/workflows/native-smoke.yml#jobs.build;.github/workflows/native-smoke.yml#jobs.runtime')
+            self.assertTrue(status)
+            cases[case] = row
+        self.assertIn('GO-NATIVE-HOST-001', cases)
+        self.assertEqual(set(cases['GO-NATIVE-HOST-001'][1].split(';')), {
+            'Fixtures.test_mac_intel_requires_positive_capability',
+            'Fixtures.test_review_mac_query_fail_closed',
+            'Fixtures.test_mac_arm_and_rosetta_not_mislabelled_as_intel',
+            'Fixtures.test_mac_query_failure_keeps_errno_receipt',
+            'Contracts.test_host_query_failure_is_preserved_before_application'})
+        workflow_contract(WORKFLOW.read_text())
 
     def test_required_fixture_and_gate_steps_cannot_disappear(self):
         text = WORKFLOW.read_text()

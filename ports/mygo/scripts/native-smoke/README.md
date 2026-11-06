@@ -17,3 +17,9 @@ run 校验 OS 原生架构及 ELF/PE/Mach-O 文件头后仅为已校验 exe 恢�
 每次运行在 work-parent 内新建目录，不复用／删除 session。保留阶段 stdout/stderr、退出码、耗时、PNG 与 result.json。失败不自动清理。仅将有界日志、PNG、result 和 manifest 加入后续明确上传清单，不上传 session、缓存、源码或整个 work-parent。进程日志轮询上限 1 MiB，20ms 检查；应用失控瞬间可能超出上限后被终止，不宣称操作系统硬配额。
 
 fixture：`python3 -B ports/mygo/scripts/native-smoke/test_smoke.py`。合成可执行头／PNG／假调用仅验证驱动 fail-closed，不能证明平台实际运行。真实结果需要独立 native run。
+
+## macOS 架构判定
+
+通过系统 libSystem 的 `sysctlbyname` 查询固定能力键并保存返回码、errno、长度和值，只有明确 ENOENT 才视为可选键不存在。ARM 能力缺失本身不能判定 Intel；还要求正向 x86_64 能力以及进程架构／Rosetta 状态一致。Apple Silicon 上翻译运行的 x86 Python 可被识别，但待运行产品仍必须是与原生主机匹配的 arm64 Mach-O。查询异常或矛盾保持失败，`stage.json` 保留失败前的诊断，不收集全环境。
+
+首轮 [42277984531](https://github.com/ferrumlux/noonmark-go/actions/runs/42277984531) 的 Intel 检查器在应用启动前收到 sysctl 非零退出；旧代码没有保留该子进程的输出与确切退出码，所以不能推断具体系统错误。本修改的合成 ctypes 测试不替代修复后 macOS 的实际运行验收。

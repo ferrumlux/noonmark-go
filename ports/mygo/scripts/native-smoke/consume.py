@@ -34,7 +34,8 @@ def consume(artifact, work, target, source, build_source, run_id, build_attempt,
         shutil.copyfile(artifact / 'manifest.json', work / 'manifest.json')
         status['stage'] = 'native-host'
         save()
-        status['native_host'] = smoke.native_host()
+        status['host_query'] = {}
+        status['native_host'] = smoke.native_host(status['host_query'])
         smoke.require(status['native_host'] == target, 'native host/target mismatch')
         status['binary_sha256'] = smoke.digest(exe)
         status['stage'] = 'application-smoke'

@@ -1,4 +1,6 @@
 """Small synthetic fixtures only. These do not prove any native runtime."""
+import ctypes
+import errno
 import json
 from pathlib import Path
 import struct
@@ -207,13 +209,78 @@ class Fixtures(unittest.TestCase):
                 smoke.png(path, (1, 1))
 
     def test_review_mac_query_fail_closed(self):
+        # Error, malformed, empty/short and unexpected-success values stay closed.
+        for answer in [(-1, errno.EACCES, 4, 1), (-1, errno.EIO, 4, 0),
+                       (-1, 0, 4, 1), (1, 0, 4, 1), (0, 0, 0, 0),
+                       (0, 0, 8, 1), (0, 0, 4, 2), (0, 0, 4, -1)]:
+            with self.subTest(answer=answer), self.assertRaises(ValueError):
+                self.mac_host('x86_64', {'hw.optional.arm64': answer})
+
+    def mac_host(self, machine, answers, facts=None):
         from types import SimpleNamespace
-        for code, out in [(0, b''), (0, b'unexpected\n'), (1, b'1\n')]:
-            with patch.object(smoke.platform, 'system', return_value='Darwin'), patch.object(smoke.subprocess, 'run', return_value=SimpleNamespace(returncode=code, stdout=out)), self.assertRaises(ValueError):
-                smoke.native_host()
-        for out, expected in [(b'0\n', 'darwin/amd64'), (b'1\n', 'darwin/arm64')]:
-            with patch.object(smoke.platform, 'system', return_value='Darwin'), patch.object(smoke.subprocess, 'run', return_value=SimpleNamespace(returncode=0, stdout=out)):
-                self.assertEqual(smoke.native_host(), expected)
+        if facts is None:
+            facts = {}
+        calls = []
+        def query(name, old, size, new, newlen):
+            self.assertIsNone(new)
+            self.assertEqual(newlen, 0)
+            self.assertEqual(ctypes.get_errno(), 0)
+            self.assertEqual(ctypes.cast(size, ctypes.POINTER(ctypes.c_size_t)).contents.value, 4)
+            name = name.decode('ascii')
+            calls.append(name)
+            self.assertIn(name, answers, 'unexpected/unbound capability query')
+            rc, error, count, value = answers[name]
+            ctypes.cast(old, ctypes.POINTER(ctypes.c_int)).contents.value = value
+            ctypes.cast(size, ctypes.POINTER(ctypes.c_size_t)).contents.value = count
+            ctypes.set_errno(error)
+            return rc
+        with patch.object(smoke.platform, 'system', return_value='Darwin'), \
+                patch.object(smoke.platform, 'machine', return_value=machine), \
+                patch.object(smoke.ctypes, 'CDLL', return_value=SimpleNamespace(sysctlbyname=query)) as loader:
+            result = smoke.native_host(facts)
+        loader.assert_called_once_with('/usr/lib/libSystem.B.dylib', use_errno=True)
+        self.assertEqual(query.argtypes, [ctypes.c_char_p, ctypes.c_void_p,
+                                        ctypes.POINTER(ctypes.c_size_t), ctypes.c_void_p, ctypes.c_size_t])
+        self.assertIs(query.restype, ctypes.c_int)
+        self.assertEqual(calls, [q['name'] for q in facts['queries']])
+        return result
+
+    def test_mac_intel_requires_positive_capability(self):
+        missing = (-1, errno.ENOENT, 4, 0)
+        yes, no = (0, 0, 4, 1), (0, 0, 4, 0)
+        for arm in (missing, no):
+            for translated in (missing, no):
+                facts = {}
+                self.assertEqual(self.mac_host('x86_64', {'hw.optional.arm64': arm,
+                    'sysctl.proc_translated': translated, 'hw.optional.x86_64': yes}, facts), 'darwin/amd64')
+                self.assertEqual(facts['method'], 'libSystem.sysctlbyname')
+                self.assertEqual(facts['queries'][0]['errno'], arm[1])
+                self.assertEqual(len(facts['queries']), 3)
+        for x86 in (missing, no, (-1, errno.EPERM, 4, 1)):
+            with self.assertRaises(ValueError):
+                self.mac_host('x86_64', {'hw.optional.arm64': missing,
+                    'sysctl.proc_translated': missing, 'hw.optional.x86_64': x86})
+
+    def test_mac_arm_and_rosetta_not_mislabelled_as_intel(self):
+        missing = (-1, errno.ENOENT, 4, 0)
+        yes, no = (0, 0, 4, 1), (0, 0, 4, 0)
+        for machine, translated in [('arm64', no), ('arm64', missing), ('x86_64', yes)]:
+            facts = {}
+            self.assertEqual(self.mac_host(machine, {'hw.optional.arm64': yes,
+                'sysctl.proc_translated': translated}, facts), 'darwin/arm64')
+            self.assertEqual(len(facts['queries']), 2)
+        for machine, arm, translated in [('x86_64', yes, no), ('x86_64', yes, missing),
+            ('arm64', yes, yes), ('unknown', yes, no), ('arm64', missing, no),
+            ('x86_64', missing, yes), ('x86_64', no, yes)]:
+            with self.subTest(machine=machine, arm=arm, translated=translated), self.assertRaises(ValueError):
+                self.mac_host(machine, {'hw.optional.arm64': arm, 'sysctl.proc_translated': translated})
+
+    def test_mac_query_failure_keeps_errno_receipt(self):
+        facts = {}
+        with self.assertRaisesRegex(ValueError, 'errno=' + str(errno.EACCES)):
+            self.mac_host('x86_64', {'hw.optional.arm64': (-1, errno.EACCES, 4, 9)}, facts)
+        self.assertEqual(facts['queries'], [{'name': 'hw.optional.arm64', 'returncode': -1,
+                         'errno': errno.EACCES, 'size': 4, 'value': None}])
 
     def test_review_phase_failure_records(self):
         for label, exe, args, kwargs in [

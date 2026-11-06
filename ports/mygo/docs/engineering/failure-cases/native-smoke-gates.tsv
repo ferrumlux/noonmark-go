@@ -1,0 +1,2 @@
+case_id	fast_gate	symptom_gate	aggregate	status
+GO-NATIVE-HOST-001	Fixtures.test_mac_intel_requires_positive_capability;Fixtures.test_review_mac_query_fail_closed;Fixtures.test_mac_arm_and_rosetta_not_mislabelled_as_intel;Fixtures.test_mac_query_failure_keeps_errno_receipt;Contracts.test_host_query_failure_is_preserved_before_application	darwin/amd64;darwin/arm64	.github/workflows/native-smoke.yml#jobs.build;.github/workflows/native-smoke.yml#jobs.runtime	candidate_only_real_darwin_pending

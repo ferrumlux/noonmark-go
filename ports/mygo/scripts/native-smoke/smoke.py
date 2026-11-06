@@ -2,6 +2,7 @@
 """Bounded native-runtime smoke. No builds, downloads, shell or user-data discovery."""
 import argparse
 import ctypes
+import errno
 import hashlib
 import json
 import os
@@ -83,7 +84,54 @@ def binary_target(path):
     return osname + '/' + arch
 
 
-def native_host():
+def darwin_host(facts):
+    """Query fixed OS capability keys, preserving ENOENT separately from errors.
+
+    hw.optional.arm64 need not exist on Intel. An absent ARM key alone is
+    never Intel evidence: require a positive x86 capability and non-translated
+    x86 Python process too. On Apple Silicon, an x86 Python may be translated;
+    the target product must still be the native arm64 Mach-O checked elsewhere.
+    """
+    facts.update(method='libSystem.sysctlbyname', process_machine=platform.machine(), queries=[])
+    library = ctypes.CDLL('/usr/lib/libSystem.B.dylib', use_errno=True)
+    query = library.sysctlbyname
+    query.argtypes = [ctypes.c_char_p, ctypes.c_void_p, ctypes.POINTER(ctypes.c_size_t),
+                      ctypes.c_void_p, ctypes.c_size_t]
+    query.restype = ctypes.c_int
+
+    def optional_int(name):
+        value = ctypes.c_int()
+        size = ctypes.c_size_t(ctypes.sizeof(value))
+        ctypes.set_errno(0)
+        result = query(name.encode('ascii'), ctypes.byref(value), ctypes.byref(size), None, 0)
+        error = ctypes.get_errno()
+        facts['queries'].append({'name': name, 'returncode': result, 'errno': error,
+                                 'size': size.value, 'value': value.value if result == 0 else None})
+        if result == -1 and error == errno.ENOENT:
+            return None
+        require(result == 0, 'macOS sysctlbyname failed: ' + name + ' errno=' + str(error))
+        require(size.value == ctypes.sizeof(value) and value.value in (0, 1),
+                'invalid macOS capability: ' + name)
+        return value.value
+
+    arm = optional_int('hw.optional.arm64')
+    translated = optional_int('sysctl.proc_translated')
+    machine = facts['process_machine']
+    if arm == 1:
+        require((machine == 'arm64' and translated in (None, 0))
+                or (machine == 'x86_64' and translated == 1),
+                'inconsistent macOS ARM/process architecture')
+        return 'arm64'
+    require(machine == 'x86_64' and translated in (None, 0),
+            'unknown or inconsistent macOS native architecture')
+    require(optional_int('hw.optional.x86_64') == 1,
+            'missing positive macOS Intel capability')
+    return 'amd64'
+
+
+def native_host(facts=None):
+    if facts is None:
+        facts = {}
     system = platform.system().lower()
     require(system in ('linux', 'darwin', 'windows'), 'unsupported host OS')
     if system == 'windows':
@@ -92,10 +140,7 @@ def native_host():
         ctypes.windll.kernel32.GetNativeSystemInfo(ctypes.byref(buf))
         arch = {9: 'amd64', 12: 'arm64'}.get(struct.unpack_from('<H', buf.raw)[0])
     elif system == 'darwin':
-        r = subprocess.run(['/usr/sbin/sysctl', '-n', 'hw.optional.arm64'], capture_output=True, timeout=10)
-        require(r.returncode == 0, 'native macOS architecture query failed')
-        require(r.stdout.strip() in (b'0', b'1'), 'unknown native macOS architecture')
-        arch = 'arm64' if r.stdout.strip() == b'1' else 'amd64'
+        arch = darwin_host(facts)
     else:
         require('microsoft' not in platform.release().lower(), 'WSL is not a native host target')
         arch = {'x86_64': 'amd64', 'aarch64': 'arm64'}.get(os.uname().machine)
