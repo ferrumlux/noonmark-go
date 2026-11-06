@@ -68,7 +68,7 @@ func (s *app) liveDayView(c *ui.Context, w, h float32) {
 	}
 	ui.Box(c).Absolute().Left(sw).Top(0).Size(mw, h).Clip().Children(func() { s.liveDayMain(c, mw, h, day, g) })
 	if rw > 0 {
-		ui.Box(c).Absolute().Left(w-rw).Top(0).Size(rw, h).Clip().Children(func() { s.liveDayDetail(c, rw, h, day) })
+		ui.Box(c).Absolute().Left(w-rw).Top(0).Size(rw, h).Clip().Children(func() { s.liveDayDetail(c, rw, h, day, g) })
 	}
 }
 func (s *app) liveDayMain(c *ui.Context, w, h float32, day taskview.DayPage, graph core.TaskGraph) {
@@ -188,10 +188,10 @@ func (s *app) liveDayMain(c *ui.Context, w, h float32, day taskview.DayPage, gra
 			r := r
 			_, weight := taskTitleStyle(r.Status == core.TraceCompleted)
 			parent := runtimeSubtaskTarget{chain: r.ChainID, trace: r.TraceID}
-			children := s.childRows("day-list", parent)
+			children := s.childRowsFromGraph(graph, day.Today, "day-list", parent)
 			accessory := float32(0)
 			if len(children) > 0 {
-				accessory = subtaskDisclosureWidth(c, string(r.TraceID), len(actualSubtaskRows(s.runtime.Snapshot(), r.ChainID, r.TraceID, s.runtime.Today()))) + 12
+				accessory = subtaskDisclosureWidth(c, string(r.TraceID), len(actualSubtaskRows(graph, r.ChainID, r.TraceID, day.Today))) + 12
 			}
 			borderInset := float32(0)
 			if s.runtimeSelection == string(r.TraceID) {
@@ -208,9 +208,9 @@ func (s *app) liveDayMain(c *ui.Context, w, h float32, day taskview.DayPage, gra
 			}
 			canComplete, _ := taskMenuCapabilities(graph, r, day.Today)
 			ui.Box(c.Key("live-row-" + string(r.TraceID))).Height(rowHeight).Width(w - 40).Children(func() {
-				s.liveDayRow(c, w-40, rowHeight, textH, r, canComplete)
+				s.liveDayRow(c, w-40, rowHeight, textH, r, canComplete, graph, day.Today)
 				if s.subtaskExpanded[r.TraceID] && len(children) > 0 {
-					ui.Box(c).Absolute().Left(40).Top(headerHeight + 1).Width(w - 40 - 52).Children(func() { s.liveSubtaskSection(c, w-40-52, "day-list", parent, false) })
+					ui.Box(c).Absolute().Left(40).Top(headerHeight + 1).Width(w - 40 - 52).Children(func() { s.liveSubtaskSectionFromGraph(c, w-40-52, "day-list", parent, false, graph, day.Today) })
 				}
 			})
 		}
@@ -262,14 +262,14 @@ func (s *app) liveDateStrip(c *ui.Context, w float32, strip taskview.DateStrip) 
 	}
 	box(c, 0, 65, w, width, color, 0)
 }
-func (s *app) liveDayRow(c *ui.Context, w, h, textH float32, r taskview.DayRow, enabled bool) {
+func (s *app) liveDayRow(c *ui.Context, w, h, textH float32, r taskview.DayRow, enabled bool, graph core.TaskGraph, today core.LocalDate) {
 	id := string(r.TraceID)
 	progress := s.measureRowProgress(c, r, textH)
 	headerHeight := progress.headerHeight
-	children := s.childRows("day-list", runtimeSubtaskTarget{chain: r.ChainID, trace: r.TraceID})
+	children := s.childRowsFromGraph(graph, today, "day-list", runtimeSubtaskTarget{chain: r.ChainID, trace: r.TraceID})
 	accessory := float32(0)
 	if len(children) > 0 {
-		accessory = subtaskDisclosureWidth(c, string(r.TraceID), len(actualSubtaskRows(s.runtime.Snapshot(), r.ChainID, r.TraceID, s.runtime.Today()))) + 12
+		accessory = subtaskDisclosureWidth(c, string(r.TraceID), len(actualSubtaskRows(graph, r.ChainID, r.TraceID, today))) + 12
 	}
 	borderInset := float32(0)
 	if s.runtimeSelection == id {
@@ -351,7 +351,7 @@ func (s *app) liveDayRow(c *ui.Context, w, h, textH float32, r taskview.DayRow, 
 				glyph = "chevron-down"
 			}
 			icon(c, 7, 6.5, 9, glyph, blue)
-			txt(c, 20, 3, 11, subtaskDisclosureText(len(actualSubtaskRows(s.runtime.Snapshot(), r.ChainID, r.TraceID, s.runtime.Today()))), blue, 600).FontFeatures("tnum")
+			txt(c, 20, 3, 11, subtaskDisclosureText(len(actualSubtaskRows(graph, r.ChainID, r.TraceID, today))), blue, 600).FontFeatures("tnum")
 		})
 		if b.Clicked() {
 			expanded := !s.subtaskExpanded[r.TraceID]
@@ -367,7 +367,7 @@ func (s *app) liveDayRow(c *ui.Context, w, h, textH float32, r taskview.DayRow, 
 		box(c, 44, h-1, w-44, 1, line.Alpha(.62), 0).PassThrough()
 	}
 }
-func (s *app) liveDayDetail(c *ui.Context, w, h float32, day taskview.DayPage) {
+func (s *app) liveDayDetail(c *ui.Context, w, h float32, day taskview.DayPage, graph core.TaskGraph) {
 	box(c, 0, 0, 1, h, line, 0)
 	calendarPaneButton(c, "day-close-rail", w-38, 14, "››", "收起日待办详情", func() { s.titleTransition(func() { s.runtimeDayRail = false }) })
 	var selected *taskview.DayRow
@@ -391,7 +391,7 @@ func (s *app) liveDayDetail(c *ui.Context, w, h float32, day taskview.DayPage) {
 			s.liveDetailProgress(c, w-28, selected.TraceID)
 			ui.Box(c).Height(14)
 			parent := runtimeSubtaskTarget{chain: selected.ChainID, trace: selected.TraceID}
-			s.liveSubtaskSection(c, w-28, "day", parent, s.canAddSubtask(parent))
+			s.liveSubtaskSectionFromGraph(c, w-28, "day", parent, s.canAddSubtaskFromGraph(graph, day.Today, parent), graph, day.Today)
 			ui.Box(c).Height(24)
 			ui.Text(c, "分类、完整 Markdown、撤销恢复与手动调整进度尚未接通。").FontSize(10.5).TextColor(muted).Width(w - 28)
 		})

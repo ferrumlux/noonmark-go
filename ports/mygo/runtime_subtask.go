@@ -127,7 +127,12 @@ func subtaskOwner(surface, child string) string {
 	return "subtask:" + subtaskPrefix(surface, child) + ".title"
 }
 func (s *app) childRows(surface string, parent runtimeSubtaskTarget) []runtimeSubtaskRow {
-	g, today := s.runtime.Snapshot(), s.runtime.Today()
+	return s.childRowsFromGraph(s.runtime.Snapshot(), s.runtime.Today(), surface, parent)
+}
+
+// Drawing callers share only their current view build's private snapshot.
+// Recompute editor overlays on each call; never cache them with the graph.
+func (s *app) childRowsFromGraph(g core.TaskGraph, today core.LocalDate, surface string, parent runtimeSubtaskTarget) []runtimeSubtaskRow {
 	var rows []runtimeSubtaskRow
 	if parent.pool() {
 		rows = plannedSubtaskRows(g, parent.chain, parent.definition, today)
@@ -266,7 +271,14 @@ func (s *app) subtaskRowHeight(c *ui.Context, width float32, surface string, r r
 	return result
 }
 func (s *app) liveSubtaskSection(c *ui.Context, width float32, surface string, parent runtimeSubtaskTarget, add bool) {
-	rows := s.childRows(surface, parent)
+	s.drawSubtaskSection(c, width, surface, parent, add, s.childRows(surface, parent))
+}
+
+func (s *app) liveSubtaskSectionFromGraph(c *ui.Context, width float32, surface string, parent runtimeSubtaskTarget, add bool, g core.TaskGraph, today core.LocalDate) {
+	s.drawSubtaskSection(c, width, surface, parent, add, s.childRowsFromGraph(g, today, surface, parent))
+}
+
+func (s *app) drawSubtaskSection(c *ui.Context, width float32, surface string, parent runtimeSubtaskTarget, add bool, rows []runtimeSubtaskRow) {
 	for i, r := range rows {
 		if i > 0 {
 			ui.Box(c).Height(subtaskRowSpacing)
@@ -612,9 +624,15 @@ func (s *app) canAddSubtask(target runtimeSubtaskTarget) bool {
 	if _, available := s.subtaskStore(); !available {
 		return false
 	}
-	g := s.runtime.Snapshot()
+	return s.canAddSubtaskFromGraph(s.runtime.Snapshot(), s.runtime.Today(), target)
+}
+
+func (s *app) canAddSubtaskFromGraph(g core.TaskGraph, today core.LocalDate, target runtimeSubtaskTarget) bool {
+	if _, available := s.subtaskStore(); !available {
+		return false
+	}
 	if target.pool() {
-		for _, row := range rowsFor(g, "pool", s.runtimeDate, s.runtime.Today()) {
+		for _, row := range rowsFor(g, "pool", s.runtimeDate, today) {
 			if row.chain != target.chain {
 				continue
 			}
@@ -626,7 +644,7 @@ func (s *app) canAddSubtask(target runtimeSubtaskTarget) bool {
 		}
 		return false
 	}
-	return actualSubtaskTargetEditable(g, s.runtime.Today(), target)
+	return actualSubtaskTargetEditable(g, today, target)
 }
 
 // This exact predicate also controls guarded native-owner retirement.

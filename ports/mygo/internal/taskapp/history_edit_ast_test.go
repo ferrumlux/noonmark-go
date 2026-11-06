@@ -97,6 +97,10 @@ func TestHistoryEditFrozenProduction(t *testing.T) {
 	must(t, e)
 	expected, e = dayDetailFrozenOverlay(expected, string(uiOverlay))
 	must(t, e)
+	snapshotOverlay, e := os.ReadFile("../../docs/tasks/diagnose-root-test-timeout/FROZEN-PRODUCTION-OVERLAY-v1.tsv")
+	must(t, e)
+	expected, e = daySnapshotFrozenOverlay(expected, string(snapshotOverlay))
+	must(t, e)
 	for _, line := range strings.Split(strings.TrimSpace(string(rows)), "\n") {
 		parts := strings.Split(line, "\t")
 		if len(parts) != 2 {
