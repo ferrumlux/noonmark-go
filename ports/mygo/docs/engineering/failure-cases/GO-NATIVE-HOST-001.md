@@ -1,6 +1,6 @@
 # GO-NATIVE-HOST-001：Intel macOS 架构预检阻断真实运行
 
-状态：修复候选与本地独审通过，**修复后真实 macOS 症状尚未验收**。关联 #12，完整桌面仍见 #9。未发行，未接触生产资料。
+状态：修复已合入，**Intel macOS 原始症状已通过真实运行验收；ARM macOS 两次未取得 runner，双 Darwin 验收仍不完整**。关联 #12，完整桌面仍见 #9。未发行，未接触生产资料。
 
 ## 原始症状与证据
 
@@ -26,3 +26,13 @@
 - 增补本故障 registry 自检后重新执行全部 fixture：25项、0.509秒、退出0。
 
 回滚只撤销检查器和对应诊断，不改产品、会话或发布权限；旧 Intel 预检仍可能阻断运行。首轮证据保留，后续新 run 不覆盖旧失败。教训：可选平台能力不能靠一次命令成败二分推断，未知错误必须保留原始诊断，支持分支必须具有正向证据。
+
+## 2026-11-06 精确修复版本的实际证据
+
+固定修复 [a3e2a407](https://github.com/ferrumlux/noonmark-go/commit/a3e2a40797bf41bc5762ded58f72fdfa5d51dbce) 的[开发 CI 42282151849](https://github.com/ferrumlux/noonmark-go/actions/runs/42282151849) 已成功，完整日志、官方 artifact 的实际字节、CRC、六成员及来源身份均经复核。root 为473.077秒，原600秒上限不变；这是单次观测，不保证后续性能。精确摘要与哈希见 [GO-NATIVE-HOST-001-EVIDENCE.json](GO-NATIVE-HOST-001-EVIDENCE.json)。
+
+[Native run 42282152002 / attempt 1](https://github.com/ferrumlux/noonmark-go/actions/runs/42282152002/attempts/1) 的 build 与 Linux/Windows 两架构、Intel Mac 五个 runtime 均成功，并核对12个官方 ZIP、10张合成PNG和6份完整job日志。Intel job 128116713487 实际观测两个可选键均 return=-1、errno=ENOENT、size=4，而 hw.optional.x86_64 为 return=0、errno=0、size=4、value=1；随后 CLI、创建/重开、拒绝护栏、Day/Pool 2400×1536渲染及必需 evidence gate 均通过。这证实新路径，不恢复旧 sysctl 命令未保存的 errno。
+
+ARM Mac attempt 1 的 job128116713590及唯一一次单job重试 attempt 2 的 job128125924170均 cancelled，runner_id=0、steps为空，没有应用执行或ARM runtime产物。两次独立官方job页分别显示服务器错误、未获hosted runner及ARM容量提示；不推定计费、权限或取消操作者。Attempt 2 中其余五个成功job只是旧结果重映射，完整起止/步骤时间戳一致，不计作第二次执行。已停止循环重跑，#12保留ARM runner受阻；这不是已执行的产品故障。
+
+这些结果不包含实际桌面窗口、系统像素回读、IME、Rosetta实测、生产资料、安装签名或发行。完整#9仍开放；后续产品批次需继续保留六目标实际运行门禁，不能以模拟或编译替补未运行的ARM Mac。

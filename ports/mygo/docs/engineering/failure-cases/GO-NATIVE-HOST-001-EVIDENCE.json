@@ -1,0 +1,147 @@
+{
+  "schemaVersion": 1,
+  "head": "a3e2a40797bf41bc5762ded58f72fdfa5d51dbce",
+  "tree": "1f3c3b7430c993a7db7a4719a264ebdf6b50d09b",
+  "development": {
+    "run_id": 42282151849,
+    "attempt": 1,
+    "source_url": "https://github.com/ferrumlux/noonmark-go/actions/runs/42282151849",
+    "job_id": 128113617920,
+    "completed_at": "2026-11-06T20:06:04Z",
+    "verification": "PASS",
+    "root_seconds": 473.077,
+    "default_timeout_seconds": 600,
+    "root_margin_seconds": 126.923,
+    "artifact_id": 13536793517,
+    "artifact_bytes": 6439,
+    "artifact_sha256": "564f9baf41d28dacad8269140172380bc78388ca673f64917a9f2d764122bc71",
+    "artifact_digest_matches_github_and_upload_log": true,
+    "zip_crc_and_safe_members_verified": true,
+    "members": {
+      "binary-checksums.txt": {
+        "bytes": 566,
+        "sha256": "d123b41ee7c8ff1a7e826a96d82f21279287a26cba11b0aea30bd18c671e7e4c",
+        "crc32": "4e7b1c58"
+      },
+      "cross-build.txt": {
+        "bytes": 311,
+        "sha256": "7bed62843e3f9d285c48874fe77f7410fc874c913bdaf23f8eefa957e5f92877",
+        "crc32": "0643bb59"
+      },
+      "checks.txt": {
+        "bytes": 27396,
+        "sha256": "3f37be9cf1813a641b2fdeac2720d90a70970927a85b6595a6b7c687044ffed8",
+        "crc32": "134bfbbf"
+      },
+      "entrypoints.txt": {
+        "bytes": 188,
+        "sha256": "592a36c63945a13f6ea856e77c3485b4fcd5d68d0cedb58c5c8c261fdd7f1477",
+        "crc32": "bd547894"
+      },
+      "environment.txt": {
+        "bytes": 416,
+        "sha256": "4c46cec31adc33fbb2a90a574bbb44dd7b416e53fab629766189fb8fd06bbcf9",
+        "crc32": "c2c1bfe8"
+      },
+      "result.txt": {
+        "bytes": 79,
+        "sha256": "9bb488611c363033e09212059f40ce3decd34f7b476b403085f37498ee25ace9",
+        "crc32": "475ab082"
+      }
+    },
+    "full_decoded_job_log": {
+      "bytes": 77460,
+      "lines": 920,
+      "sha256": "262cd68647d4d485fceffdf7525f70e2f97a1aa8cfeccbf58767d003ef4ca53c",
+      "first_line": "﻿2026-11-06T19:43:40.8360904Z Current runner version: '2.338.2'",
+      "last_line": "2026-11-06T20:05:58.6160786Z ##[warning]Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/"
+    },
+    "source_files_verified": 17,
+    "four_module_race_and_vet": "verified via exact source fail-fast command chain plus completed subsequent stages; vet is silent",
+    "compile_only_targets": [
+      "linux/amd64",
+      "linux/arm64",
+      "windows/amd64",
+      "windows/arm64",
+      "darwin/amd64",
+      "darwin/arm64"
+    ],
+    "limitations": [
+      "Default gate only, not full framework allocation suite/TestDiffFrameAllocs.",
+      "Six target builds are compile-only; Linux CLI/headless is not desktop or real OS IME validation.",
+      "Unicode16 gate excludes separate ICU76 differential (RUN_ICU76=0).",
+      "No new Swift oracle, signing, release, deployment, production data or complete product parity acceptance.",
+      "Package-level root tests are not verbose; individual application test outcomes are not separately logged.",
+      "Binary checksum manifest recorded, but executable bytes are not in bounded artifact and have not been independently hashed here.",
+      "One successful run below 600 seconds does not guarantee future runner performance."
+    ]
+  },
+  "native": {
+    "run_id": 42282152002,
+    "url": "https://github.com/ferrumlux/noonmark-go/actions/runs/42282152002",
+    "build_attempt": 1,
+    "attempt1_conclusion": "failure",
+    "successful_runtime_targets": [
+      "linux/amd64",
+      "linux/arm64",
+      "windows/amd64",
+      "windows/arm64",
+      "darwin/amd64"
+    ],
+    "verified_zip_count": 12,
+    "verified_png_count": 10,
+    "verified_complete_job_logs": 6,
+    "intel": {
+      "job_id": 128116713487,
+      "binary_artifact_id": 13535483807,
+      "runtime_artifact_id": 13535818240,
+      "binary_sha256": "3000efcfa1b6d958b90ee9bf5be6d58cb6b5002de0a84dc315dcf96e64b465d5",
+      "host_query": {
+        "hw.optional.arm64": {
+          "returncode": -1,
+          "errno": 2,
+          "size": 4,
+          "value": null
+        },
+        "sysctl.proc_translated": {
+          "returncode": -1,
+          "errno": 2,
+          "size": 4,
+          "value": null
+        },
+        "hw.optional.x86_64": {
+          "returncode": 0,
+          "errno": 0,
+          "size": 4,
+          "value": 1
+        }
+      }
+    },
+    "arm_attempts": [
+      {
+        "attempt": 1,
+        "job_id": 128116713590,
+        "status": "completed",
+        "conclusion": "cancelled",
+        "runner_id": 0,
+        "steps": [],
+        "runtime_observed": false,
+        "correlation_id": "58b5d00a-ce26-48fd-bbbc-4edc304fa63c"
+      },
+      {
+        "attempt": 2,
+        "job_id": 128125924170,
+        "status": "completed",
+        "conclusion": "cancelled",
+        "runner_id": 0,
+        "steps": [],
+        "runtime_observed": false,
+        "correlation_id": "5260fb95-3e72-414a-a483-a173a6ca9982"
+      }
+    ],
+    "arm_public_annotations": "Both attempts independently report Internal server error, hosted runner acquisition failure and macOS arm64 capacity notices; underlying cause, cancellation actor, billing and permission causes not established.",
+    "attempt2_inherited_success_jobs_are_not_new_execution": true,
+    "six_target_runtime_accepted": false,
+    "desktop_or_ime_accepted": false
+  }
+}

@@ -6,7 +6,7 @@
 - [全部 Issues](https://github.com/ferrumlux/noonmark-go/issues)：每项任务的事实、实现、审查、验证与关闭记录。
 - [当前能力](../../README.md)、[迁移审计](../migration-audit/NOONMARK-MYGO-MIGRATION.md)、[发行门禁](../release/RELEASING.md)：能力声明与退出条件。
 
-当前使用 **GitHub Issues 总览表 + 状态标签**。没有建立 GitHub Projects 原生拖拽看板，也没有自动同步。总览表由维护者在状态变化时更新；实时查询以 Issue 标签为准。将来新增其他看板时，应保留 GitHub Issue 编号和证据链接，不建立冲突的第二套事实。
+当前使用 **GitHub Issues 总览表 + 状态标签**，并已有 [noonmark-go 开发看板](https://github.com/users/ferrumlux/projects/2)。#1–#13 入板及 #2 关闭触发项目自动化均有 Issue 事件记录；项目字段映射、auto-add 及完整同步行为尚未独立核验，不能由这两项事实外推。总览表仍由维护者在状态变化时更新，分项 Issue 保存代码、测试与关闭证据；看板保留对应 Issue 编号和证据链接，不建立冲突的第二套事实，也不重复创建。
 
 ## 状态与优先级
 
@@ -68,4 +68,6 @@
 
 ## 初始化覆盖
 
-2026-11-06 从远端 main、现有文档与实际 Actions 状态建立 #1–#13：当前 DayTodo 远端验收、性能裕度、分类、恢复/手动进度、历史、离线产品/存储、同步/AI、原生目标、发行门禁和已核验 CI 基线，并单列进行中但未合入的六 host 运行 smoke 与 Swift 完整 Snapshot 对照。它们是首批工作分解，不表示完整迁移清单已经逐条转换或所有未完成工作已经开工。
+2026-11-06 初始化时从远端 main、现有文档与实际 Actions 状态建立 #1–#13：当前 DayTodo 远端验收、性能裕度、分类、恢复/手动进度、历史、离线产品/存储、同步/AI、原生目标、发行门禁和已核验 CI 基线，并单列当时进行中但未合入的六 host 运行 smoke 与 Swift 完整 Snapshot 对照。它们是首批工作分解，不表示完整迁移清单已经逐条转换或所有未完成工作已经开工。
+
+初始化后的状态以分项 Issue 及总览为准：DayTodo 远端验收 #2 已完成；六 host 流水线和后续 Intel 架构检测修复已合入，逐平台真实运行仍由 #12 核验。Swift 完整 Snapshot 对照 #13 继续保留未完成范围。此更新不代表原生桌面或完整产品对等通过。

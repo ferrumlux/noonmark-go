@@ -723,6 +723,11 @@ func main() {
 	initSession := flag.String("init-session", "", "Exclusively create a new isolated development session directory")
 	session := flag.String("session", "", "Open an existing isolated development session")
 	prototype := flag.Bool("prototype", false, "Run the static UI prototype without storage")
+	_ = flag.String("native-window-smoke", "", "Internal lifecycle-only development probe report")
+	reportFile, preflightErr := nativeWindowPreflight(os.Args[1:])
+	if preflightErr != nil {
+		log.Fatal(preflightErr)
+	}
 	flag.Parse()
 	if *list {
 		for _, spec := range screens {
@@ -737,6 +742,7 @@ func main() {
 	if *initSession != "" && *session != "" {
 		log.Fatal("Choose only one session action")
 	}
+	var probe *nativeWindowProbe
 	var service *taskapp.Service
 	if *initSession != "" || *session != "" {
 		if *prototype || *render != "" {
@@ -744,6 +750,9 @@ func main() {
 		}
 		now := time.Now()
 		today := core.LocalDate{Year: now.Year(), Month: int(now.Month()), Day: now.Day()}
+		if reportFile != nil {
+			probe = newNativeWindowProbe(reportFile.stage, fmt.Sprintf("%04d-%02d-%02d", today.Year, today.Month, today.Day), os.Stdout)
+		}
 		var err error
 		if *initSession != "" {
 			service, err = taskapp.Create(*initSession, today)
@@ -798,6 +807,9 @@ func main() {
 			}
 		})
 	}
+	if probe != nil {
+		mygo.App.OnWindowCreated(func(w *mygo.Window) { probe.observeCreated(w.ID()) })
+	}
 	var open func(string)
 	open = func(key string) {
 		spec, ok := findScreen(key)
@@ -830,23 +842,55 @@ func main() {
 				}
 			})
 		}
+		if probe != nil {
+			probe.BindWindow(win)
+		}
 	}
 	mygo.App.WhenReady(func() { open(*page) })
-	code := runtimeExitStatus(mygo.App.Run(), func() {
+	runErr := mygo.App.Run()
+	if probe != nil {
+		probe.RecordRunReturned(runErr)
+	}
+	code := runtimeExitStatus(runErr, func() {
 		// The event loop has ended. No UI callback waits here; drain accepted
 		// commands before closing storage, including an event-loop startup failure.
 		if writer != nil {
 			writer.StopAfterDrain()
 			<-writer.Done()
+			if probe != nil {
+				probe.RecordDrain(true)
+			}
 			dispatcher.StopAfterDrain()
 			<-dispatcher.Done()
+			if probe != nil {
+				probe.RecordDrain(false)
+			}
 		}
 		if service != nil {
-			if err := service.Close(); err != nil {
+			err := service.Close()
+			if probe != nil {
+				probe.RecordServiceClose(err)
+			}
+			if err != nil {
 				log.Print(err)
 			}
 		}
 	})
+	if probe != nil {
+		payload, err := probe.Finalize()
+		if err != nil {
+			log.Print(err)
+			code = 1
+		}
+		if payload != nil {
+			if err := reportFile.WriteFinal(payload); err != nil {
+				log.Print(err)
+				code = 1
+			}
+		} else {
+			code = 1
+		}
+	}
 	if code != 0 {
 		os.Exit(code)
 	}
