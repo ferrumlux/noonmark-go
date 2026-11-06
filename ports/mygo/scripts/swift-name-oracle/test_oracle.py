@@ -341,7 +341,7 @@ class ContractTests(unittest.TestCase):
         main_registry = (registry.parent / 'gates.tsv').read_text().splitlines()
         registered = [line.split('\t') for line in main_registry[1:] if line.split('\t')[0] == case]
         self.assertEqual(registered, [[case, fast, fast, 'scripts/check',
-                                     'in_progress_offline_contract_only_real_macos_symptom_in_swift_oracle_gates']])
+                                     'fixed_hosted_run_verified']])
         self.assertEqual(symptom, 'python3 -B ports/mygo/scripts/swift-name-oracle/run.py')
         self.assertEqual(aggregate, 'scripts/check;.github/workflows/swift-name-oracle.yml#jobs.capture')
         self.assertIn(status, ('in_progress_macos_ci_pending', 'fixed_hosted_run_verified'))

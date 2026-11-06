@@ -73,7 +73,7 @@ func lifecycleAssert(t *testing.T, r auditedHistoryCommand, want canonical.Value
 		t.Fatal("state change incorrectly reported as no-op")
 	}
 	p := r.proof
-	for _, badKind := range []historyCommandKind{0, historyCommandManualProgress + 1, 255} {
+	for _, badKind := range []historyCommandKind{0, historyCommandActualSubtaskEdit + 1, 255} {
 		bad := *p
 		bad.kind = badKind
 		invalid := auditedHistoryCommand{proof: &bad}

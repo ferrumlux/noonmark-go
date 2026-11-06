@@ -44,9 +44,11 @@ const (
 	historyCommandRename
 	historyCommandTitleInput
 	historyCommandManualProgress
+	historyCommandPlannedSubtaskEdit
+	historyCommandActualSubtaskEdit
 )
 
-// Only the six successful audit entries construct this closed result. Neither
+// Only the eight successful audit entries construct this closed result. Neither
 // caller-selected captures nor mutable proofs are returned. We retain scalar
 // input identity and immutable, owned endpoints, not the caller's EventIDs.
 type auditedHistoryCommand struct{ proof *historyCommandProof }
@@ -65,6 +67,13 @@ type historyCommandProof struct {
 	requestedTitle           string
 	requestedNewDefinitionID core.TaskDefinitionID
 	requestedPercent         int
+	subtaskEditKind          core.SubtaskEditKind
+	expectedDefinition       core.TaskDefinitionID
+	plannedChild             core.PlannedSubtaskID
+	actualChild              core.SubtaskID
+	requestedLineage         core.SubtaskLineageID
+	requestedDifficulty      core.Difficulty
+	requestedCancellation    core.CancellationID
 	changed                  bool
 }
 
@@ -73,7 +82,7 @@ func (r auditedHistoryCommand) valid() bool {
 		return false
 	}
 	switch r.proof.kind {
-	case historyCommandSettlement, historyCommandComplete, historyCommandUndo, historyCommandAbandon, historyCommandReactivate, historyCommandRename, historyCommandTitleInput, historyCommandManualProgress:
+	case historyCommandSettlement, historyCommandComplete, historyCommandUndo, historyCommandAbandon, historyCommandReactivate, historyCommandRename, historyCommandTitleInput, historyCommandManualProgress, historyCommandPlannedSubtaskEdit, historyCommandActualSubtaskEdit:
 		return r.proof.prior.valid() && r.proof.after.valid()
 	default:
 		return false

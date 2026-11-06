@@ -1,0 +1,240 @@
+{
+  "schemaVersion": 1,
+  "evidenceKind": "actual-upstream-swift-public-api",
+  "inputKind": "fixed-synthetic-only",
+  "portableSummaryOnly": true,
+  "fixCommit": "e35a5d5d628b7c0d0a2ece945fc18e944d344ee0",
+  "fixTree": "419e77381195c72c674dcb1fb64761d4952a40c2",
+  "originalFailure": {
+    "runID": 42182456188,
+    "jobID": 127774977256,
+    "url": "https://github.com/ferrumlux/noonmark-go/actions/runs/42182456188",
+    "failure": "compile-core_failed: package declarations require -package-name"
+  },
+  "swiftRun": {
+    "runID": 42185254910,
+    "runAttempt": 1,
+    "jobID": 127783951449,
+    "headSHA": "e35a5d5d628b7c0d0a2ece945fc18e944d344ee0",
+    "status": "completed",
+    "conclusion": "success",
+    "url": "https://github.com/ferrumlux/noonmark-go/actions/runs/42185254910",
+    "jobURL": "https://github.com/ferrumlux/noonmark-go/actions/runs/42185254910/job/127783951449",
+    "allStepsSucceeded": true,
+    "offlineContractTestCount": 19,
+    "jobLogSHA256": "a4a6026e2bad8260fa18a2032d5006a0d3213e1567e08c7212e0069e515d09ed"
+  },
+  "artifact": {
+    "id": 13486674928,
+    "name": "swift-name-oracle-42185254910-1",
+    "url": "https://github.com/ferrumlux/noonmark-go/actions/runs/42185254910/artifacts/13486674928",
+    "bytes": 20799,
+    "digest": "sha256:cb056e61b88b9977dcf1f651232dae4c141045bf74afe56a23d0b6cebce7eda1",
+    "createdAt": "2026-11-06T08:08:06Z",
+    "expiresAt": "2026-11-13T08:08:05Z",
+    "downloadedDigestMatches": true,
+    "members": [
+      {
+        "name": "capture.json",
+        "bytes": 7152779,
+        "sha256": "a2874916e44427fb4020fa2dbe253dddb47816c6116b5f3782b9141c8204a1a8"
+      },
+      {
+        "name": "summary.json",
+        "bytes": 368,
+        "sha256": "c723831878db039861e6513e32fb06978162c804230c04ac6172fd07c0ff6dac"
+      }
+    ],
+    "archiveValidation": "Only these two regular JSON members; no extra members, encryption, symlinks or path traversal; each within its existing byte budget."
+  },
+  "capture": {
+    "oracle_capture": "succeeded",
+    "stage": "complete",
+    "unicode16_comparison": "not_performed",
+    "algorithmVersion": "unicode-16.0.0.0-nfkc-casefold-whitespace-v1",
+    "icuVersion": "76.1.0.0",
+    "icuUnicodeVersion": "16.0.0.0",
+    "caseCount": 108,
+    "pairCount": 17,
+    "entityRoundTripCount": 12,
+    "source": {
+      "repository": "https://github.com/quboliu/noonmark",
+      "commit": "43e6eefaae3a04be89cab3e234d470111afd80ef",
+      "rootTree": "eca47c1c210b8b0d53556c955754710f5f2188c0",
+      "coreTree": "a1aa0252c8839d01dc69e47e05f2e69eceebc97d"
+    },
+    "runtime": {
+      "architecture": "arm64",
+      "deploymentTarget": "arm64-apple-macosx14.0",
+      "osVersion": "ProductName:\t\tmacOS\nProductVersion:\t\t15.8.2\nBuildVersion:\t\t24H232",
+      "runnerImageOS": "macos15",
+      "runnerImageVersion": "20261028.0489.1",
+      "sdkVersion": "26.2",
+      "swiftGraphemeUnicodeVersion": "not_exposed_independently",
+      "swiftVersion": "Apple Swift version 6.2.3 (swiftlang-6.2.3.3.21 clang-1700.6.3.2)\nTarget: arm64-apple-macosx15.0",
+      "xcodeVersion": "Xcode 26.2\nBuild version 17C52"
+    },
+    "entityDecodeObservation": {
+      "acceptedCount": 6,
+      "rejectedCount": 6,
+      "rejectedCaseIDs": [
+        "empty",
+        "only-di",
+        "display-non-idempotent"
+      ],
+      "entities": [
+        "TaskCategory",
+        "TaskLabel"
+      ],
+      "rejectionKind": "dataCorrupted",
+      "goDecoderCompared": false
+    }
+  },
+  "comparison": {
+    "status": "supported_fields_match",
+    "exitCode": 0,
+    "swiftVerified": false,
+    "coverage": {
+      "algorithmVersionChecks": 1,
+      "caseCount": 108,
+      "entityFieldRecordCount": 12,
+      "entityVersionChecks": 12,
+      "mismatchCount": 0,
+      "pairBooleanChecks": 102,
+      "pairCount": 17,
+      "textRecordCount": 564,
+      "textRepresentationChecks": 1692,
+      "totalChecks": 1807
+    },
+    "allIndividualChecksEqual": true,
+    "reportSHA256": "630b00d3eee0b6e931724856d3a6d2ba234c3068969dbf5a2bc0c73febebb5d1",
+    "stdoutSHA256": "0ad5f7b8751dae9c1a27234af29395f04aeb05ad7aa518de81a246ca38693c0b",
+    "stderrEmpty": true,
+    "goVersion": "go version go1.27.3 linux/amd64",
+    "goExecutableSHA256": "5f5eb6d0b2fb6aa0bb5d5f8c5f1c944e0de955c925f0111af92a9d8f79680b5b",
+    "comparatorSourceSHA256": "e2e371e0260c2d72606116e0e02c702648983120aa995a3bc522a3eea6a2cae3",
+    "pinsSHA256": "894931b66855c98ff55044509b9c2fa84526163e1ec40c151ed2764ed4fc9c87",
+    "sourceFilesSHA256": {
+      ".github/workflows/swift-name-oracle.yml": "61f45789c162e12d0836d79b87fa8481c9472ebd9566beb07b0fdd457615d04b",
+      "ports/mygo/domain-extensions/classification/canonical16/canonical.go": "8f7d41647d9edea7a0367756727ee5bebb1d5a46e2c3be92264df21ca4b4ed81",
+      "ports/mygo/domain-extensions/classification/canonical16/grapheme.go": "6212f93db1910c04675d25695dec8fa9c62074ef0e669187ef3b7e3ca4848f48",
+      "ports/mygo/domain-extensions/classification/canonical16/normalize.go": "0823b75ff362dc465b79f6fe85efa961b475152a29bfd95f3a1acff94d8724e2",
+      "ports/mygo/domain-extensions/classification/canonical16/scripts/guard_paths.py": "1e322c97e8d8d518c765c126d654a918a8f242a6a77ba6c1f6f074eeb389e63a",
+      "ports/mygo/domain-extensions/classification/canonical16/tables_generated.go": "39c0bba7e56b499ab71457dfe0c5e3ed81d76211ae2f9009c2d82f689bf912dd",
+      "ports/mygo/domain-extensions/go.mod": "ed80466ea600a026be86fab04554d16824a5aaed138c51044e7aca2b170e018b",
+      "ports/mygo/scripts/swift-name-compare/probe.go": "75b0d2f5f283046442c2a714580b1c16711bbea4d37172dc6d6a3d378ab39012",
+      "ports/mygo/scripts/swift-name-oracle/NameOracle.swift": "ede42fb462b04b761e3461bdfba1fe5616c2933738c39dcebfde96426d8a900d",
+      "ports/mygo/scripts/swift-name-oracle/run.py": "47a6a225f124a80cf3461ba6aad772607ab787dd7f9aaf3f32b5603c8642b3ee",
+      "ports/mygo/scripts/swift-name-oracle/source-manifest.json": "a62e1974c004a9509f5cd48c9a3f1cc326fbab089719126d20c84cf608e2860d",
+      "ports/mygo/scripts/swift-name-oracle/vectors.json": "564fe5cde3f4d30b946d8153ce48d899380e41d79be43cb2a2fd6cbee8ca687d"
+    },
+    "buildSourceSnapshotSHA256": "9e4ac6a200910b9e340cdad34d14e8ee096ef89747dd8e676bbc34e9c0e7e81b",
+    "probeBinarySHA256": "6e10f4120ccd939a6fbcd23caa8e86ca7cf8289bacc709ff71eb4b425c9153c2",
+    "probeOutputSHA256": "b1708ffeb1ae187f1927154bc5b874e672171c8544b975e6e7708c4089f19dcb"
+  },
+  "relatedMyGoCI": {
+    "runID": 42185255089,
+    "runAttempt": 1,
+    "jobID": 127783952001,
+    "headSHA": "e35a5d5d628b7c0d0a2ece945fc18e944d344ee0",
+    "url": "https://github.com/ferrumlux/noonmark-go/actions/runs/42185255089",
+    "status": "completed",
+    "conclusion": "success",
+    "updatedAt": "2026-11-06T08:30:13Z",
+    "allStepsSucceeded": true,
+    "jobLogSHA256": "3eb8dbe87658b7f006d69e67ae978ca07717db6537e91d8ded3138b8a1c34e4e",
+    "artifact": {
+      "id": 13488402534,
+      "name": "mygo-development-evidence-42185255089-1",
+      "url": "https://github.com/ferrumlux/noonmark-go/actions/runs/42185255089/artifacts/13488402534",
+      "bytes": 6219,
+      "digest": "sha256:582cfb32a6ac521e6d338ce5077c3235f48d814c50c20f0290f8e0965b552f9e",
+      "createdAt": "2026-11-06T08:30:09Z",
+      "expiresAt": "2026-11-13T08:30:09Z",
+      "downloadedDigestMatches": true,
+      "members": {
+        "binary-checksums.txt": {
+          "bytes": 566,
+          "sha256": "98559abd585c692b736700864450b9ebc86d703b7386c9ef42f1e82a2e778cb0"
+        },
+        "checks.txt": {
+          "bytes": 25731,
+          "sha256": "0238e284e9d0aef966a97e042b88d94cf2ee7acb4e6baeaa51ff07b92c4f7bf0"
+        },
+        "cross-build.txt": {
+          "bytes": 311,
+          "sha256": "7bed62843e3f9d285c48874fe77f7410fc874c913bdaf23f8eefa957e5f92877"
+        },
+        "entrypoints.txt": {
+          "bytes": 188,
+          "sha256": "592a36c63945a13f6ea856e77c3485b4fcd5d68d0cedb58c5c8c261fdd7f1477"
+        },
+        "environment.txt": {
+          "bytes": 416,
+          "sha256": "175f0b76ae1bbdf8c9f3e26d5e75b5e9b5898d88a7d94b2978ce048bab1e1e7d"
+        },
+        "result.txt": {
+          "bytes": 79,
+          "sha256": "9bb488611c363033e09212059f40ce3decd34f7b476b403085f37498ee25ace9"
+        }
+      }
+    },
+    "verifiedScope": [
+      "Root package race tests: 531.697 seconds",
+      "taskapp race tests: 217.505 seconds",
+      "Four modules and existing dependency/Unicode/native gates",
+      "Six target compilation",
+      "Isolated synthetic CLI and Linux headless rendering"
+    ],
+    "defaultBridgeEvidence": "Non-verbose successful root package log plus the unchanged unfiltered default test command and fixed source invocation chain; not individual successful test-name lines.",
+    "defaultInvocationSourcesSHA256": {
+      "ports/mygo/scripts/check": "936c97d54ab0efef558cca688f50c60cb38dce17b0667c062b3ee6c906edac01",
+      "ports/mygo/swift_name_oracle_contract_test.go": "67705edbf7ade4bab17344e33109f1e486acf9db554b233af0a877d28967b877",
+      "ports/mygo/failure_gates_test.go": "9c3ab46cc719dc587313eb80b8fcce9c4dec749f39e4765d91431f11d2382b21"
+    }
+  },
+  "notVerified": [
+    "Swift Character boundaries, count and per-Character whitespace equality to Go",
+    "Swift grapheme Unicode version; it remains not_exposed_independently",
+    "Go entity decoder/encoder, complete wire bytes and round-trip equivalence",
+    "Classification workflows, catalog, history, ownership, migration and production integration",
+    "Inputs or runtimes beyond the fixed vectors and recorded versions",
+    "macOS/Windows Go product runtime, native desktop UI and system IME",
+    "Release, signing or distribution acceptance",
+    "Full MyGo allocation suite; it is explicitly excluded by the existing CI contract"
+  ],
+  "boundaries": {
+    "productionDataAccess": false,
+    "iCloudAccess": false,
+    "keychainAccess": false,
+    "aiNetworkAccess": false,
+    "productSwiftRuntimeDependency": false,
+    "workflowOrValidationRelaxed": false,
+    "newRemoteTriggerOrRelease": false
+  },
+  "interpretation": "Capture success, supported Go field equality and related MyGo CI are separate conclusions. This portable summary omits the raw capture and full comparison report; hashes do not replace their bytes or authenticate a future download. The source fix was verified at fixCommit; this later documentation/registry patch has no hosted CI result yet.",
+  "closeoutPatchVerification": {
+    "baseHead": "e35a5d5d628b7c0d0a2ece945fc18e944d344ee0",
+    "scope": "Documentation, portable evidence, two gate statuses and one matching exact Python assertion only",
+    "pythonContracts": {
+      "testCount": 19,
+      "seconds": 0.099,
+      "exitCode": 0,
+      "logSHA256": "1f184bf9877c30c0f8a0c2d4ed6603c9efcde9ef89deed2a137b0d311df1bd46"
+    },
+    "goFocused": {
+      "tests": [
+        "TestFailureGateRegistry",
+        "TestSwiftNameOracleCompilationContract",
+        "TestSwiftNameOracleContractBuildRootGuard"
+      ],
+      "bridgePythonTestCount": 19,
+      "packageSeconds": 0.272,
+      "exitCode": 0,
+      "raceEnabled": false,
+      "logSHA256": "8ec41f948291906a9d5783b02fb7af526119548f495bd4faaef5a2ca9d556750"
+    },
+    "hostedCIForThisPatch": false,
+    "fullCheckOrUIOrReleaseRerun": false
+  }
+}

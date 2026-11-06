@@ -97,13 +97,13 @@ func TestHistoryEditDetachedEndpointsAndKinds(t *testing.T) {
 		}
 	}
 	p := editPrior(t, vnSeed(t, vnDate).k.Snapshot())
-	for _, kind := range []historyCommandKind{historyCommandRename, historyCommandTitleInput, historyCommandManualProgress} {
+	for _, kind := range []historyCommandKind{historyCommandRename, historyCommandTitleInput, historyCommandManualProgress, historyCommandPlannedSubtaskEdit, historyCommandActualSubtaskEdit} {
 		r := auditedHistoryCommand{&historyCommandProof{seal: forwardClockOrdinaryHistoryVNext, kind: kind, prior: p, after: p}}
 		if !r.valid() {
 			t.Fatal("new kind registration")
 		}
 	}
-	for _, kind := range []historyCommandKind{0, historyCommandManualProgress + 1, 255} {
+	for _, kind := range []historyCommandKind{0, historyCommandActualSubtaskEdit + 1, 255} {
 		if (auditedHistoryCommand{&historyCommandProof{seal: forwardClockOrdinaryHistoryVNext, kind: kind, prior: p, after: p}}).valid() {
 			t.Fatal("unknown kind")
 		}

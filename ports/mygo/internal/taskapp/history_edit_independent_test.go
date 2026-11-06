@@ -375,7 +375,7 @@ func TestIndependentEditClosedKinds(t *testing.T) {
 		proof := *r.proof
 		proof.kind = historyCommandKind(i)
 		got := auditedHistoryCommand{proof: &proof}
-		want := i >= 1 && i <= 8
+		want := i >= 1 && i <= 10
 		if got.valid() != want {
 			t.Fatalf("closed kind %d: got %v want %v", i, got.valid(), want)
 		}

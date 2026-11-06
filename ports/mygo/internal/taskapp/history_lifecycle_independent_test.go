@@ -406,7 +406,7 @@ func TestLifecycleIndependentFailures(t *testing.T) {
 	if _, e := inspectForwardClockOrdinaryHistoryVNext(s); e == nil {
 		t.Fatal("uncaptured U accepted")
 	}
-	for kind := historyCommandManualProgress + 1; kind < 16; kind++ {
+	for kind := historyCommandActualSubtaskEdit + 1; kind < 16; kind++ {
 		r := auditedHistoryCommand{proof: &historyCommandProof{seal: forwardClockOrdinaryHistoryVNext, kind: kind, prior: p, after: ap}}
 		if r.valid() {
 			t.Fatal("unknown kind")

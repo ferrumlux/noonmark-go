@@ -3,7 +3,7 @@
 - task-id：`verify-swift-name-oracle`
 - 等级：A
 - 日期：2026-11-05（UTC）
-- 状态：2026-11-06 真实 macOS 捕获在 Core 编译失败；package 上下文修复及离线回归已准备，新 commit 真实 CI 复验 **pending**。见 [修复任务](../fix-swift-oracle-package/README.md) 和 [故障案例](../../engineering/failure-cases/GO-SWIFT-ORACLE-001.md)。
+- 状态：2026-11-06 修复commit `e35a5d5d628b7c0d0a2ece945fc18e944d344ee0` 的真实macOS捕获已成功，固定名称字段Go对账1807项吻合；同head MyGo CI已成功；后续证据补丁只作本地定向回归，不冒称已获新hosted CI。见 [修复任务](../fix-swift-oracle-package/README.md) 和 [故障案例](../../engineering/failure-cases/GO-SWIFT-ORACLE-001.md)。
 - 本目录不会宣称分类名称互通或完整 Go 复刻已完成。
 
 ## 需求、现状与范围
@@ -44,7 +44,7 @@
 ### 捕获成功与互通成功严格分开
 
 - `oracle_capture=succeeded`：固定上游在记录的平台／工具链上执行，结构与 provenance 校验通过。
-- ICU Unicode 为 `16.0.0.0`：`unicode16_comparison=not_performed`，仍需用 Go 对实际字节、分段和实体行为逐例对账。
+- ICU Unicode 为 `16.0.0.0`：capture保留`unicode16_comparison=not_performed`。独立Go比较器只对已支持的名称／等价字段逐项对账；Character分段与实体decoder／完整wire仍需另外实现和验证。
 - 其他实际版本：`unicode16_comparison=unsupported`，仍保存真实捕获；不能据此宣称 Unicode 16、其他版本或所有平台互通。
 - 失败会非零退出；可建立外置根后发生的失败写出有界 `summary.json`。编译／运行失败附最多 1024 字符的固定公开源／合成输入 stderr 尾段，替换运行根路径；不上传全部日志。
 
@@ -74,7 +74,7 @@ harness 在写出前检查 16 MiB 上限，调用器接收后及追加 metadata 
 - source manifest 与只读 reference 的 commit、tree、14 个 Core 源码及 Package／LICENSE 字节和 Git objects 完整核对：通过。
 - Linux 运行入口非零退出 `macos_required_not_swift_verified`，未伪造 Swift 结果。
 
-这些测试只证明捕获入口的离线契约。本地 Linux 没有 Swift／Darwin。2026-11-06 的 [真实 run](https://github.com/ferrumlux/noonmark-go/actions/runs/42182456188) 已执行 Swift 编译，但因缺少 package 编译上下文失败；harness、macOS sandbox 与真实上游捕获尚未执行。修复整合并 push 后须跟踪该精确 commit 的新 workflow 到终态、读取 artifact 的实际平台／ICU／版本和所有向量，再安排 Go 对账。workflow 绿色也不等于互通绿色。
+这些测试只证明捕获入口的离线契约。本地 Linux 没有 Swift／Darwin。2026-11-06 首个 [真实 run](https://github.com/ferrumlux/noonmark-go/actions/runs/42182456188) 因缺少package编译上下文失败，在该run中harness、macOS sandbox与真实捕获没有执行。此旧失败证据保留；同日修复后新run的成功及有限Go对账见下文。workflow绿色仍不等于完整互通绿色。
 
 ## 风险、回滚与后续
 
@@ -87,3 +87,13 @@ harness 在写出前检查 16 MiB 上限，调用器接收后及追加 metadata 
 ## 独立审核与正式整合
 
 2026-11-05 20:58 UTC，独立审核已完成28项离线测试（含12项新增contract检查）、actionlint1.7.7、上游16文件byte/blob/tree与官方actions精确pins核验，未发现可复现阻断。真实Swift、Darwin sandbox与Go对账仍未执行。正式整合按七文件清单逐个核验SHA，仅将本说明放到ports/mygo/docs；16项原测试与actionlint在正式树重新通过。没有更改既有Go业务代码或release门禁。16MiB是最终证据输出上限，不是subprocess的实时内存配额。
+
+## 真实复验（2026-11-06 UTC）
+
+修复commit `e35a5d5d628b7c0d0a2ece945fc18e944d344ee0` 的 [run42185254910／attempt1](https://github.com/ferrumlux/noonmark-go/actions/runs/42185254910) 已completed/success：19项离线合同、真实Core／包外harness编译、sandbox捕获及artifact上传均成功。不是旧失败run的重跑或合成capture替代。
+
+[artifact13486674928](https://github.com/ferrumlux/noonmark-go/actions/runs/42185254910/artifacts/13486674928) 的20,799-byte ZIP与官方SHA256一致，仅含7,152,779-byte capture与368-byte summary。captureSHA256为`a2874916e44427fb4020fa2dbe253dddb47816c6116b5f3782b9141c8204a1a8`，summary绑定同一hash；108 cases、17 pairs、12 entityRoundTrips齐全。新runnerSHA256为`47a6a225f124a80cf3461ba6aad772607ab787dd7f9aaf3f32b5603c8642b3ee`，其余原有pins不变，metadata的commit／run／attempt与官方记录一致。
+
+实际Xcode26.2 build17C52、Swift6.2.3、macOS15.8.2 arm64、SDK26.2、ICU76.1.0.0／Unicode16.0.0.0。原始capture只声称捕获成功；后续独立Go1.27.3 linux/amd64比较器对1807项受支持名称／等价字段全部吻合，保持`swiftVerified=false`。精确hash、环境、实体接受／拒绝事实与未比较边界见 [验证任务](../verify-swift-name-comparison/README.md) 和 [portable evidence](../verify-swift-name-comparison/evidence-42185254910.json)。
+
+这只消除该独立oracle的原始编译症状，并提供固定输入的有限对账证据；不证明完整codec、Swift Character分段、分类业务、其他平台产品／UI或发行。同head [MyGo run42185255089](https://github.com/ferrumlux/noonmark-go/actions/runs/42185255089)也已completed/success，源码身份、6个白名单txt产物及官方digest复核一致。案例仅在原始oracle编译／捕获故障范围闭环；后续文档／registry补丁的本地定向回归见修复任务，不冒称新head hosted验收。

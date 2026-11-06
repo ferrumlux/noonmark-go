@@ -1,2 +1,2 @@
 case_id	fast_gate	symptom_gate	aggregate	status
-GO-SWIFT-ORACLE-001	TestSwiftNameOracleCompilationContract	python3 -B ports/mygo/scripts/swift-name-oracle/run.py	scripts/check;.github/workflows/swift-name-oracle.yml#jobs.capture	in_progress_macos_ci_pending
+GO-SWIFT-ORACLE-001	TestSwiftNameOracleCompilationContract	python3 -B ports/mygo/scripts/swift-name-oracle/run.py	scripts/check;.github/workflows/swift-name-oracle.yml#jobs.capture	fixed_hosted_run_verified

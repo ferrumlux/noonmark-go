@@ -1,6 +1,6 @@
 # Swift 名称 capture 离线对账
 
-这是可独立合并的离线工具。**目前没有真实 Swift capture，也没有 Swift 通过结论。** 单测从 Go 输出构造明显标为 `synthetic-test-fixture-not-swift` 的输入，只证明验证器、差异检测和重放流程；生产 CLI 必定拒绝该类输入，不提供接受合成结果的开关。
+这是已整合的离线工具。**2026-11-06 已取得真实 Swift capture，固定108 cases／17 pairs／12条实体字段共1807项对账吻合；不是完整 Swift／实体 codec／UI 对等。** 当前真实结果与边界见 [验证任务](../../docs/tasks/verify-swift-name-comparison/README.md) 和 [portable evidence](../../docs/tasks/verify-swift-name-comparison/evidence-42185254910.json)。 单测从 Go 输出构造明显标为 `synthetic-test-fixture-not-swift` 的输入，只证明验证器、差异检测和重放流程；生产 CLI 必定拒绝该类输入，不提供接受合成结果的开关。
 
 不改 oracle workflow、`run.py`、Swift harness 或固定向量，不接入 engine、runtime、codec、非空 catalog 或生产资料。只依赖 Python 3.10+ 标准库、固定 Go 1.27.3，以及本仓库已审查的 `canonical16` 纯 Go 实现，没有新增第三方依赖。
 

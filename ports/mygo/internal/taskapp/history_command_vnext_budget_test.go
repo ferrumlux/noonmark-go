@@ -447,7 +447,14 @@ func TestHistoryCommandBudgetASTOrderGate(t *testing.T) {
 			funcs[f.Name.Name] = f
 		}
 	}
-	for _, name := range []string{"auditSettlementHistoryVNext", "auditCompletionHistoryVNext", "auditAbandonHistoryVNext", "auditReactivateHistoryVNext", "auditTitleHistoryVNext", "auditManualProgressHistoryVNext"} {
+	subtask, e := parser.ParseFile(fs, "history_subtask_command_vnext.go", nil, 0)
+	must(t, e)
+	for _, decl := range subtask.Decls {
+		if f, ok := decl.(*ast.FuncDecl); ok {
+			funcs[f.Name.Name] = f
+		}
+	}
+	for _, name := range []string{"auditSettlementHistoryVNext", "auditCompletionHistoryVNext", "auditAbandonHistoryVNext", "auditReactivateHistoryVNext", "auditTitleHistoryVNext", "auditManualProgressHistoryVNext", "auditPlannedSubtaskHistoryVNext", "auditActualSubtaskHistoryVNext"} {
 		f := funcs[name]
 		if f == nil {
 			t.Fatal("missing entry")
@@ -467,6 +474,12 @@ func TestHistoryCommandBudgetASTOrderGate(t *testing.T) {
 			}
 			if i == 3 && name == "auditManualProgressHistoryVNext" {
 				want = "historyCommandManualProgressInputBudget"
+			}
+			if i == 3 && name == "auditPlannedSubtaskHistoryVNext" {
+				want = "historyCommandPlannedSubtaskInputBudget"
+			}
+			if i == 3 && name == "auditActualSubtaskHistoryVNext" {
+				want = "historyCommandActualSubtaskInputBudget"
 			}
 			stmt, ok := f.Body.List[i].(*ast.IfStmt)
 			if !ok {
@@ -518,6 +531,12 @@ func TestHistoryCommandBudgetASTOrderGate(t *testing.T) {
 		}
 		if name == "auditManualProgressHistoryVNext" {
 			want[4] = "historyCommandManualProgressInputBudget"
+		}
+		if name == "auditPlannedSubtaskHistoryVNext" {
+			want[4] = "historyCommandPlannedSubtaskInputBudget"
+		}
+		if name == "auditActualSubtaskHistoryVNext" {
+			want[4] = "historyCommandActualSubtaskInputBudget"
 		}
 		if !reflect.DeepEqual(initial, want) {
 			t.Fatalf("unchecked pre-gate call: %v", initial)
