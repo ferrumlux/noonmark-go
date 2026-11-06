@@ -28,11 +28,8 @@ func replayCarryover(k *core.TaskKernel, in core.TraceCarryoverInput, continuati
 func (s *Service) carryoverTrace(chain core.TaskChainID, trace core.DayTraceID, target core.LocalDate, continuation bool) (core.DayTraceID, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if s.closed {
-		return "", ErrSession
-	}
-	if s.disk.blocked {
-		return "", ErrIncomplete
+	if err := s.gateLocked(); err != nil {
+		return "", err
 	}
 	k, err := core.NewTaskKernel(s.graph)
 	if err != nil {
@@ -67,7 +64,7 @@ func (s *Service) carryoverTrace(chain core.TaskChainID, trace core.DayTraceID, 
 	if err != nil {
 		return "", err
 	}
-	if err = s.disk.commit(wire); err != nil {
+	if err = s.commitLocked(wire); err != nil {
 		return "", err
 	}
 	s.snapshot, s.graph = wire, graph

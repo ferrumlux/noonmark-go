@@ -17,6 +17,7 @@ type Service struct {
 	today    core.LocalDate
 	clock    func() time.Time
 	closed   bool
+	health   SessionHealth
 }
 
 func Create(path string, today core.LocalDate) (*Service, error) {
@@ -27,7 +28,7 @@ func Create(path string, today core.LocalDate) (*Service, error) {
 	if e != nil {
 		return nil, e
 	}
-	s := &Service{disk: d, today: today, clock: time.Now}
+	s := &Service{disk: d, today: today, clock: time.Now, health: SessionHealth{SessionWritable, HealthOK, StageNone}}
 	wire, e := initialSnapshot()
 	if e != nil {
 		d.root.Close()
@@ -60,7 +61,7 @@ func Open(path string, today core.LocalDate) (*Service, error) {
 		return nil, e
 	}
 	g := state.Tasks
-	s := &Service{disk: d, graph: g, snapshot: wire, today: today, clock: time.Now}
+	s := &Service{disk: d, graph: g, snapshot: wire, today: today, clock: time.Now, health: SessionHealth{SessionWritable, HealthOK, StageNone}}
 	if e = s.reconcileDayLocked(today); e != nil {
 		d.root.Close()
 		return nil, e
@@ -71,21 +72,34 @@ func Open(path string, today core.LocalDate) (*Service, error) {
 // AdvanceTo applies the natural-day boundary and its empty classification
 // history in one persisted transaction. A failed write publishes neither the
 // candidate task facts nor its audit nor the new today value.
-func (s *Service) AdvanceTo(today core.LocalDate) error {
-	if !today.Valid() {
-		return core.ErrInvalidInput
-	}
+func (s *Service) AdvanceTo(today core.LocalDate) error { return s.AdvanceToOutcome(today).Err }
+func (s *Service) AdvanceToOutcome(today core.LocalDate) AdvanceOutcome {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	return s.reconcileDayLocked(today)
+	a := newAttempt()
+	var err error
+	if !today.Valid() {
+		// Preserve the original pure-parameter error priority, but report existing
+		// health (including the legacy blocked guard) without any disk scan.
+		if s.disk.blocked {
+			s.invalidateLocked(HealthBlocked, StageSessionGate)
+		}
+		a.stage, err = StageParameter, core.ErrInvalidInput
+	} else {
+		err = s.reconcileDayLocked(today, &a)
+	}
+	o := AdvanceOutcome{Outcome: s.outcomeLocked(a, err)}
+	if o.Err == nil {
+		o.Receipt = &AdvanceReceipt{s.disk.revision, s.disk.hash, s.today}
+	}
+	return o
 }
-func (s *Service) reconcileDayLocked(today core.LocalDate) error {
-	if s.closed {
-		return ErrSession
+func (s *Service) reconcileDayLocked(today core.LocalDate, a ...*attempt) error {
+	if err := s.gateLocked(); err != nil {
+		setAttempt(a, WriteNone, StageSessionGate)
+		return err
 	}
-	if s.disk.blocked {
-		return ErrIncomplete
-	}
+	setAttempt(a, WriteNone, StageClock)
 	// Probe at the existing finite frontier, without allocating a mutation
 	// clock. The probe is never published; real changes are replayed below.
 	frontier, e := s.persistedFrontier()
@@ -93,6 +107,7 @@ func (s *Service) reconcileDayLocked(today core.LocalDate) error {
 		return e
 	}
 	settle := func(now core.Instant) (canonical.Value, core.TaskGraph, error) {
+		setAttempt(a, WriteNone, StageDomain)
 		k, err := core.NewTaskKernel(s.graph)
 		if err != nil {
 			return canonical.Value{}, core.TaskGraph{}, err
@@ -100,30 +115,34 @@ func (s *Service) reconcileDayLocked(today core.LocalDate) error {
 		if err = k.SettleTaskDays(today, now); err != nil {
 			return canonical.Value{}, core.TaskGraph{}, err
 		}
+		setAttempt(a, WriteNone, StageCandidate)
 		captured, err := CaptureEmptyHistory(s.snapshot, s.graph, k.Snapshot())
 		if err != nil {
 			return canonical.Value{}, core.TaskGraph{}, err
 		}
 		return normalizeSnapshot(captured)
 	}
+	setAttempt(a, WriteNone, StageCandidate)
 	wire, _, e := settle(frontier)
 	if e != nil {
 		return e
 	}
 	if historyEqual(s.snapshot, wire) {
-		if _, e = s.disk.verifyPrefix(s.disk.revision, s.disk.hash, false); e != nil {
+		if _, e = s.verifyPrefixLocked(a...); e != nil {
 			return e
 		}
 	} else {
+		setAttempt(a, WriteNone, StageClock)
 		now, err := s.nextInstant()
 		if err != nil {
 			return err
 		}
+		setAttempt(a, WriteNone, StageCandidate)
 		wire, graph, err := settle(now)
 		if err != nil {
 			return err
 		}
-		if err = s.disk.commit(wire); err != nil {
+		if err = s.commitLocked(wire, a...); err != nil {
 			return err
 		}
 		s.graph, s.snapshot = graph, wire
@@ -138,7 +157,8 @@ func (s *Service) Close() error {
 		return nil
 	}
 	s.closed = true
-	return s.disk.root.Close()
+	s.health.Session = SessionClosed
+	return s.disk.close()
 }
 func (s *Service) Today() core.LocalDate { s.mu.RLock(); defer s.mu.RUnlock(); return s.today }
 func (s *Service) Snapshot() core.TaskGraph {
@@ -149,8 +169,8 @@ func (s *Service) Snapshot() core.TaskGraph {
 func (s *Service) transact(fn func(*core.TaskKernel, core.Instant) error) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if s.closed {
-		return ErrSession
+	if err := s.gateLocked(); err != nil {
+		return err
 	}
 	k, e := core.NewTaskKernel(s.graph)
 	if e != nil {
@@ -171,7 +191,7 @@ func (s *Service) transact(fn func(*core.TaskKernel, core.Instant) error) error 
 	if e != nil {
 		return e
 	}
-	if e = s.disk.commit(wire); e != nil {
+	if e = s.commitLocked(wire); e != nil {
 		return e
 	}
 	s.graph = g

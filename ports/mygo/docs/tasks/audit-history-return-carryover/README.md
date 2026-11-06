@@ -32,4 +32,4 @@
 
 最初定向回归3.471秒退出0，首次check在root/UI race528.958秒、taskapp race245.906秒通过后被go vet的三处无字段名字面量拒绝（exit1）。原红日志已保留，不能把首次整体称通过。完成上述仅测试字面量修正后，重新实际执行vet、独立focused和完整聚合；同一固定564文件的 scripts/check（四模块race与vet、Unicode、依赖与MyGo native门禁）、scripts/cross-build、scripts/build、scripts/test-entrypoints 全部退出0，文件SHA/mode前后核对一致。使用已核官方Go1.27.3与离线依赖，外置隔离构建，顺序复用同执行者上一批已结束的编译cache，因此不是冷缓存复现；CI会另按新head核验。
 
-六目标只有编译，Linux CLI只有MyGo headless day/pool与development创建/重开/复用守卫，不是六OS桌面、IME或发行验收。此后只更新故障状态与hosted证据文档；没有更改production或测试，相关登记门禁已实际race重跑退出0（1.494秒），独立行为／闭集／原症状race定向重跑退出0（6.228秒），go vet再次退出0。正式整合提交及远端CI尚待同步，不将前批ed200ac5绿色借给本批。
+六目标只有编译，Linux CLI只有MyGo headless day/pool与development创建/重开/复用守卫，不是六OS桌面、IME或发行验收。此后只更新故障状态与hosted证据文档；没有更改production或测试，相关登记门禁已实际race重跑退出0（1.494秒），独立行为／闭集／原症状race定向重跑退出0（6.228秒），go vet再次退出0。正式修复commit eb924a14d395391c5625e61effddaed500ddb6b9 已同步；同head MyGo run42198336290及实际artifact核验通过，见HOSTED-CI-42198336290.json。此后没有把这份前批证据借给新的Service变更。

@@ -89,6 +89,10 @@ func TestHistoryEditASTSealedAndBudget(t *testing.T) {
 func TestHistoryEditFrozenProduction(t *testing.T) {
 	rows, e := os.ReadFile("../../docs/tasks/audit-history-edits/FROZEN-PRODUCTION-SHA256.tsv")
 	must(t, e)
+	overlay, e := os.ReadFile("../../docs/tasks/service-typed-outcome/FROZEN-PRODUCTION-OVERLAY.tsv")
+	must(t, e)
+	expected, e := outcomeFrozenOverlay(string(rows), string(overlay))
+	must(t, e)
 	for _, line := range strings.Split(strings.TrimSpace(string(rows)), "\n") {
 		parts := strings.Split(line, "\t")
 		if len(parts) != 2 {
@@ -96,7 +100,7 @@ func TestHistoryEditFrozenProduction(t *testing.T) {
 		}
 		b, e := os.ReadFile(filepath.Join("../../../..", parts[1]))
 		must(t, e)
-		if fmt.Sprintf("%x", sha256.Sum256(b)) != parts[0] {
+		if fmt.Sprintf("%x", sha256.Sum256(b)) != expected[parts[1]] {
 			t.Fatal("frozen production changed", parts[1])
 		}
 	}

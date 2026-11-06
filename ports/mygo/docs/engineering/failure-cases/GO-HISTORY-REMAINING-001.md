@@ -1,6 +1,6 @@
 # GO-HISTORY-REMAINING-001：旧 proof kind 错误接受新增 typed detail
 
-状态：处理中。根本修正本地 commit 为32befa59455f74078aeded954ba96578b2092fdb，修订版完整 taskapp/race/vet、独立原症状复验与实现审查均通过；正式共同基线整合的全门禁已通过，当前整合提交及其远端 CI 待同步核对，没有接线、发行或影响真实用户资料。
+状态：已修复（未接线 helper 范围）。修复已同步为 eb924a14d395391c5625e61effddaed500ddb6b9，精确同 head 的本地检查及 GitHub MyGo run 42198336290 通过，实际 artifact 与完整日志已核；没有接线、发行或影响真实用户资料。
 
 ## 症状与引入来源
 
@@ -33,7 +33,7 @@ exit1，0.014s；10个旧kind ×3种新detail均错误通过，真实Return改ki
 
 根本修复：旧kind分支同时要求三个新增detail全nil。前批真实成功出口永不设置这些字段，所以旧可生成proof语义不变；拒绝的是本批引入后新出现的内部错配。必须明确修订valid旧分支字节冻结要求，而不是虚称旧body未变。不增加任何豁免、开放union或caller callback。
 
-原独立设计reviewer已Accepted最小澄清。修订只给旧kind分支加入三新detail全nil；注册文件修订后SHA256为90e22cf119936f446913e9441b0e4cbbedd02ba97d9da9d79917b72798a92363，其他三production原SHA不变。上述两作者门禁已实际exit0（0.014s），独立原七测试已原封不动换入修订 production，focused/race 均通过；另增独立闭集矩阵也通过。修订候选 taskapp 38.346s、race 246.185s、vet 均 exit0；独立实现审查 Accepted。同一 ed200ac5 共同基线已整合作者与独立测试，四模块 scripts/check、六目标编译与隔离CLI全部退出0；原始固定564文件的SHA/mode在门禁前后完全一致。正式整合提交及其远端CI仍待同步核对，不能借用 ed200ac5 的绿色。此前全包41.029s、race253.030s、vet通过只证明未含该回归的旧测试通过，不能作为闭集正确性或修订后验收证据。
+原独立设计reviewer已Accepted最小澄清。修订只给旧kind分支加入三新detail全nil；注册文件修订后SHA256为90e22cf119936f446913e9441b0e4cbbedd02ba97d9da9d79917b72798a92363，其他三production原SHA不变。上述两作者门禁已实际exit0（0.014s），独立原七测试已原封不动换入修订 production，focused/race 均通过；另增独立闭集矩阵也通过。修订候选 taskapp 38.346s、race 246.185s、vet 均 exit0；独立实现审查 Accepted。同一 ed200ac5 共同基线已整合作者与独立测试，四模块 scripts/check、六目标编译与隔离CLI全部退出0；原始固定564文件的SHA/mode在门禁前后完全一致。正式修复 commit 为 eb924a14d395391c5625e61effddaed500ddb6b9；MyGo run 42198336290 / job 127827115063 于2026-11-06 10:18:11 UTC成功。artifact13493154729实际6212字节，SHA256 7dd5548585361e7ca3c27056ce5db9cb027c93486c9a019f5618f61a0d16c83c与metadata和上传日志一致。完整888行job日志及四模块race/vet、六目标编译、隔离CLI核验通过，详见任务目录HOSTED-CI-42198336290.json；不代表跨OS实机或发行。此前全包41.029s、race253.030s、vet通过只证明未含该回归的旧测试通过，不能作为闭集正确性或修订后验收证据。
 
 ## 实际门禁与边界
 

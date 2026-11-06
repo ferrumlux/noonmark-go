@@ -303,8 +303,12 @@ func TestTitleServiceStaleAndClosed(t *testing.T) {
 	wire := other.snapshot
 	chain := s.graph.Chains[0].ID
 	must(t, s.SaveTaskTitleInput(chain, "winner"))
-	for _, title := range []string{"loser", "old"} {
-		if e = other.SaveTaskTitleInput(chain, title); !errors.Is(e, ErrConflict) {
+	for i, title := range []string{"loser", "old"} {
+		want := ErrConflict
+		if i > 0 {
+			want = ErrIncomplete
+		}
+		if e = other.SaveTaskTitleInput(chain, title); !errors.Is(e, want) {
 			t.Fatal("stale accepted", e)
 		}
 	}
@@ -498,7 +502,8 @@ func TestTitleServiceCanonicalEquivalentNoop(t *testing.T) {
 			must(t, e)
 			defer other.Close()
 			must(t, other.SaveTaskTitleInput(chain, "winner"))
-			if e = edit(chain, "cafe\u0301"); !errors.Is(e, ErrConflict) {
+			// A detected blocked session remains stopped after disk.blocked is cleared.
+			if e = edit(chain, "cafe\u0301"); !errors.Is(e, ErrIncomplete) {
 				t.Fatal("stale equivalent noop accepted", e)
 			}
 			if !reflect.DeepEqual(before, s.Snapshot()) || !historyEqual(wire, s.snapshot) {

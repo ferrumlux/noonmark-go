@@ -19,13 +19,27 @@ func (s *Service) SetManualProgress(chain core.TaskChainID, trace core.DayTraceI
 // confirmed by this transaction, including clamping and the historical floor.
 // On any failure the returned zero is not an acknowledgment.
 func (s *Service) SetManualProgressAcknowledged(chain core.TaskChainID, trace core.DayTraceID, percent int) (int, error) {
+	o := s.SetManualProgressOutcome(chain, trace, percent)
+	if o.Err != nil {
+		return 0, o.Err
+	}
+	return o.Receipt.Percent, nil
+}
+func (s *Service) SetManualProgressOutcome(chain core.TaskChainID, trace core.DayTraceID, percent int) ManualOutcome {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if s.closed {
-		return 0, ErrSession
+	a := newAttempt()
+	accepted, err := s.setManualProgressLocked(chain, trace, percent, &a)
+	o := ManualOutcome{Outcome: s.outcomeLocked(a, err)}
+	if o.Err == nil {
+		o.Receipt = &ManualReceipt{s.disk.revision, s.disk.hash, chain, trace, accepted}
 	}
-	if s.disk.blocked {
-		return 0, ErrIncomplete
+	return o
+}
+func (s *Service) setManualProgressLocked(chain core.TaskChainID, trace core.DayTraceID, percent int, a *attempt) (int, error) {
+	if err := s.gateLocked(); err != nil {
+		a.stage = StageSessionGate
+		return 0, err
 	}
 	k, err := core.NewTaskKernel(s.graph)
 	if err != nil {
@@ -55,10 +69,12 @@ func (s *Service) SetManualProgressAcknowledged(chain core.TaskChainID, trace co
 		}
 	}
 	if changed {
+		a.stage = StageClock
 		command.Now, err = s.nextInstant()
 		if err != nil {
 			return 0, err
 		}
+		a.stage = StageDomain
 		k, err = core.NewTaskKernel(s.graph)
 		if err != nil {
 			return 0, err
@@ -68,6 +84,7 @@ func (s *Service) SetManualProgressAcknowledged(chain core.TaskChainID, trace co
 		}
 		candidate = k.Snapshot()
 	}
+	a.stage = StageCandidate
 	captured, err := captureManualProgressHistory(s.snapshot, s.graph, candidate, command)
 	if err != nil {
 		return 0, err
@@ -87,12 +104,12 @@ func (s *Service) SetManualProgressAcknowledged(chain core.TaskChainID, trace co
 		return 0, core.ErrNotFound
 	}
 	if historyEqual(s.snapshot, wire) {
-		if _, err = s.disk.verifyPrefix(s.disk.revision, s.disk.hash, false); err != nil {
+		if _, err = s.verifyPrefixLocked(a); err != nil {
 			return 0, err
 		}
 		return accepted, nil
 	}
-	if err = s.disk.commit(wire); err != nil {
+	if err = s.commitLocked(wire, a); err != nil {
 		return 0, err
 	}
 	s.graph, s.snapshot = graph, wire

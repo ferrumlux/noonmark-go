@@ -189,9 +189,15 @@ func TestReconcileClockNoopSafetyMatrix(t *testing.T) {
 				want = ErrConflict
 			}
 			s.clock = func() time.Time { t.Fatal("rejected no-op sampled clock"); return time.Time{} }
-			for _, day := range []core.LocalDate{testDay, next} {
-				if err = s.AdvanceTo(day); !errors.Is(err, want) {
-					t.Fatalf("got %v want %v", err, want)
+			for i, day := range []core.LocalDate{testDay, next} {
+				expected := want
+				// The first detection preserves its original error; the next
+				// command is rejected by the sticky Service session gate.
+				if i > 0 && fault != "closed" {
+					expected = ErrIncomplete
+				}
+				if err = s.AdvanceTo(day); !errors.Is(err, expected) {
+					t.Fatalf("got %v want %v", err, expected)
 				}
 				if s.Today() != testDay || s.disk.revision != revision || !reflect.DeepEqual(before, s.Snapshot()) {
 					t.Fatal("rejected no-op published")

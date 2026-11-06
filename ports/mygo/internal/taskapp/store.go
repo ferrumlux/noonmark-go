@@ -49,8 +49,20 @@ type diskStore struct {
 	hash     string
 	blocked  bool
 	fault    func(string) error
+	// Optional private I/O substitutes used by isolated tests. Nil keeps the
+	// original operation, flags, ordering, and error mapping unchanged.
+	openWrite func(string) (storeWriteFile, error)
+	readBack  func(string, int) ([]byte, error)
+	syncDir   func(*os.Root, string) error
+	closeRoot func() error
 }
 
+func (d *diskStore) close() error {
+	if d.closeRoot != nil {
+		return d.closeRoot()
+	}
+	return d.root.Close()
+}
 func pathGuard(path string) error {
 	if !filepath.IsAbs(path) || filepath.Clean(path) != path {
 		return ErrSession
@@ -206,8 +218,27 @@ func (d *diskStore) readRegular(name string, limit int) ([]byte, error) {
 	}
 	return b, nil
 }
+
+type storeWriteFile interface {
+	Write([]byte) (int, error)
+	Sync() error
+	Close() error
+}
+
+func (d *diskStore) openWriteFile(name string) (storeWriteFile, error) {
+	if d.openWrite != nil {
+		return d.openWrite(name)
+	}
+	return d.root.OpenFile(name, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0600)
+}
+func (d *diskStore) syncDirectory(name string) error {
+	if d.syncDir != nil {
+		return d.syncDir(d.root, name)
+	}
+	return syncDirectory(d.root, name)
+}
 func (d *diskStore) writeExclusive(name string, b []byte) error {
-	f, e := d.root.OpenFile(name, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0600)
+	f, e := d.openWriteFile(name)
 	if e != nil {
 		return ErrIncomplete
 	}
@@ -228,83 +259,110 @@ func (d *diskStore) writeExclusive(name string, b []byte) error {
 		return ErrIncomplete
 	}
 	ok = true
-	actual, e := d.readRegular(name, len(b))
+	readBack := d.readRegular
+	if d.readBack != nil {
+		readBack = d.readBack
+	}
+	actual, e := readBack(name, len(b))
 	if e != nil || !bytes.Equal(actual, b) {
 		return ErrIncomplete
 	}
 	return nil
 }
 func (d *diskStore) commit(snapshot canonical.Value) error {
+	return d.commitObserved(snapshot).err
+}
+func (d *diskStore) commitObserved(snapshot canonical.Value) commitObservation {
+	extent, stage := WriteNone, StageSessionGate
+	invalidates, reason := false, HealthOK
+	result := func(err error) commitObservation { return commitObservation{extent, stage, invalidates, reason, err} }
 	if d.blocked {
-		return ErrIncomplete
+		invalidates, reason = true, HealthBlocked
+		return result(ErrIncomplete)
 	}
+	stage = StageCapacity
 	if d.revision >= maxRevisions {
-		return ErrLimit
+		return result(ErrLimit)
 	}
+	stage = StageCandidate
 	payload, e := encodeSnapshot(snapshot)
 	if e != nil {
-		return e
+		return result(e)
 	}
+	stage = StageCapacity
 	b, e := json.Marshal(record{Format: "noonmark-mygo-development-v2", Revision: d.revision + 1, ParentSHA256: d.hash, Payload: payload})
 	if e != nil || len(b) > maxRecordBytes {
-		return ErrLimit
+		return result(ErrLimit)
 	}
-	total, e := d.verifyPrefix(d.revision, d.hash, false)
+	stage = StagePrefix
+	verified := d.verifyPrefixObserved(d.revision, d.hash, false)
+	total, e := verified.bytes, verified.err
 	if e != nil {
-		return e
+		invalidates, reason = true, HealthPrefixInvalid
+		return result(e)
 	}
+	stage = StageCapacity
 	if total > maxSessionBytes-len(b) {
-		return ErrLimit
+		return result(ErrLimit)
 	}
+	stage = StageReserve
 	if d.fault != nil {
 		if e := d.fault("before-reserve"); e != nil {
-			return e
+			return result(e)
 		}
 	}
 	name := fmt.Sprintf("rev-%010d", d.revision+1)
+	extent, invalidates, reason = WriteReservationPossible, true, HealthWriteUncertain
 	if e = d.root.Mkdir(name, 0700); e != nil {
-		return ErrConflict
+		return result(ErrConflict)
 	}
+	extent = WriteReservedOrPartial
 	d.blocked = true // any uncertain result after reservation requires a fresh open.
 	if d.fault != nil {
 		if e := d.fault("after-reserve"); e != nil {
-			return e
+			return result(e)
 		}
 	}
+	stage = StagePayload
 	if e = d.writeExclusive(name+"/state.json", b); e != nil {
-		return e
+		return result(e)
 	}
+	stage = StageMarker
 	if d.fault != nil {
 		if e := d.fault("before-commit"); e != nil {
-			return e
+			return result(e)
 		}
 	}
 	digest := sha256.Sum256(b)
 	hash := hex.EncodeToString(digest[:])
 	if e = d.writeExclusive(name+"/COMMITTED", []byte(hash+"\n")); e != nil {
-		return e
+		return result(e)
 	}
 	// Directory fsync has no portable Go contract on Windows. File fsync and
 	// read-back are enforced everywhere; power-loss directory durability remains
 	// platform validation work, and is not advertised as a production guarantee.
-	if e = syncDirectory(d.root, name); e != nil {
-		return e
+	stage = StageSync
+	if e = d.syncDirectory(name); e != nil {
+		return result(e)
 	}
-	if e = syncDirectory(d.root, "."); e != nil {
-		return e
+	if e = d.syncDirectory("."); e != nil {
+		return result(e)
 	}
+	extent, stage = WriteWrittenUnacknowledged, StagePostPersist
 	if d.fault != nil {
 		if e := d.fault("after-persist"); e != nil {
-			return ErrIncomplete
+			return result(ErrIncomplete)
 		}
 	}
-	if _, e = d.verifyPrefix(d.revision+1, hash, true); e != nil {
-		return ErrIncomplete
+	stage = StageReadback
+	if verified = d.verifyPrefixObserved(d.revision+1, hash, true); verified.err != nil {
+		return result(ErrIncomplete)
 	}
 	d.revision++
 	d.hash = hash
 	d.blocked = false
-	return nil
+	extent, stage, invalidates, reason = WriteCommittedConfirmed, StageNone, false, HealthOK
+	return result(nil)
 }
 func encodeSnapshot(snapshot canonical.Value) ([]byte, error) {
 	if e := ValidateEmptyHistory(snapshot); e != nil {

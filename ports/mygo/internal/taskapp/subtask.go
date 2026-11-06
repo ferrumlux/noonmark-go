@@ -80,11 +80,8 @@ func (s *Service) editSubtask(c subtaskEditCommand) (subtaskEditAck, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	fail := func(e error) (subtaskEditAck, error) { return subtaskEditAck{}, e }
-	if s.closed {
-		return fail(ErrSession)
-	}
-	if s.disk.blocked {
-		return fail(ErrIncomplete)
+	if err := s.gateLocked(); err != nil {
+		return fail(err)
 	}
 	if (c.planned == nil) == (c.actual == nil) {
 		return fail(core.ErrInvalidInput)
@@ -169,12 +166,12 @@ func (s *Service) editSubtask(c subtaskEditCommand) (subtaskEditAck, error) {
 		}
 	}
 	if historyEqual(s.snapshot, wire) {
-		if _, e = s.disk.verifyPrefix(s.disk.revision, s.disk.hash, false); e != nil {
+		if _, e = s.verifyPrefixLocked(); e != nil {
 			return fail(e)
 		}
 		return ack, nil
 	}
-	if e = s.disk.commit(wire); e != nil {
+	if e = s.commitLocked(wire); e != nil {
 		return fail(e)
 	}
 	s.graph, s.snapshot = g, wire

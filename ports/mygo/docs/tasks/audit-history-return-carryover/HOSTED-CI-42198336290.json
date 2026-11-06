@@ -1,0 +1,141 @@
+{
+  "head": "eb924a14d395391c5625e61effddaed500ddb6b9",
+  "run": 42198336290,
+  "run_url": "https://github.com/ferrumlux/noonmark-go/actions/runs/42198336290",
+  "attempt": 1,
+  "status": "completed",
+  "conclusion": "success",
+  "updated_at": "2026-11-06T10:18:11Z",
+  "job": 127827115063,
+  "all_steps_success": true,
+  "steps": [
+    {
+      "name": "Set up job",
+      "status": "completed",
+      "conclusion": "success",
+      "number": 1
+    },
+    {
+      "name": "Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803",
+      "status": "completed",
+      "conclusion": "success",
+      "number": 2
+    },
+    {
+      "name": "Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16",
+      "status": "completed",
+      "conclusion": "success",
+      "number": 3
+    },
+    {
+      "name": "Install Linux headless rendering prerequisites",
+      "status": "completed",
+      "conclusion": "success",
+      "number": 4
+    },
+    {
+      "name": "Validate workflow contract",
+      "status": "completed",
+      "conclusion": "success",
+      "number": 5
+    },
+    {
+      "name": "Fresh-cache tests, six builds and synthetic CLI guards",
+      "status": "completed",
+      "conclusion": "success",
+      "number": 6
+    },
+    {
+      "name": "Upload bounded development evidence only",
+      "status": "completed",
+      "conclusion": "success",
+      "number": 7
+    },
+    {
+      "name": "Post Run actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16",
+      "status": "completed",
+      "conclusion": "success",
+      "number": 13
+    },
+    {
+      "name": "Post Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803",
+      "status": "completed",
+      "conclusion": "success",
+      "number": 14
+    },
+    {
+      "name": "Complete job",
+      "status": "completed",
+      "conclusion": "success",
+      "number": 15
+    }
+  ],
+  "artifact": 13493154729,
+  "artifact_bytes": 6212,
+  "artifact_sha256": "7dd5548585361e7ca3c27056ce5db9cb027c93486c9a019f5618f61a0d16c83c",
+  "digest_matches_github_metadata_and_upload_log": true,
+  "members": {
+    "binary-checksums.txt": {
+      "bytes": 566,
+      "sha256": "71d42f1015b5b9a87802c05bffdb02e0ff12403f9385ad8ecc8d5228912e1866"
+    },
+    "checks.txt": {
+      "bytes": 25731,
+      "sha256": "c7c0daf7495af2d3a68ae2b396a1f068c18fa04900960d8758c52211508e3bab"
+    },
+    "cross-build.txt": {
+      "bytes": 311,
+      "sha256": "7bed62843e3f9d285c48874fe77f7410fc874c913bdaf23f8eefa957e5f92877"
+    },
+    "entrypoints.txt": {
+      "bytes": 188,
+      "sha256": "592a36c63945a13f6ea856e77c3485b4fcd5d68d0cedb58c5c8c261fdd7f1477"
+    },
+    "environment.txt": {
+      "bytes": 416,
+      "sha256": "141cf15ed119194f256a13949b0956de29f768ea5ff424223626525d71f14bdf"
+    },
+    "result.txt": {
+      "bytes": 79,
+      "sha256": "9bb488611c363033e09212059f40ce3decd34f7b476b403085f37498ee25ace9"
+    }
+  },
+  "job_log": {
+    "bytes": 74865,
+    "lines": 888,
+    "sha256": "7de70bd033ae3dcef510c0a507bc9ebbc9d290b94ad5728086a33e4423465837",
+    "first_line": "﻿2026-11-06T09:52:46.8569761Z Current runner version: '2.338.2'",
+    "last_line": "2026-11-06T10:18:07.6446773Z ##[warning]Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/",
+    "source": "GitHub fetch_workflow_job_logs full decoded response; original content preserved"
+  },
+  "stage_log_coverage": {
+    "checks.txt": {
+      "lines": 444,
+      "all_lines_present_in_job_log": true,
+      "whole_content_in_order_in_job_log": true,
+      "under_capture_limit": true
+    },
+    "cross-build.txt": {
+      "lines": 7,
+      "all_lines_present_in_job_log": true,
+      "whole_content_in_order_in_job_log": true,
+      "under_capture_limit": true
+    },
+    "entrypoints.txt": {
+      "lines": 3,
+      "all_lines_present_in_job_log": true,
+      "whole_content_in_order_in_job_log": true,
+      "under_capture_limit": true
+    }
+  },
+  "limitations": [
+    "六目标仅编译；非 Linux 未实机运行。",
+    "Linux day/pool 为 MyGo ui.Render headless，不是桌面窗口或 IME 验收。",
+    "MyGo 全框架 allocation suite 明确排除，不可称通过。",
+    "ICU76 differential 不在此 hosted gate，RUN_ICU76=0。",
+    "四个应用模块 go test -race ./... 输出包级结果，非 verbose；不能声称每个 remaining history 测试名均在日志逐条打印。",
+    "artifact 只有六份有界文本，二进制 hash 为 CI 报告值；未取得或重新核验二进制文件。",
+    "不是 release、签名、production、同步或全面产品对等验收。"
+  ],
+  "warning": "upload-artifact 的 Node.js 20 废弃警告，runner 强制 Node.js 24；该步骤成功。"
+}

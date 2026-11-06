@@ -60,11 +60,8 @@ func (s *Service) SaveTraceTitleInput(trace core.DayTraceID, title string) error
 func (s *Service) SaveTraceTitleInputAcknowledged(trace core.DayTraceID, title string) (string, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if s.closed {
-		return "", ErrSession
-	}
-	if s.disk.blocked {
-		return "", ErrIncomplete
+	if err := s.gateLocked(); err != nil {
+		return "", err
 	}
 	for _, tr := range s.graph.Traces {
 		if tr.ID != trace {
@@ -83,11 +80,8 @@ func (s *Service) SaveTraceTitleInputAcknowledged(trace core.DayTraceID, title s
 
 // Caller owns s.mu for both any route validation and the complete transaction.
 func (s *Service) editTitleLocked(chain core.TaskChainID, title string, mode titleMode) (string, error) {
-	if s.closed {
-		return "", ErrSession
-	}
-	if s.disk.blocked {
-		return "", ErrIncomplete
+	if err := s.gateLocked(); err != nil {
+		return "", err
 	}
 	k, err := core.NewTaskKernel(s.graph)
 	if err != nil {
@@ -127,13 +121,13 @@ func (s *Service) editTitleLocked(chain core.TaskChainID, title string, mode tit
 	}
 	if historyEqual(s.snapshot, wire) {
 		// No revision consumed, but a stale/uncertain handle cannot acknowledge a save.
-		_, err = s.disk.verifyPrefix(s.disk.revision, s.disk.hash, false)
+		_, err = s.verifyPrefixLocked()
 		if err != nil {
 			return "", err
 		}
 		return acceptedTitle, nil
 	}
-	if err = s.disk.commit(wire); err != nil {
+	if err = s.commitLocked(wire); err != nil {
 		return "", err
 	}
 	s.graph, s.snapshot = graph, wire

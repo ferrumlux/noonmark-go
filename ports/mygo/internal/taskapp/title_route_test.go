@@ -101,7 +101,8 @@ func TestTraceTitleStaleBlockedClosedCanonicalNoop(t *testing.T) {
 	must(t, err)
 	defer other.Close()
 	must(t, other.SaveTraceTitleInput(trace, "另一窗口"))
-	if err := s.SaveTraceTitleInput(trace, "cafe\u0301"); !errors.Is(err, ErrConflict) {
+	// Clearing the old disk flag cannot undo a detected session failure.
+	if err := s.SaveTraceTitleInput(trace, "cafe\u0301"); !errors.Is(err, ErrIncomplete) {
 		t.Fatal(err)
 	}
 	if !reflect.DeepEqual(before, s.Snapshot()) || rev != s.disk.revision {
