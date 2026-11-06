@@ -64,3 +64,7 @@ ProjectDay源码不变，相同命令合成fixture：
 各阶段完整日志为外置 `annual.log`、`check.log`、`cross.log`、`entrypoints.log`，配套`.command/.exit/.started/.finished/.time.json`。来源和log hashes绑定在VERIFIED-f541dc28.json，原脚本副本在original-scripts/。正式3346与Snapshot I1未改，没有push、正式集成或新hosted run。
 
 独审额外race writer三组观察：new最大7.2–9.6ms，old5.1–6.3ms，均值略降。这是小样本整体命令耗时，不能当纯锁等待或统计定论，不宣称writer尾延迟解决。后续安全同步、新head CI与正式合入决定仍属于下一阶段。
+
+## 后续 hosted development 门禁
+
+以上“尚未 hosted／未 push／待同步”保留为各阶段当时状态。随后已推送 `0ee21539d87453e630b559a3474c1d23a0d15a21`，官方 run `42265932787` 成功；root 491.495s，默认600s不变。精确版本、实际入口、完成范围、日志与 artifact 摘要及未验边界见 [HOSTED-CI.md](HOSTED-CI.md)。此前 `f541dc28` 本地结果与本次 hosted 结果分开绑定；本段为后续纯文档补充，不将文档提交冒称为该 run 的被测版本。Refs #2 / #3；#2 待本记录合入后闭环。

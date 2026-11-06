@@ -13,3 +13,7 @@ This is an independent repository, not a GitHub fork. To propose the port upstre
 See [the implementation status and checks](ports/mygo/README.md) for current limitations and reproduction commands.
 
 Reproducible six-target packaging is prepared behind a blocked stable-release gate. See [release preparation and acceptance requirements](ports/mygo/docs/release/RELEASING.md). Manual packaging runs create development candidates only; they do not publish a release or prove native platform support.
+
+## Development tracking
+
+Track work and evidence in the [development overview](https://github.com/ferrumlux/noonmark-go/issues/1). See the [issue lifecycle and completion criteria](ports/mygo/docs/engineering/PROJECT-TRACKING.md).

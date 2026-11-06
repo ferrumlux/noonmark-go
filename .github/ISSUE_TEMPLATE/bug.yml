@@ -1,0 +1,50 @@
+name: 缺陷与回归
+description: 保留失败证据、最小复现与修复后验证
+title: "[缺陷] "
+labels: ["status: 待办"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        总览：https://github.com/ferrumlux/noonmark-go/issues/1
+        请只使用隔离 development/e2e 合成资料。不要附真实任务内容、密码、token、生产路径或私密日志。
+  - type: textarea
+    id: environment
+    attributes:
+      label: 来源版本与环境
+      description: 完整 commit、OS/架构、工具版本、支持的执行入口；注明原生桌面或 headless。
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: 复现步骤与实际结果
+      description: 给出最小合成 fixture、命令、exit 和可访问的失败证据。
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: 预期结果与依据
+      description: 链接上游语义、既有设计或测试契约。
+    validations:
+      required: true
+  - type: textarea
+    id: impact
+    attributes:
+      label: 影响、阻塞与下一步
+      description: 标明影响范围、数据风险、关联 Issue；无法复现时如实记录。
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: 修复验收
+      value: |
+        - [ ] 保留修复前失败证据
+        - [ ] 新增能重现问题的永久回归
+        - [ ] 修复不删除测试、不放宽门禁或改变未授权范围
+        - [ ] 同版本实际验证通过，未覆盖范围有记录
+        - [ ] 总览状态与关闭摘要更新
+    validations:
+      required: true

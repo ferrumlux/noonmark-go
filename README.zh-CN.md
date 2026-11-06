@@ -13,3 +13,7 @@
 当前能力、缺口与复现方法见 [移植说明](ports/mygo/README.md)。
 
 六目标可重现打包流水线已准备，正式发行门禁仍为阻断。操作及完整验收要求见 [发行准备说明](ports/mygo/docs/release/RELEASING.md)。手动打包只产生开发候选，不发布 Release，也不代表各平台原生运行已通过。
+
+## 研发追踪
+
+任务、状态与证据见 [研发总览](https://github.com/ferrumlux/noonmark-go/issues/1)，开工、验收与关闭规则见 [研发闭环流程](ports/mygo/docs/engineering/PROJECT-TRACKING.md)。

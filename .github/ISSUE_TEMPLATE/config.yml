@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: 研发状态与证据闭环总览
+    url: https://github.com/ferrumlux/noonmark-go/issues/1
+    about: 先检查已有任务、状态与依赖，避免重复建项。

@@ -1,0 +1,59 @@
+name: 研发任务
+description: 记录范围、依赖、实际结果与闭环条件
+title: "[任务] "
+labels: ["status: 待办"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        总览：https://github.com/ferrumlux/noonmark-go/issues/1
+        请先搜索已有 Issue，避免重复。只提交合成研发资料，不上传真实用户数据、凭据或私密日志。
+  - type: textarea
+    id: scope
+    attributes:
+      label: 目标与范围
+      description: 说明用户可观察的结果、改动边界与明确不包含的工作。
+    validations:
+      required: true
+  - type: textarea
+    id: baseline
+    attributes:
+      label: 当前事实与来源
+      description: 填写源码 commit、现有设计、实际证据和未完成项。规划不能当成已实现。
+    validations:
+      required: true
+  - type: dropdown
+    id: priority
+    attributes:
+      label: 优先级建议
+      options:
+        - P0 当前阻断或数据正确性风险
+        - P1 本阶段关键工作
+        - P2 后续阶段
+        - P3 改善项
+    validations:
+      required: true
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: 依赖与下一步
+      description: 关联 Issue、需要的环境、解除阻塞条件。未确定的执行人或日期不要虚构。
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: 验收标准
+      description: 每条条件必须可核验；分别标明单测、CI、合成 UI 与原生桌面的要求。
+      value: |
+        - [ ] 范围与来源版本明确
+        - [ ] 独立审查与适用回归完成
+        - [ ] 结果绑定实际 commit、命令、exit、CI 和证据
+        - [ ] 未覆盖范围与后续任务有记录
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: 已有证据与结果
+      description: 可留空表示尚未执行。不要填写尚未运行的命令为通过。
