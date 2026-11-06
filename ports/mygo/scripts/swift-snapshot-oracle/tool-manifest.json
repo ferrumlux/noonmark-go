@@ -131,8 +131,8 @@
       "path": "ports/mygo/scripts/swift-snapshot-oracle/go-probe/main_test.go",
       "role": "tool",
       "gitBlob": "",
-      "sha256": "6f5bc040db97f902bc637aa3d36b88a639efeca2cffc399711492cde3a1bb87d",
-      "bytes": 7824
+      "sha256": "dd3b4adb1c275630dc862a1d2cce2c89d31b07993f1816283b41abe9f57b0151",
+      "bytes": 8170
     },
     {
       "path": "ports/mygo/scripts/swift-snapshot-oracle/go-probe/mutation.go",

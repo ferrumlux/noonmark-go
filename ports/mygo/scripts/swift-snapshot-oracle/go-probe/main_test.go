@@ -275,17 +275,31 @@ func TestFixedPositiveMutation(t *testing.T) {
 	}
 }
 func TestActualIngressMatrixFaultControls(t *testing.T) {
-	spec := os.Getenv("SNAPSHOT_SPEC")
-	for _, mode := range []string{"normal", "bypass", "late"} {
-		r, e := runIngressMatrix(spec, mode, filepath.Join(t.TempDir(), "matrix"))
-		if e != nil {
-			t.Fatal(e)
-		}
-		if r.Pass != (mode == "normal") {
-			t.Fatalf("%s gate=%v", mode, r.Pass)
-		}
-		if len(r.Rows) != 294 {
-			t.Fatal("missing closed matrix")
-		}
+	explicit, err := filepath.Abs("../spec")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, setting := range []string{"unset", "explicit"} {
+		t.Run(setting, func(t *testing.T) {
+			t.Setenv("SNAPSHOT_SPEC", explicit)
+			if setting == "unset" {
+				if err := os.Unsetenv("SNAPSHOT_SPEC"); err != nil {
+					t.Fatal(err)
+				}
+			}
+			spec := testSpecPath()
+			for _, mode := range []string{"normal", "bypass", "late"} {
+				r, e := runIngressMatrix(spec, mode, filepath.Join(t.TempDir(), "matrix"))
+				if e != nil {
+					t.Fatal(e)
+				}
+				if r.Pass != (mode == "normal") {
+					t.Fatalf("%s gate=%v", mode, r.Pass)
+				}
+				if len(r.Rows) != 294 {
+					t.Fatal("missing closed matrix")
+				}
+			}
+		})
 	}
 }
