@@ -1,0 +1,105 @@
+{
+  "schemaVersion": 1,
+  "repository": "https://github.com/quboliu/noonmark",
+  "commit": "43e6eefaae3a04be89cab3e234d470111afd80ef",
+  "rootTree": "eca47c1c210b8b0d53556c955754710f5f2188c0",
+  "coreTree": "a1aa0252c8839d01dc69e47e05f2e69eceebc97d",
+  "files": [
+    {
+      "path": "Package.swift",
+      "sha256": "567ba7c660ac4ea55f09ea14052dfb164a21460f56f51adb370e0c429cc312c7",
+      "bytes": 6689,
+      "gitBlob": "3ac73de79c116ed9d498137cdb90e44399b5334f"
+    },
+    {
+      "path": "LICENSE",
+      "sha256": "8d56b405468aad11f87ab5763f901e276e08d9646ff5c8481b1762b6b789e9ed",
+      "bytes": 34524,
+      "gitBlob": "fe6b9036ba1818c79c15f802a586a9711ece2b97"
+    },
+    {
+      "path": "Sources/NoonmarkCore/AutomaticTaskClassification.swift",
+      "sha256": "aac9e765d4a92ccd17824813e30dcbb586157d3410eab62ec2f80e5f214f0b30",
+      "bytes": 19395,
+      "gitBlob": "d23ede56a46713b915ab3ef27af68fd7585be683"
+    },
+    {
+      "path": "Sources/NoonmarkCore/IdeaWorkspace.swift",
+      "sha256": "c6ecb9517f1d4d1961f452f44d52cead1200b57c72dec393b0413db4e22992fe",
+      "bytes": 6253,
+      "gitBlob": "085bfebf202db19f7c4924e9ae32b576ea5c5001"
+    },
+    {
+      "path": "Sources/NoonmarkCore/Identifiers.swift",
+      "sha256": "bbc3cb3a28c8ca1d8eb2c9c7524c517edb4c373c1c964ce5e9028bb081342af6",
+      "bytes": 3152,
+      "gitBlob": "78ebe979e4ce4d644aea1818b9cf30f54fcfe0f8"
+    },
+    {
+      "path": "Sources/NoonmarkCore/LocalDate.swift",
+      "sha256": "ad7bb4521e84a75ebbfda446c0a19078dbe23d72e4b81dd87abef5388da128b0",
+      "bytes": 2303,
+      "gitBlob": "6f81ecf943969ec43aeac81d5ed2dbe4fd05f032"
+    },
+    {
+      "path": "Sources/NoonmarkCore/Models.swift",
+      "sha256": "14b961a337ceae9671ea1d5c9202ec0848fd25bffc1f0fb7ab433d8b47fb41f2",
+      "bytes": 43650,
+      "gitBlob": "f66ac6828b9d58e8842930c3355445ae6e2a9be9"
+    },
+    {
+      "path": "Sources/NoonmarkCore/MutationClock.swift",
+      "sha256": "c39d9e756b6a34e9e5688906cf8c0c60b1f28175e61217b7f0c8ce28518ba3d6",
+      "bytes": 6325,
+      "gitBlob": "bd3700e57961a3d6a32ba587a3f73f2ecb7ba2ff"
+    },
+    {
+      "path": "Sources/NoonmarkCore/NoonmarkEngine.swift",
+      "sha256": "8bbc2933eff4ac8d4946c2501ee3e00e12de7312038dc914c75da8d70fb8425f",
+      "bytes": 153461,
+      "gitBlob": "4e94a951159a36fb264aa8aaee25f1ff88439816"
+    },
+    {
+      "path": "Sources/NoonmarkCore/NoonmarkError.swift",
+      "sha256": "d812e1da6b9026fd784b3a0f9d9db6c984c2bf791dc99567fb32a0a65c375f04",
+      "bytes": 1528,
+      "gitBlob": "d1c09e58e22bafe9c7d5f10f0ce34d2db0ca082e"
+    },
+    {
+      "path": "Sources/NoonmarkCore/NoonmarkSnapshot.swift",
+      "sha256": "259e7764c3b76520628820fc1c463584ff0cf11c5ea202cae17b804821cdbc2d",
+      "bytes": 27726,
+      "gitBlob": "cc5dd14c439bb6f836196a9b49c478c5440e3313"
+    },
+    {
+      "path": "Sources/NoonmarkCore/TaskClassification.swift",
+      "sha256": "1dd107ba2902b1bbf5f4b38391d9d7e3ea4b3b7219aca43b106ec4b91a755f0c",
+      "bytes": 161192,
+      "gitBlob": "9f96b9839c1f16ce281d7521d588f4fb3fb91b6c"
+    },
+    {
+      "path": "Sources/NoonmarkCore/TaskClassificationStateValidation.swift",
+      "sha256": "74826bb3b9335c3033dc3babde47467aadfbde9b9d435496ac80bf8ccb65d8f6",
+      "bytes": 35914,
+      "gitBlob": "c33f59a0d2e2603c1f4f2b05aa1e7ce0fa9cff2d"
+    },
+    {
+      "path": "Sources/NoonmarkCore/TaskCycleSeries.swift",
+      "sha256": "08c0bc186d7ccfd8cd853d5bf142b3a46c1fc913dde27bb6c9d0372ae544de13",
+      "bytes": 82462,
+      "gitBlob": "19c5b4368093c6bfb445684f62efd4ce8edf674f"
+    },
+    {
+      "path": "Sources/NoonmarkCore/TaskDefinitionValidator.swift",
+      "sha256": "a1a12d396e6a960f4dd369e7434e5cdade597821f3ecd72de7ff80726e1fe5d3",
+      "bytes": 9906,
+      "gitBlob": "7060730b70648c8b94996cfb19d895d5cd602623"
+    },
+    {
+      "path": "Sources/NoonmarkCore/TrajectoryTopologyValidator.swift",
+      "sha256": "833fdc0b41bde709088eac67a48f71aa86792d6feaa9bab84d380ec9d1877537",
+      "bytes": 20093,
+      "gitBlob": "9a873b7d1e2a78ffde6ecf97b58ab0a56ea47bdd"
+    }
+  ]
+}

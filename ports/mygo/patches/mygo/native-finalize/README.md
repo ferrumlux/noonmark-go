@@ -13,3 +13,9 @@
 每次实际交给 host 的 popup 有独立实例及 host 身份，只接收一次 callback；新菜单请求、owner 消失或禁用、窗口关闭或 host 改变会使旧 callback 失效。业务选中和文字编辑命令共用守门。现有同步 PopupMenu 返回后沿原 int callback 发出 0 表示结束，Tester.CloseMenu 使用相同契约，无新平台 ABI。合法选择同步先于结束通知，结束不会冲掉已接受的选择。
 
 详细证据、取消通知的来源和未验证范围见 docs/tasks/connect-return-menu/DEPENDENCY.md。此补丁不代表真实 OS 菜单、IME、Swift oracle 或平台事件次序已实机验收。
+
+## 独立 Selected 语义补丁
+
+0005-selected-access.patch 与 0006-selected-access-regression-tests.patch 独立追加，0001–0004 保持原字节。Selected 不再将 Button 伪装为 Checked；新增独立已设置标记区分 false 与未设置，保留明确 Checked/Mixed、原按钮角色、点击及键盘。原有 Tab/TreeItem/Row/ListItem 在没有明确 Checked 时仍保留旧 AccessChecked wire alias，保持既有测试及消费者；新语义由 AccessSelected/AccessSelectionKnown 表达。三个 native adapter 同步读取，不只修改 Tester。
+
+永久快速门禁 scripts/check-selected-access；scripts/check 的 root tests 与 check-mygo-native 同时覆盖。组件门禁依赖独立延期日期组件批次，整合时须一同保留。详见 docs/tasks/repair-selected-access/DESIGN.md。无原生 OS 或 Swift 实机验收声明。

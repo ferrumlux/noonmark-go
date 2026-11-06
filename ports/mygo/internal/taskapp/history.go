@@ -15,7 +15,7 @@ import (
 )
 
 // ValidateEmptyHistory validates ONLY the isolated task runtime's empty-catalog
-// settlement/ordinary-return history. It is not a rich classification validator or a Swift
+// settlement/ordinary-return/deferred history. It is not a rich classification validator or a Swift
 // interoperability claim. All other classification facts fail closed. Unlike
 // codec's empty-audit shortcut, this also rejects missing settlement events.
 func ValidateEmptyHistory(snapshot canonical.Value) error {
@@ -42,7 +42,7 @@ func ValidateEmptyHistory(snapshot canonical.Value) error {
 	}
 	expected := map[string]core.DayTrace{}
 	for _, t := range state.Tasks.Traces {
-		if t.Status != core.TracePending && t.Status != core.TraceCompleted && t.Status != core.TraceUnfinished && t.Status != core.TraceReturnedToPool && t.Status != core.TraceCancelledDraft {
+		if t.Status != core.TracePending && t.Status != core.TraceCompleted && t.Status != core.TraceUnfinished && t.Status != core.TraceReturnedToPool && t.Status != core.TraceCancelledDraft && t.Status != core.TraceDeferred {
 			return historyError("unsupported trace status")
 		}
 		d, ok := days[t.Date]
@@ -55,9 +55,9 @@ func ValidateEmptyHistory(snapshot canonical.Value) error {
 			}
 			continue
 		}
-		if t.Status == core.TraceReturnedToPool {
+		if t.Status == core.TraceReturnedToPool || t.Status == core.TraceDeferred {
 			if t.SettledAt == nil || *t.SettledAt != t.ContentUpdatedAt || d.LockedAt != nil && d.LockedAt.Before(*t.SettledAt) {
-				return historyError("invalid return clock")
+				return historyError("invalid terminal clock")
 			}
 			expected[string(t.ID)] = t
 			continue
@@ -109,7 +109,7 @@ func ValidateEmptyHistory(snapshot canonical.Value) error {
 		}
 		at := core.Instant(historyUint(o["capturedAt"]))
 		captureAt := days[trace.Date].LockedAt
-		if trace.Status == core.TraceReturnedToPool {
+		if trace.Status == core.TraceReturnedToPool || trace.Status == core.TraceDeferred {
 			captureAt = trace.SettledAt
 		}
 		if captureAt == nil || at != *captureAt {
@@ -196,19 +196,25 @@ func CaptureEmptyHistory(prior canonical.Value, before, after core.TaskGraph) (c
 	for _, t := range before.Traces {
 		oldTraces[t.ID] = t
 	}
+	if err := auditGenericSchedules(before, after, extra); err != nil {
+		return fail(err)
+	}
 	for _, t := range after.Traces {
-		if t.Status == core.TraceReturnedToPool || t.Status == core.TraceCancelledDraft {
+		if _, exists := oldTraces[t.ID]; !exists && t.CarriedFromTraceID != nil {
+			return fail(historyError("carryover requires specialized command audit"))
+		}
+		if t.Status == core.TraceReturnedToPool || t.Status == core.TraceCancelledDraft || t.Status == core.TraceDeferred {
 			old, ok := oldTraces[t.ID]
 			if !ok || old.Status != t.Status {
 				return fail(historyError("return requires specialized command audit"))
 			}
 		}
 	}
-	// Existing return/cancellation facts are terminal in generic transactions,
+	// Existing return/cancellation/deferred facts are terminal in generic transactions,
 	// even before their date locks. Only their day may acquire a later lock.
 	terminal := map[string]canonical.Value{}
 	for _, v := range prior.Object["traces"].Array {
-		if v.Object["status"].String == string(core.TraceReturnedToPool) || v.Object["status"].String == string(core.TraceCancelledDraft) {
+		if v.Object["status"].String == string(core.TraceReturnedToPool) || v.Object["status"].String == string(core.TraceCancelledDraft) || v.Object["status"].String == string(core.TraceDeferred) {
 			terminal[historyID(v.Object["id"])] = v
 		}
 	}
@@ -240,14 +246,14 @@ func CaptureEmptyHistory(prior canonical.Value, before, after core.TaskGraph) (c
 			}
 		}
 	}
-	// Locked and terminal return traces and their materialised content are immutable in this narrow
+	// Locked and terminal traces and their materialised content are immutable in this narrow
 	// runtime. Chain clocks/pool notes are deliberately not frozen: a chain can
 	// still have an editable current task. Forward definition supersession is
 	// not supported here and must be implemented as a separate audited command.
 	lockedTraces := map[string]bool{}
 	lockedDefinitions := map[string]bool{}
 	for _, t := range before.Traces {
-		if oldDays[t.Date].LockedAt != nil || t.Status == core.TraceReturnedToPool || t.Status == core.TraceCancelledDraft {
+		if oldDays[t.Date].LockedAt != nil || t.Status == core.TraceReturnedToPool || t.Status == core.TraceCancelledDraft || t.Status == core.TraceDeferred {
 			lockedTraces[string(t.ID)] = true
 			lockedDefinitions[string(t.DefinitionID)] = true
 		}

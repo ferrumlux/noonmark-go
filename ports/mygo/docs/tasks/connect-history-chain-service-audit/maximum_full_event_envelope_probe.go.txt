@@ -1,0 +1,13 @@
+// 独立最大完整事件包探针。追加到冻结 history_vnext_independent_test.go 后运行。
+// 复用同文件的 iaPath/iaNow/iaWire/iaObj/iaNumber/iaMust/iaReject；不独立作为生产源码编译。
+
+func TestIndependentHistoryMaximumFullEventEnvelopeProbe(t *testing.T) {
+ d:=core.LocalDate{Year:2026,Month:11,Day:1};_,g,_:=iaPath(t,d,iaNow(0),iaStep{"A",iaNow(0)})
+ size:=func(n int) int {caps:=make([]iaCapture,n);for i:=range caps{caps[i]=iaCapture{core.TraceAbandoned,iaNow(0)}};v:=iaWire(t,g,caps);envelope:=iaObj(map[string]canonical.Value{"formatVersion":iaNumber(7),"snapshot":v});data,e:=canonical.Marshal(envelope);iaMust(t,e);return len(data)}
+ first,second:=size(1),size(2);step:=second-first;total,n:=first,1
+ for {next:=n+1;oldDigits,newDigits:=len(strconv.Itoa(n)),len(strconv.Itoa(next));increase:=step+newDigits-1+2*(newDigits-oldDigits);if total+increase>canonical.DefaultLimits().MaxBytes{break};total+=increase;n=next}
+ caps:=make([]iaCapture,n);for i:=range caps{caps[i]=iaCapture{core.TraceAbandoned,iaNow(0)}};v:=iaWire(t,g,caps);envelope:=iaObj(map[string]canonical.Value{"formatVersion":iaNumber(7),"snapshot":v});data,e:=canonical.Marshal(envelope);iaMust(t,e);if len(data)!=total{t.Fatalf("byte growth formula mismatch at %d: got %d want %d",n,len(data),total)}
+ p,e:=inspectForwardClockOrdinaryHistoryVNext(v);iaMust(t,e);if p.proof.count!=uint64(n)||p.proof.stats.MaxSlots>84||p.proof.stats.MaxClosureRounds>84{t.Fatal("maximum full-snapshot count/states mismatch")}
+ t.Logf("maximum fixed-shape full envelope: events=%d bytes=%d spare=%d maxSlots=%d closure=%d",n,len(data),canonical.DefaultLimits().MaxBytes-len(data),p.proof.stats.MaxSlots,p.proof.stats.MaxClosureRounds)
+ caps=append(caps,iaCapture{core.TraceAbandoned,iaNow(0)});over:=iaWire(t,g,caps);overEnvelope:=iaObj(map[string]canonical.Value{"formatVersion":iaNumber(7),"snapshot":over});if _,e:=canonical.Marshal(overEnvelope);e==nil||!strings.Contains(e.Error(),"byte limit"){t.Fatalf("next event did not hit byte cap: %v",e)};iaReject(t,over)
+}

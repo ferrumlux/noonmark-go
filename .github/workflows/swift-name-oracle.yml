@@ -1,0 +1,39 @@
+name: Swift classification name oracle
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/swift-name-oracle.yml'
+      - 'ports/mygo/scripts/swift-name-oracle/**'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: swift-name-oracle-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  capture:
+    runs-on: macos-15
+    timeout-minutes: 30
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.2.app/Contents/Developer
+      PYTHONDONTWRITEBYTECODE: '1'
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6, node24, verified 2026-11-05
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+      - name: Test isolated capture contract
+        run: python3 -B ports/mygo/scripts/swift-name-oracle/test_oracle.py
+      - name: Capture actual upstream Swift behavior
+        run: python3 -B ports/mygo/scripts/swift-name-oracle/run.py
+      - name: Upload bounded synthetic oracle evidence
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6, node24, verified 2026-11-05
+        with:
+          name: swift-name-oracle-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/noonmark-swift-name-oracle/evidence/*.json
+          if-no-files-found: error
+          retention-days: 7
+          include-hidden-files: false
+          overwrite: false

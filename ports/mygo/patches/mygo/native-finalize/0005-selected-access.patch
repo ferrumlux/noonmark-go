@@ -1,0 +1,331 @@
+--- a/internal/darwin/access.go
++++ b/internal/darwin/access.go
+@@ -219,6 +219,11 @@
+ 	case n.Role == platform.RoleDisclosure:
+ 		// 1 while open, as AppKit's disclosure triangles.
+ 		return nsNumberInt(int(n.States&platform.AccessExpanded) / int(platform.AccessExpanded))
++	case n.Role == platform.RoleTab:
++		if n.Selected() {
++			return nsNumberInt(1)
++		}
++		return nsNumberInt(0)
+ 	case toggle(n.Role):
+ 		v := 0
+ 		switch {
+@@ -297,7 +302,7 @@
+ 	}
+ 	// The state of a toggle is its value; a row's choice is not, which its
+ 	// table tells (AXSelectedRowsChanged).
+-	toggled := toggle(n.Role) && n.States&(platform.AccessChecked|platform.AccessMixed) != o.States&(platform.AccessChecked|platform.AccessMixed) ||
++	toggled := n.Role == platform.RoleTab && n.Selected() != o.Selected() || toggle(n.Role) && n.States&(platform.AccessChecked|platform.AccessMixed) != o.States&(platform.AccessChecked|platform.AccessMixed) ||
+ 		n.Role == platform.RoleDisclosure && n.States&platform.AccessExpanded != o.States&platform.AccessExpanded
+ 	if fresh || n.Value != o.Value || n.Now != o.Now || toggled || n.Role == platform.RoleText && n.Label != o.Label ||
+ 		n.Role == platform.RoleHeading && n.Level != o.Level {
+@@ -314,8 +319,14 @@
+ 	if n.PosInSet > 0 && (fresh || n.PosInSet != o.PosInSet) {
+ 		send(obj, "setAccessibilityIndex:", uintptr(n.PosInSet-1))
+ 	}
+-	if chooses(n) && (fresh || !chooses(o) || n.States&platform.AccessChecked != o.States&platform.AccessChecked) {
+-		send(obj, "setAccessibilitySelected:", boolArg(n.States&platform.AccessChecked != 0))
++	if (chooses(n) || chooses(o) || n.States&(platform.AccessSelectionKnown|platform.AccessSelected) != 0 || o.States&(platform.AccessSelectionKnown|platform.AccessSelected) != 0) && (fresh || chooses(n) != chooses(o) || n.Selected() != o.Selected() || n.States&platform.AccessSelectionKnown != o.States&platform.AccessSelectionKnown) {
++		send(obj, "setAccessibilitySelected:", boolArg(n.Selected()))
++		// NSAccessibilityElement setters do not replace explicit change notices.
++		// Rows notify their container below; independent selected controls notify
++		// their own value, including when the explicit state is removed.
++		if !fresh && !chooses(n) && n.Selected() != o.Selected() {
++			valueChanged = true
++		}
+ 	}
+ 	if fresh || n.Placeholder != o.Placeholder {
+ 		var p id
+@@ -462,7 +473,7 @@
+ 				if c.node.States&platform.AccessOffscreen == 0 {
+ 					shown = append(shown, c.obj)
+ 				}
+-				if chooses(c.node) && c.node.States&platform.AccessChecked != 0 {
++				if chooses(c.node) && c.node.Selected() {
+ 					chosen = append(chosen, c.obj)
+ 					chosenIDs = append(chosenIDs, cid)
+ 				}
+--- a/internal/linux/surface_access.go
++++ b/internal/linux/surface_access.go
+@@ -372,7 +372,7 @@
+ func (an *accessNode) chosenRows() []*accessNode {
+ 	var rows []*accessNode
+ 	for _, c := range an.children {
+-		if chooses(c.n) && c.n.States&platform.AccessChecked != 0 {
++		if chooses(c.n) && c.n.Selected() {
+ 			rows = append(rows, c)
+ 		}
+ 	}
+@@ -643,11 +643,11 @@
+ 		list = append(list, st.checkable)
+ 	case platform.RoleTab, platform.RoleTreeItem, platform.RoleRow, platform.RoleListItem:
+ 		// Rows and items of lists only where their list chooses them.
+-		if n.States&platform.AccessSelectable == 0 && (n.Role == platform.RoleRow || n.Role == platform.RoleListItem) {
++		if n.States&(platform.AccessSelectable|platform.AccessSelectionKnown|platform.AccessSelected) == 0 && (n.Role == platform.RoleRow || n.Role == platform.RoleListItem) {
+ 			break
+ 		}
+ 		list = append(list, st.selectable)
+-		if n.States&platform.AccessChecked != 0 {
++		if n.Selected() {
+ 			list = append(list, st.selected) // not checked
+ 		}
+ 	case platform.RolePopUpButton:
+@@ -681,6 +681,13 @@
+ 			list = append(list, st.multiLine)
+ 		} else {
+ 			list = append(list, st.singleLine)
++		}
++	}
++	// Explicit selection also belongs to buttons, without changing their role.
++	if n.States&(platform.AccessSelectionKnown|platform.AccessSelected) != 0 && n.Role != platform.RoleTab && n.Role != platform.RoleTreeItem && n.Role != platform.RoleRow && n.Role != platform.RoleListItem {
++		list = append(list, st.selectable)
++		if n.Selected() {
++			list = append(list, st.selected)
+ 		}
+ 	}
+ 	// A toggle button is checked while pressed, as GTK's are.
+@@ -1264,7 +1271,7 @@
+ 	})
+ 	isSelected := purego.NewCallback(func(obj ptr, i int32) bool {
+ 		c := childAt(obj, i)
+-		return c != nil && chooses(c.n) && c.n.States&platform.AccessChecked != 0
++		return c != nil && chooses(c.n) && c.n.Selected()
+ 	})
+ 	cbSelectionInit = purego.NewCallback(func(iface, data ptr) {
+ 		// add_selection, clear_selection, ref_selection,
+--- a/internal/platform/access.go
++++ b/internal/platform/access.go
+@@ -209,7 +209,26 @@
+ 	// as a region loading, which assistive technology waits for before
+ 	// reading it: ARIA's aria-busy.
+ 	AccessBusy
+-)
++	// AccessSelectionKnown distinguishes explicit false selection from legacy
++	// role-based AccessChecked selection. It does not make an element a list item.
++	AccessSelectionKnown
++)
++
++// Selected returns independent selection when specified, or the legacy choice
++// state of selection roles. Check boxes and toggle buttons remain checked only.
++func (n AccessNode) Selected() bool {
++	if n.States&AccessSelectionKnown != 0 {
++		return n.States&AccessSelected != 0
++	}
++	if n.States&AccessSelected != 0 {
++		return true
++	}
++	switch n.Role {
++	case RoleTab, RoleTreeItem, RoleRow, RoleListItem, RoleRadio:
++		return n.States&AccessChecked != 0
++	}
++	return false
++}
+ 
+ // AccessCurrent is the item an element is the current one of among those
+ // around it, as ARIA's aria-current says.
+--- a/internal/windows/surface_access.go
++++ b/internal/windows/surface_access.go
+@@ -262,6 +262,20 @@
+ }
+ 
+ // supports reports whether the element implements an interface.
++// selectionItem reports the selection pattern independently of checked state.
++func selectionItem(n platform.AccessNode) bool {
++	if n.States&(platform.AccessSelectionKnown|platform.AccessSelected) != 0 {
++		return true
++	}
++	switch n.Role {
++	case platform.RoleRadio, platform.RoleTab, platform.RoleTreeItem:
++		return true
++	case platform.RoleListItem, platform.RoleRow:
++		return n.States&platform.AccessSelectable != 0
++	}
++	return false
++}
++
+ func (e *uiaElement) supports(i int) bool {
+ 	n := e.n
+ 	switch i {
+@@ -287,13 +301,7 @@
+ 		return n.Role == platform.RoleCheckBox || n.Role == platform.RoleSwitch || n.Role == platform.RoleToggleButton ||
+ 			n.Role == platform.RoleMenuItemCheckBox || n.Role == platform.RoleMenuItemRadio
+ 	case ifaceSelectionItem:
+-		switch n.Role {
+-		case platform.RoleRadio, platform.RoleTab, platform.RoleTreeItem:
+-			return true
+-		case platform.RoleListItem, platform.RoleRow:
+-			return n.States&platform.AccessSelectable != 0
+-		}
+-		return false
++		return selectionItem(n)
+ 	case ifaceSelection:
+ 		// A list or table choosing its rows.
+ 		return (n.Role == platform.RoleList || n.Role == platform.RoleTable || n.Role == platform.RoleTree) && n.States&platform.AccessSelectable != 0
+@@ -595,13 +603,13 @@
+ 	if prev.States&platform.AccessDisabled != n.States&platform.AccessDisabled {
+ 		changed(uiaIsEnabledProperty, boolVariant(prev.States&platform.AccessDisabled == 0), boolVariant(n.States&platform.AccessDisabled == 0))
+ 	}
+-	switch {
+-	case e.supports(ifaceToggle):
++	if e.supports(ifaceToggle) {
+ 		if before, after := toggleState(prev), toggleState(n); before != after {
+ 			changed(uiaToggleStateProperty, variant{VT: vtI4, Val: uint64(before)}, variant{VT: vtI4, Val: uint64(after)})
+ 		}
+-	case e.supports(ifaceSelectionItem):
+-		if before, after := prev.States&platform.AccessChecked != 0, n.States&platform.AccessChecked != 0; before != after {
++	}
++	if !e.root && (selectionItem(n) || selectionItem(prev)) {
++		if before, after := prev.Selected(), n.Selected(); before != after {
+ 			changed(uiaIsSelectedProperty, boolVariant(before), boolVariant(after))
+ 			// A row of a list choosing several joins the choice or leaves
+ 			// it, unless it is now the only one.
+@@ -618,7 +626,8 @@
+ 				procUiaRaiseAutomationEvent.Call(e.ptr(ifaceSimple), event)
+ 			}
+ 		}
+-	case e.supports(ifaceRangeValue):
++	}
++	if e.supports(ifaceRangeValue) {
+ 		if prev.Now != n.Now {
+ 			changed(uiaRangeValueProperty, variant{VT: vtR8, Val: math.Float64bits(rangeValue(prev))},
+ 				variant{VT: vtR8, Val: math.Float64bits(rangeValue(n))})
+@@ -953,7 +962,7 @@
+ 		}),
+ 	)
+ 
+-	selected := func(e *uiaElement) bool { return e.n.States&platform.AccessChecked != 0 }
++	selected := func(e *uiaElement) bool { return e.n.Selected() }
+ 	selectItem := cb(func(this uintptr) uintptr { // Select, AddToSelection
+ 		e, hr := live(this)
+ 		if e == nil || selected(e) {
+@@ -1232,7 +1241,7 @@
+ func (e *uiaElement) chosen() []*uiaElement {
+ 	var chosen []*uiaElement
+ 	for _, d := range e.tree.order {
+-		if d.n.States&platform.AccessChecked != 0 && d.supports(ifaceSelectionItem) && d.container() == e {
++		if d.n.Selected() && d.supports(ifaceSelectionItem) && d.container() == e {
+ 			chosen = append(chosen, d)
+ 		}
+ 	}
+--- a/ui/access.go
++++ b/ui/access.go
+@@ -507,6 +507,20 @@
+ 	if n.Label == "" && (leafRole(n.Role) || n.Role == platform.RoleListItem || n.Role == platform.RoleRow || n.Role == platform.RoleColumnHeader || n.Role == platform.RoleStatus) {
+ 		n.Label = e.innerText()
+ 	}
++	if e.selected != 0 {
++		n.States |= platform.AccessSelectionKnown
++		if e.selected == 2 {
++			n.States |= platform.AccessSelected
++			// Keep the historical wire representation for selection roles when
++			// Checked was not explicitly set. Buttons never use this alias.
++			if e.checked == 0 {
++				switch n.Role {
++				case platform.RoleTab, platform.RoleTreeItem, platform.RoleRow, platform.RoleListItem:
++					n.States |= platform.AccessChecked
++				}
++			}
++		}
++	}
+ 	switch e.checked {
+ 	case 2:
+ 		n.States |= platform.AccessChecked
+--- a/ui/element.go
++++ b/ui/element.go
+@@ -478,8 +478,10 @@
+ 	// What assistive technology sees: the role, whether a check box,
+ 	// radio or switch is off (1), on (2) or mixed (3), whether a pop-up
+ 	// shows, a value, and a range's minimum, maximum and value.
+-	role     Role
+-	checked  int8
++	role    Role
++	checked int8
++	// selected is independent of checked: unset (0), false (1), true (2).
++	selected int8
+ 	expanded bool
+ 	// busy marks content about to change (Busy), and current the item
+ 	// the element is the current one of (Current).
+--- a/ui/list.go
++++ b/ui/list.go
+@@ -735,7 +735,7 @@
+ 			w.Radius(r)
+ 		}
+ 		w.styleFn = func(w *node) {
+-			if w.checked != 2 && w.Hovered() {
++			if !w.selectionOn() && w.Hovered() {
+ 				w.bg = t.SurfaceHover
+ 			}
+ 		}
+--- a/ui/outline.go
++++ b/ui/outline.go
+@@ -315,7 +315,7 @@
+ // arrowColor is the color of the arrow of an item of a tree: muted, or
+ // the accent's text on the item chosen.
+ func arrowColor(t *Theme, item *node) Color {
+-	if item != nil && item.checked == 2 {
++	if item != nil && item.selectionOn() {
+ 		return t.AccentText
+ 	}
+ 	return t.TextMuted
+--- a/ui/runtime.go
++++ b/ui/runtime.go
+@@ -1443,7 +1443,7 @@
+ 		rt.focusScopes = append(rt.focusScopes, rt.commitScope)
+ 		// Tab goes to the radio button or tab chosen; not to a toggle
+ 		// that is on.
+-		if g := rt.commitScope.group; g != 0 && e.checked == 2 && (e.role == RoleRadio || e.role == RoleTab) {
++		if g := rt.commitScope.group; g != 0 && ((e.role == RoleRadio && e.checked == 2) || (e.role == RoleTab && e.selectionOn())) {
+ 			if info := rt.groups[g]; info.checked == 0 {
+ 				info.checked = e.id
+ 				rt.groups[g] = info
+--- a/ui/table.go
++++ b/ui/table.go
+@@ -632,13 +632,22 @@
+ 
+ // Selected shows the element as chosen among its siblings, in the accent
+ // color, as a row of a list, and tells assistive technology it is.
++// Selection is independent of Checked, including when explicitly false.
+ func (e *node) Selected(on bool) *node {
+ 	if !on {
+-		e.checked = 1
++		e.selected = 1
+ 		return e
+ 	}
+ 	t := e.theme()
+-	e.checked = 2
++	e.selected = 2
+ 	e.Background(e.c.accent(t)).TextColor(t.AccentText)
+ 	return e
+ }
++
++// selectionOn preserves legacy widget selection while letting Selected override it.
++func (e *node) selectionOn() bool {
++	if e.selected != 0 {
++		return e.selected == 2
++	}
++	return e.checked == 2
++}
+--- a/ui/tester_access.go
++++ b/ui/tester_access.go
+@@ -151,7 +151,7 @@
+ 		Mixed:           s&platform.AccessMixed != 0,
+ 		Expanded:        s&platform.AccessExpanded != 0,
+ 		Expandable:      s&platform.AccessExpandable != 0,
+-		Selected:        s&platform.AccessSelected != 0 || chosen,
++		Selected:        (r != RoleRadio || s&(platform.AccessSelectionKnown|platform.AccessSelected) != 0) && n.Selected(),
+ 		Selectable:      s&platform.AccessSelectable != 0,
+ 		Multiselectable: s&platform.AccessMultiselectable != 0,
+ 		Busy:            s&platform.AccessBusy != 0,
+--- a/ui/tree.go
++++ b/ui/tree.go
+@@ -297,7 +297,7 @@
+ 	item.flags |= flagOwnRing
+ 	expanded := branch && *open
+ 	item.styleFn = func(item *node) {
+-		if item.checked != 2 && item.Hovered() {
++		if !item.selectionOn() && item.Hovered() {
+ 			item.bg = t.SurfaceHover
+ 		}
+ 	}

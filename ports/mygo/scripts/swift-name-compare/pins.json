@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "files": {
+    ".github/workflows/swift-name-oracle.yml": "61f45789c162e12d0836d79b87fa8481c9472ebd9566beb07b0fdd457615d04b",
+    "ports/mygo/scripts/swift-name-oracle/run.py": "435585c4e932e95c72ecf07e2ed2b07ad6e2347dfcb3d029a5367a0917ce8370",
+    "ports/mygo/scripts/swift-name-oracle/NameOracle.swift": "ede42fb462b04b761e3461bdfba1fe5616c2933738c39dcebfde96426d8a900d",
+    "ports/mygo/scripts/swift-name-oracle/source-manifest.json": "a62e1974c004a9509f5cd48c9a3f1cc326fbab089719126d20c84cf608e2860d",
+    "ports/mygo/scripts/swift-name-oracle/vectors.json": "564fe5cde3f4d30b946d8153ce48d899380e41d79be43cb2a2fd6cbee8ca687d",
+    "ports/mygo/domain-extensions/classification/canonical16/canonical.go": "8f7d41647d9edea7a0367756727ee5bebb1d5a46e2c3be92264df21ca4b4ed81",
+    "ports/mygo/domain-extensions/classification/canonical16/normalize.go": "0823b75ff362dc465b79f6fe85efa961b475152a29bfd95f3a1acff94d8724e2",
+    "ports/mygo/domain-extensions/classification/canonical16/grapheme.go": "6212f93db1910c04675d25695dec8fa9c62074ef0e669187ef3b7e3ca4848f48",
+    "ports/mygo/domain-extensions/classification/canonical16/tables_generated.go": "39c0bba7e56b499ab71457dfe0c5e3ed81d76211ae2f9009c2d82f689bf912dd",
+    "ports/mygo/domain-extensions/go.mod": "ed80466ea600a026be86fab04554d16824a5aaed138c51044e7aca2b170e018b",
+    "ports/mygo/domain-extensions/classification/canonical16/scripts/guard_paths.py": "1e322c97e8d8d518c765c126d654a918a8f242a6a77ba6c1f6f074eeb389e63a",
+    "ports/mygo/scripts/swift-name-compare/probe.go": "75b0d2f5f283046442c2a714580b1c16711bbea4d37172dc6d6a3d378ab39012"
+  }
+}

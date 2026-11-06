@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+set -euo pipefail
+if [ "$#" -ne 2 ]; then
+  echo 'Usage: reproduce-maximum-full-event-envelope ABSOLUTE_PORTS_MYGO_DIR EXISTING_EXTERNAL_BUILD_DIR' >&2
+  exit 2
+fi
+SOURCE_ROOT=$(cd -- "$1" && pwd -P)
+export NOONMARK_MYGO_BUILD_ROOT=$(cd -- "$2" && pwd -P)
+: "${NOONMARK_GO:?Set the existing pinned Go 1.27.3 executable}"
+: "${GOCACHE:?Set the existing external cache}"
+: "${GOPATH:?Set the existing module path containing the pinned MyGo archive}"
+PROBE_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)
+PROBE_FILE="$PROBE_DIR/maximum_full_event_envelope_probe.go.txt"
+export GOPROXY=off GOSUMDB=off GOMAXPROCS=2 GOGC=20 GOMEMLIMIT=700MiB
+source "$SOURCE_ROOT/scripts/environment"
+python3 - "$SOURCE_ROOT" "$BUILD_ROOT" "$PROBE_FILE" <<'PY'
+import hashlib, json, pathlib, sys
+source, build, probe = map(pathlib.Path, sys.argv[1:])
+original = source / 'internal/taskapp/history_vnext_independent_test.go'
+contents = original.read_bytes()
+if hashlib.sha256(contents).hexdigest() != '0cc208feaef690b5142adf50e57d303b38e1e38d9a62898a6298f001fbc787c4':
+    raise SystemExit('Frozen independent test SHA mismatch; use the reviewed task source.')
+generated = build / 'evidence/maximum-events-reproduction-test.go'
+generated.write_bytes(contents + b'\n\n' + probe.read_bytes())
+overlay = build / 'evidence/maximum-events-reproduction-overlay.json'
+overlay.write_text(json.dumps({'Replace': {str(original): str(generated)}}, indent=2) + '\n')
+PY
+set +e
+"$GO" test -overlay "$BUILD_ROOT/evidence/maximum-events-reproduction-overlay.json" -p=1 ./internal/taskapp -run '^TestIndependentHistoryMaximumFullEventEnvelopeProbe$' -count=1 -v > "$BUILD_ROOT/evidence/maximum-events-reproduction.log" 2>&1
+code=$?
+printf '%s\n' "$code" > "$BUILD_ROOT/evidence/maximum-events-reproduction.exit"
+cat "$BUILD_ROOT/evidence/maximum-events-reproduction.log"
+exit "$code"

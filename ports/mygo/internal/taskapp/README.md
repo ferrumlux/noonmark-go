@@ -41,3 +41,17 @@ v2 格式标识没有改变，但新 reader 接受的事实范围扩大；旧 re
 ## 普通子任务
 
 计划项在池内原地修改当前definition；实际项只改自身，删除保留取消墓碑、lineage与position，不自动完成父项。显式chain/definition或chain/trace/child路由、精确命令重放审计、原子确认与no-op prefix校验，详见[设计](../../docs/tasks/connect-subtask-core/DESIGN.md)与[验证](../../docs/tasks/connect-subtask-core/VERIFY.md)。此处是Service接通，不代表子任务UI、加权进度或源snapshot undo已实现。
+
+## 手动进度命令
+
+`SetManualProgress(chainID,traceID,percent)` 与 `SetManualProgressAcknowledged` 已接通普通任务的原子写入；后者只返回同一事务确认的规范化整数。必须为未锁定的今天 pending，整条 chain 任何历史／未来 presentable 实际子任务都会阻断。数值先限制在0..100再取历史 floor；nil与0不同，100不会自动完成。实际改变只更新该trace的 manual percent 与 content clock，不修改chain、definition、day、分类或其他任务。撤销完成保留原手动值。
+
+同值no-op不读取未使用的wall clock，不新增revision，但仍检查磁盘prefix；拒绝stale、损坏、blocked或已关闭的句柄。持久化不确定时不返回成功确认，不提前发布内存。完整重放审计和empty catalog／runtime scope仍严格保留，缺失历史不自动补齐。设计与验证见[手动进度批次](../../docs/tasks/connect-manual-progress/DESIGN.md)。
+
+本批不接UI。上游滑块每次onChanged同步提交是既有语义，不以明确提交按钮、拖动结束写入或丢弃中间事件代替。开发后端对一年历史的完整重放／规范化／prefix验证成本较高，具体性能与未验证边界记录于同目录VERIFY；不能据此宣称原版滑块体验已对等。
+
+## 普通 Day 延期与延续 UI
+
+后续接线已通过共享后台 lane 调用既有 `DeferCurrentTrace`／`ContinueUnfinishedTrace`，未改变本 Service 的严格空 catalog、完整审计或持久化边界。只有确认返回的新 trace ID 可用于导航；取消日期展示不会撤销已经准入的存储操作。原 source 的未确认 native 输入仍由原窗口／原对象持有，不能自动提交为子任务或搬到新 trace；完成 publication、失败及 Close／Quit 都要保全它。完整 Unfinished 页面、snapshot undo 与成功 toast 尚未接通，验证见 `../../docs/tasks/connect-carryover-ui/VERIFY.md`。
+
+日结安全：Open／AdvanceTo 先用持久化 frontier 预检完整结算及审计；无变化不分配新时钟，仍校验完整 prefix 与 closed／blocked 状态。实际变化从原图以严格单调 next clock 重放并原子落盘。合法 MaxFloat64 图能同日重开，但需要更晚时刻的真实结算明确失败；不会降时钟或放宽校验。

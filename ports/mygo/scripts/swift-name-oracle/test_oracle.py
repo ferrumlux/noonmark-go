@@ -1,0 +1,231 @@
+#!/usr/bin/env python3
+# SPDX-License-Identifier: AGPL-3.0-only
+"""入口／输出验证器的离线测试；这些 fixture 不是 Swift 执行证据。"""
+from copy import deepcopy
+import importlib.util
+import json
+import os
+from pathlib import Path
+import subprocess
+import sys
+import tempfile
+import unittest
+from unittest import mock
+
+HERE = Path(__file__).resolve().parent
+spec = importlib.util.spec_from_file_location('oracle_runner', HERE / 'run.py')
+runner = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(runner)
+
+class ContractTests(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory(prefix='oracle-contract-', dir=os.environ.get('RUNNER_TEMP'))
+        self.addCleanup(self.temp.cleanup)
+        self.root = Path(self.temp.name)
+        self.repo = self.root / 'repo'; self.repo.mkdir()
+        self.runner_temp = self.root / 'temp'; self.runner_temp.mkdir()
+        self.vectors = {'schemaVersion': 1, 'provenance': 'fixed-synthetic-only',
+                        'cases': [{'id': 'fixture-only', 'input': 'A'}],
+                        'pairs': [{'id': 'same', 'left': 'fixture-only', 'right': 'fixture-only'}]}
+
+    def assertRejected(self, function, *args):
+        with self.assertRaises((runner.GuardError, UnicodeEncodeError, KeyError, TypeError)):
+            function(*args)
+
+    def test_pinned_inputs(self):
+        for path, digest, limit in [
+            (HERE / 'source-manifest.json', runner.MANIFEST_SHA, 16384),
+            (HERE / 'vectors.json', runner.VECTORS_SHA, runner.MAX_INPUT),
+            (runner.ROOT / '.github/workflows/swift-name-oracle.yml', runner.WORKFLOW_SHA, 8192)]:
+            runner.read_checked(path, digest, limit)
+        runner.validate_manifest(json.loads((HERE / 'source-manifest.json').read_bytes()))
+        value = runner.validate_vectors(json.loads((HERE / 'vectors.json').read_bytes()))
+        self.assertEqual(len(value['cases']), 108)
+        self.assertEqual(len(value['pairs']), 17)
+        self.assertEqual(next(x['input'] for x in value['cases'] if x['id'] == 'display-non-idempotent'), 'a\n\u0301b')
+        self.assertEqual(len(next(x['input'] for x in value['cases'] if x['id'] == 'nonstarters-65536')), 131073)
+
+    def test_workflow_safety_mutations_rejected(self):
+        text = (runner.ROOT / '.github/workflows/swift-name-oracle.yml').read_text()
+        changes = [('contents: read', 'contents: write'), ('macos-15', 'self-hosted'),
+                   ('branches: [main]', 'branches: ["*"]'), ('  workflow_dispatch:', '  pull_request_target:'),
+                   ('persist-credentials: false', 'persist-credentials: true'),
+                   ('include-hidden-files: false', 'include-hidden-files: true'),
+                   ('evidence/*.json', '**/*'), ('retention-days: 7', 'retention-days: 90'),
+                   ('Xcode_26.2', 'Xcode_16.4'), ('timeout-minutes: 30', 'timeout-minutes: 360'),
+                   ('d23441a48e516b6c34aea4fa41551a30e30af803', 'v6'),
+                   ('b7c566a772e6b6bfb58ed0dc250532a479d7789f', 'v6'),
+                   ("      - 'ports/mygo/scripts/swift-name-oracle/**'", "      - '**'")]
+        path = self.root / 'workflow.yml'
+        for old, new in changes:
+            with self.subTest(mutation=old):
+                self.assertIn(old, text)
+                path.write_text(text.replace(old, new))
+                self.assertRejected(runner.read_checked, path, runner.WORKFLOW_SHA, 8192)
+
+    def test_source_manifest_rejects_substitution_and_paths(self):
+        original = json.loads((HERE / 'source-manifest.json').read_text())
+        for field, value in [('commit', 'a' * 40), ('repository', 'https://example.invalid/evil'),
+                             ('coreTree', 'b' * 40), ('rootTree', 'c' * 40)]:
+            data = deepcopy(original); data[field] = value
+            self.assertRejected(runner.validate_manifest, data)
+        for path in ('../evil.swift', '/tmp/evil.swift', 'Sources/NoonmarkStorage/Store.swift',
+                     'Sources/NoonmarkCore/../evil.swift'):
+            data = deepcopy(original); data['files'][2]['path'] = path
+            self.assertRejected(runner.validate_manifest, data)
+        data = deepcopy(original); data['files'].append(data['files'][2])
+        self.assertRejected(runner.validate_manifest, data)
+        data = deepcopy(original); data['files'][2]['bytes'] = 10**10
+        self.assertRejected(runner.validate_manifest, data)
+
+    def test_digest_symlink_and_size_guards(self):
+        path = self.root / 'input'; path.write_bytes(b'fixed')
+        runner.read_checked(path, runner.sha(b'fixed'), 5)
+        self.assertRejected(runner.read_checked, path, runner.sha(b'evil'), 5)
+        self.assertRejected(runner.read_checked, path, runner.sha(b'fixed'), 4)
+        link = self.root / 'link'; link.symlink_to(path)
+        self.assertRejected(runner.read_checked, link, runner.sha(b'fixed'), 5)
+
+    def test_fresh_root_and_source_overlap(self):
+        work = runner.prepare_root({'RUNNER_TEMP': str(self.runner_temp)}, self.repo)
+        self.assertEqual(work.parent, self.runner_temp)
+        self.assertEqual(set(x.name for x in work.iterdir()), {'evidence','logs','home','tmp','cache','build','source'})
+        self.assertRejected(runner.prepare_root, {'RUNNER_TEMP': str(self.runner_temp)}, self.repo)
+        for invalid in ({}, {'RUNNER_TEMP': 'relative'}, {'RUNNER_TEMP': str(self.repo)},
+                        {'RUNNER_TEMP': str(self.root)}, {'RUNNER_TEMP': str(self.repo/'missing')}):
+            with self.subTest(environment=invalid):
+                with self.assertRaises((runner.GuardError, FileNotFoundError)):
+                    runner.prepare_root(invalid, self.repo)
+
+    def test_existing_or_dangling_work_symlink_rejected(self):
+        work = self.runner_temp / 'noonmark-swift-name-oracle'
+        work.symlink_to(self.root / 'missing')
+        self.assertRejected(runner.prepare_root, {'RUNNER_TEMP': str(self.runner_temp)}, self.repo)
+        self.assertFalse((self.root / 'missing').exists())
+
+    def test_clean_environment_contains_no_credentials_or_user_home(self):
+        work = runner.prepare_root({'RUNNER_TEMP': str(self.runner_temp)}, self.repo)
+        with unittest.mock.patch.dict(os.environ, {'SECRET': 'not-forwarded', 'HOME': '/Users/production',
+             'GIT_CONFIG_PARAMETERS': 'malicious', 'DYLD_INSERT_LIBRARIES': '/tmp/malicious'}):
+            env = runner.clean_environment(work)
+        self.assertEqual(env['HOME'], str(work/'home'))
+        self.assertEqual(env['TMPDIR'], str(work/'tmp'))
+        for forbidden in ('SECRET', 'GIT_CONFIG_PARAMETERS', 'DYLD_INSERT_LIBRARIES'):
+            self.assertNotIn(forbidden, env)
+        self.assertFalse(any('/Users/production' in value for value in env.values()))
+
+    def test_vectors_guards(self):
+        runner.validate_vectors(self.vectors)
+        data = deepcopy(self.vectors); data['provenance'] = 'production'
+        self.assertRejected(runner.validate_vectors, data)
+        data = deepcopy(self.vectors); data['cases'] *= 129
+        self.assertRejected(runner.validate_vectors, data)
+        data = deepcopy(self.vectors); data['cases'] *= 2
+        self.assertRejected(runner.validate_vectors, data)
+        data = deepcopy(self.vectors); data['cases'][0]['input'] = 'A' * (1024*1024+1)
+        self.assertRejected(runner.validate_vectors, data)
+        data = deepcopy(self.vectors); data['cases'][0]['input'] = '\ud800'
+        self.assertRejected(runner.validate_vectors, data)
+        data = deepcopy(self.vectors); data['pairs'][0]['right'] = 'missing'
+        self.assertRejected(runner.validate_vectors, data)
+        data = deepcopy(self.vectors); data['pairs'] *= 2
+        self.assertRejected(runner.validate_vectors, data)
+
+    def fixture_capture_not_swift_execution(self):
+        text = {'text':'A', 'utf8Hex':'41', 'unicodeScalars':[65], 'characterCount':1,
+                'characters':[{'startScalar':0, 'endScalar':1, 'isWhitespace':False}]}
+        case = {'id':'fixture-only', **{field:deepcopy(text) for field in runner.TEXT_FIELDS}}
+        pair = {**self.vectors['pairs'][0], **{field:{'swiftEqual':True,'utf8Equal':True}
+                                                for field in ('input','displayName','canonicalKey')}}
+        return {'schemaVersion':1, 'algorithmVersion':'unicode-16.0.0.0-nfkc-casefold-whitespace-v1',
+                'icuVersion':'76.1.0.0', 'icuUnicodeVersion':'16.0.0.0',
+                'cases':[case], 'pairs':[pair], 'entityRoundTrips':[]}
+
+    def test_output_schema_fixture_is_not_swift_verification(self):
+        runner.validate_capture(self.fixture_capture_not_swift_execution(), self.vectors)
+
+    def test_output_bytes_scalars_ranges_and_status_guards(self):
+        for field, value in [('utf8Hex','42'), ('unicodeScalars',[66]), ('characterCount',2),
+                             ('characters',[{'startScalar':1,'endScalar':2,'isWhitespace':False}])]:
+            data = self.fixture_capture_not_swift_execution(); data['cases'][0]['input'][field] = value
+            self.assertRejected(runner.validate_capture, data, self.vectors)
+        for field, value in [('icuVersion','unknown'), ('algorithmVersion','unicode-15.0.0.0-nfkc-casefold-whitespace-v1')]:
+            data = self.fixture_capture_not_swift_execution(); data[field] = value
+            self.assertRejected(runner.validate_capture, data, self.vectors)
+        data = self.fixture_capture_not_swift_execution(); data['cases'][0]['extra'] = 'unexpected'
+        self.assertRejected(runner.validate_capture, data, self.vectors)
+        data = self.fixture_capture_not_swift_execution(); data['pairs'][0]['input']['utf8Equal'] = False
+        self.assertRejected(runner.validate_capture, data, self.vectors)
+        data = self.fixture_capture_not_swift_execution(); data['pairs'][0]['input']['swiftEqual'] = 'true'
+        self.assertRejected(runner.validate_capture, data, self.vectors)
+
+    def test_comparison_never_claimed_by_capture_success(self):
+        self.assertEqual(runner.comparison_status('16.0.0.0'), 'not_performed')
+        for version in ('15.1.0.0','17.0.0.0','16.1.0.0','unknown'):
+            self.assertEqual(runner.comparison_status(version), 'unsupported')
+
+    def test_evidence_bounds_and_exclusive_create(self):
+        output = self.root/'evidence.json'
+        self.assertRejected(runner.write_json, output, {'payload':'A'*32}, 8)
+        self.assertFalse(output.exists())
+        runner.write_json(output, {'ok':True}, 32)
+        with self.assertRaises(FileExistsError):
+            runner.write_json(output, {'overwrite':True}, 64)
+
+    def test_missing_xcode_writes_failure_evidence_without_fallback(self):
+        environment = {'RUNNER_TEMP':str(self.runner_temp), 'GITHUB_ACTIONS':'true',
+                       'RUNNER_ENVIRONMENT':'github-hosted', 'DEVELOPER_DIR':'/missing/xcode'}
+        with mock.patch.dict(os.environ, environment, clear=True), \
+             mock.patch.object(runner.platform, 'system', return_value='Darwin'), \
+             mock.patch.object(runner, 'DEVELOPER', '/missing/xcode'), \
+             mock.patch.object(sys, 'argv', ['run.py']), \
+             mock.patch.object(runner.subprocess, 'run') as process:
+            with self.assertRaisesRegex(runner.GuardError, 'xcode_26_2_unavailable'):
+                runner.main()
+            process.assert_not_called()
+        evidence = self.runner_temp/'noonmark-swift-name-oracle'/'evidence'
+        self.assertEqual(set(x.name for x in evidence.iterdir()), {'summary.json'})
+        summary = json.loads((evidence/'summary.json').read_text())
+        self.assertEqual(summary['oracle_capture'], 'failed')
+        self.assertEqual(summary['failure'], 'xcode_26_2_unavailable')
+
+    def test_wrong_xcode_version_never_falls_back(self):
+        developer = self.root/'developer'; developer.mkdir()
+        environment = {'RUNNER_TEMP':str(self.runner_temp), 'GITHUB_ACTIONS':'true',
+                       'RUNNER_ENVIRONMENT':'github-hosted', 'DEVELOPER_DIR':str(developer)}
+        outcome = subprocess.CompletedProcess(['xcodebuild'], 0, b'Xcode 16.4\nBuild version fixture\n', b'')
+        with mock.patch.dict(os.environ, environment, clear=True), \
+             mock.patch.object(runner.platform, 'system', return_value='Darwin'), \
+             mock.patch.object(runner, 'DEVELOPER', str(developer)), \
+             mock.patch.object(sys, 'argv', ['run.py']), \
+             mock.patch.object(runner.subprocess, 'run', return_value=outcome) as process:
+            with self.assertRaisesRegex(runner.GuardError, 'xcode_version_mismatch'):
+                runner.main()
+            self.assertEqual(process.call_count, 1)
+        summary = json.loads((self.runner_temp/'noonmark-swift-name-oracle/evidence/summary.json').read_text())
+        self.assertEqual(summary['oracle_capture'], 'failed')
+        self.assertEqual(summary['failure'], 'xcode_version_mismatch')
+
+    def test_self_hosted_and_linux_reject_before_artifacts(self):
+        for system, kind, expected in [('Linux','github-hosted','macos_required'),
+                                      ('Darwin','self-hosted','github_hosted_required')]:
+            environment = {'RUNNER_TEMP':str(self.runner_temp), 'GITHUB_ACTIONS':'true',
+                           'RUNNER_ENVIRONMENT':kind, 'DEVELOPER_DIR':runner.DEVELOPER}
+            with self.subTest(system=system, kind=kind), \
+                 mock.patch.dict(os.environ, environment, clear=True), \
+                 mock.patch.object(runner.platform, 'system', return_value=system), \
+                 mock.patch.object(sys, 'argv', ['run.py']), \
+                 mock.patch.object(runner.subprocess, 'run') as process:
+                with self.assertRaisesRegex(runner.GuardError, expected):
+                    runner.main()
+                process.assert_not_called()
+                self.assertEqual(list(self.runner_temp.iterdir()), [])
+
+    def test_cli_does_not_accept_external_inputs(self):
+        outcome = subprocess.run([sys.executable, '-B', str(HERE/'run.py'), '/Users/production'],
+                                 capture_output=True, text=True)
+        self.assertNotEqual(outcome.returncode, 0)
+        self.assertIn('no_runtime_arguments', outcome.stderr)
+
+if __name__ == '__main__':
+    unittest.main(verbosity=2)

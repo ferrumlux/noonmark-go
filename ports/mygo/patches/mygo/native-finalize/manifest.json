@@ -89,6 +89,74 @@
           "after": "dfead49e34b1b8297f8d22cfdd4c456537d2a2f7f0206b1af25006aa4654b844"
         }
       }
+    },
+    {
+      "file": "0005-selected-access.patch",
+      "sha256": "ab7aa8f5be93e4260eddff35728c86792a95d8a16f0b11dd56a396c10a09966a",
+      "files": {
+        "internal/darwin/access.go": {
+          "before": "64019197d44ba2bea12a599a724413cf0944835f98e7a612ca06b8561fb317ac",
+          "after": "511aa843e0b5f4116a01bf2a4af41a1378e2bf0120b91be2341a6484bcea6052"
+        },
+        "internal/linux/surface_access.go": {
+          "before": "590088551942ecadfbce4295ca8074a17862331c07ea7aec8f01f6e685f621b5",
+          "after": "d8c26e1a6d8db039da5de917b44dc56e790591c3e59b733e5efcaa4f2ede1156"
+        },
+        "internal/platform/access.go": {
+          "before": "f1f8be1751413b08e754cbf98d124fc10e317d49dbc477f202cdcad8d4937f1d",
+          "after": "642b88c9d80a2e91aab059c9929d12e29d93e110df478b466570015215188e98"
+        },
+        "internal/windows/surface_access.go": {
+          "before": "40616cf23eaaa584ee64482e68eafc8f40188a0f73ef91baa798f21790c2dd44",
+          "after": "1d65f249d8f4c4d754d3d640afd90fd9617b2c190cdb00e548c176ab4e1114ac"
+        },
+        "ui/access.go": {
+          "before": "87da04a5bc292e22fa35f566c6f0e77a93f227a85e0280b00fe2aa2e5fcd7829",
+          "after": "ec7bf3e324127030d10f7b2a49395f3c17c07fe9ccd31ef3595c96a77e88e8a1"
+        },
+        "ui/element.go": {
+          "before": "c342b6ce0240d79b2f97d01ffeef48c2b4e9e58740338fea3ebf8203c3a68cb3",
+          "after": "9436a1aba93e5cb5ab822ce5c20ef3490621ca04de0ba01088c271555dc77075"
+        },
+        "ui/list.go": {
+          "before": "ce8f207aa66cd1732c7da4b1cd43ffcad549970df8927e349c725735415e771e",
+          "after": "e50a88a3aef1fdbc050db1be9fe84cbc34bee76dfbd5e64a3bb51fe27f5c7bca"
+        },
+        "ui/outline.go": {
+          "before": "a69d3a44fba57b61e5d0c3db000f315d48e1106da039f7c6842138e69b3ab4cd",
+          "after": "40109569e397d9a27a80a8219365b0e59e85b9fb3d0d3f8e5ebdc87fc4caa476"
+        },
+        "ui/runtime.go": {
+          "before": "c8e7ee77a96701bc0d8dbc07f0fc530a5fd0dd4da4a11e81cf05e44df0a97798",
+          "after": "59102b6d66b20d999565ce8b51a79e5bf6a2bc9ef9f52526dc282ee5a60f456b"
+        },
+        "ui/table.go": {
+          "before": "6678b6d3390a8848a977c6f6ad800b71816458df3a1145855cfc2d9924c7ce3d",
+          "after": "5ca14bd6c49af6bf8687fb991a60fed4b3932b022b879d1c36bc95e3f4e0a36c"
+        },
+        "ui/tester_access.go": {
+          "before": "831ba59cc21b1ddc45629d595add88c96ff12abe536adcb5590e103ddef9737b",
+          "after": "8b71adee7c0cc049d0bb1aa545c1c70c915478dea102116c5bb8301e1632b97d"
+        },
+        "ui/tree.go": {
+          "before": "6f5981a91529357fb8215db2da7d09075e153439a310e8ee46e8c5bf3c4b29cb",
+          "after": "0ad707b3e2d1c4af4cb1949d237a558736ee016ed784584cb60d792371067c50"
+        }
+      }
+    },
+    {
+      "file": "0006-selected-access-regression-tests.patch",
+      "sha256": "67fa246685ed116bafde0f0fd56ddacd4cb42da0854b0cb9221374b651645c38",
+      "files": {
+        "internal/windows/noonmark_selected_access_test.go": {
+          "before": null,
+          "after": "d058826bd703086dcb64052cd07c2afe24d86c2a3a80245a400993600e688bae"
+        },
+        "ui/noonmark_selected_access_test.go": {
+          "before": null,
+          "after": "af54e5101aec557f0dede941eb46202dfff136fa968a431a850ee31ba65c5d9d"
+        }
+      }
     }
   ]
 }

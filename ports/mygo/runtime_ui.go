@@ -31,6 +31,11 @@ type taskService interface {
 func newRuntimeApp(service taskService) *app {
 	s := newApp()
 	s.runtime = service
+	if view, ok := service.(*titleReadView); ok {
+		s.progress = view.hub.progress
+	} else {
+		s.progress = newRuntimeProgressCache(service.Snapshot())
+	}
 	s.runtimeDate = service.Today()
 	s.runtimeCalendarDate = service.Today()
 	s.runtimeAppliedDay = service.Today()
@@ -119,6 +124,13 @@ func (s *app) runCommand(fn func() error, clear bool) {
 	s.commandResult(fn(), clear)
 }
 func (s *app) commandResult(err error, clear bool) {
+	// Standalone headless mode has no shared hub; update only at a confirmed
+	// command boundary, never from view construction. Desktop uses hub.publish.
+	if err == nil && s.titles == nil && s.progress != nil && !s.progress.publish(s.runtime.Snapshot()) {
+		s.runtimeError = progressFailureMessage
+		s.runtimeNotice = ""
+		return
+	}
 	if err != nil {
 		s.runtimeError = "操作未保存，界面仍保留原资料与草稿。"
 		switch {
@@ -153,7 +165,7 @@ func (s *app) commandResult(err error, clear bool) {
 	}
 }
 func (s *app) submitLiveDraft(pool bool) {
-	if s.runtimePoolPicker {
+	if s.livePickerOpen() {
 		return
 	}
 	title := strings.TrimSpace(s.draft)
@@ -169,6 +181,7 @@ func (s *app) submitLiveDraft(pool bool) {
 	}
 }
 func (s *app) liveSidebar(c *ui.Context, h, sw float32, g core.TaskGraph) {
+	counts := s.navigationCounts()
 	box(c, 0, 0, sw, h, side, 0)
 	box(c, sw, 0, .7, h, line, 0)
 	if sw > 100 {
@@ -192,13 +205,13 @@ func (s *app) liveSidebar(c *ui.Context, h, sw float32, g core.TaskGraph) {
 			if sw > 100 {
 				col, weight := navLabelStyle(active)
 				txt(c, navLeading+navIconFrame+navTextGap, 7, navFontSize, n.title, col, weight)
-				switch n.page {
-				case "day", "pool", "upcoming", "completed", "unfinished":
-					txt(c, sw-35-inset, 9, 11, fmt.Sprint(len(rowsFor(g, n.page, s.runtime.Today(), s.runtime.Today()))), sourceVisual.text3, 400).FontFeatures("tnum")
+				if count := counts.forPage(n.page); count > 0 {
+					txt(c, sw-35-inset, 9, 11, fmt.Sprint(count), sourceVisual.text3, 400).FontFeatures("tnum")
 				}
 			}
 		})
 	}
+	s.liveCarryoverRecoveryLink(c, h, sw, g)
 	if sw > 100 {
 		txt(c, 20, h-48, 10.5, "隔离开发会话", blue, 600)
 		txt(c, 20, h-29, 10, "不接入现有 Noonmark 数据", muted, 400)
@@ -216,6 +229,10 @@ func liveAction(c *ui.Context, key string, x, y, w float32, title, label string,
 	}
 }
 func (s *app) runtimeView(c *ui.Context) {
+	if s.carryover != nil && !s.carryoverCurrent(s.carryover) {
+		s.carryover = nil
+	}
+	s.refreshCarryoverRecoveryNotice()
 	if s.hasSubtaskComposerFailure() && s.runtimeError == "" {
 		s.runtimeError = subtaskComposerFailureMessage
 	}
@@ -247,6 +264,7 @@ func (s *app) runtimeView(c *ui.Context) {
 	if s.page == "day" {
 		s.liveDayView(c, w, h)
 		s.livePoolPicker(c)
+		s.liveCarryoverPicker(c)
 		return
 	}
 	if s.page == "calendar" {
@@ -466,7 +484,10 @@ func (s *app) observeRuntimeDay(now func() time.Time) {
 		}
 		applied := s.runtime.Today()
 		if applied != s.runtimeAppliedDay {
-			if s.runtimeDate == s.runtimeAppliedDay {
+			if s.titles == nil && s.progress != nil && !s.progress.publish(s.runtime.Snapshot()) {
+				return s.progress.err
+			}
+			if s.runtimeDate == s.runtimeAppliedDay && s.automaticOwnerExitAllowed() {
 				s.runtimeDate = applied
 				s.runtimeDayFocus = ""
 				s.runtimeSelection = ""

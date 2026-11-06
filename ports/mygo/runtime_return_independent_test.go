@@ -40,7 +40,7 @@ func TestIndependentCancelledOldNativeMenuAfterReopen(t *testing.T) {
 	old := independentNativeMenuCallback(t, f.tt)
 	f.tt.CloseMenu()
 	openReturnMenu(t, f.tt, trace.ID)
-	old(2) // Native host delivers the old return item after a newer menu opened.
+	old(3) // Native host delivers the old return item after a newer menu opened.
 	f.tt.Frame()
 	f.all()
 	if f.svc.Snapshot().Traces[0].Status != core.TracePending {
@@ -66,7 +66,7 @@ func TestIndependentOldNativeMenuCannotCrossReattachedSession(t *testing.T) {
 	f.h.attach(f.s, func() { f.invalid = true }, func() {})
 	f.tt.Frame()
 	f.all()
-	old(2)
+	old(3)
 	f.tt.Frame()
 	f.all()
 	if f.svc.Snapshot().Traces[0].Status != core.TracePending {
@@ -87,7 +87,7 @@ func TestIndependentMenuOmitsCompleteWithOpenSubtask(t *testing.T) {
 	f.ui()
 	f.tt.Frame()
 	openReturnMenu(t, f.tt, tr.ID)
-	if !reflect.DeepEqual(f.tt.Menu(), []string{returnToPoolLabel}) {
+	if !reflect.DeepEqual(f.tt.Menu(), []string{deferTaskLabel, returnToPoolLabel}) {
 		t.Fatalf("source completion capability omitted: menu=%v", f.tt.Menu())
 	}
 }

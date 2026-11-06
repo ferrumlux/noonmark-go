@@ -1,0 +1,34 @@
+# R4 自动跟日离页许可补充（待审查）
+
+独立强红：B原生Complete菜单先排队，titleTransition真实终结标题editor，commands在途使其不重建；A确认Defer形成同source guard；B noFrame marked输入，应用Handle故障令Finish失败；AdvanceTo跨日publication虽保全reason，却随后因len(titleEditors)==0直接切date并清selection，拆掉原native owner。成功Finish对照分支可通过portal恢复。
+
+R4需要统一所有离页路径，不添加domain状态例外。自动跟日同样是原owner离页，不能只检查titleEditors。共享automatic-day-follow许可保留现有title条件，并检查本轮source lease或独立recovery保护的composer：必须拥有真正Finish成功且非composing的finalizedValid证据才允许自动离页；没有该证据就保持原date/selection/原node。未受本轮保护的无关chain不影响；不引入新的graph clone或同步Service读取。
+
+不在自动跟日处重复Finish，不撤销稳定恢复owner的新编辑lease。成功Finish证明允许原有跟日，再由portal找到原source；失败或proof缺失则保持原生字段挂载，用户明确完成/清空/导航时仍走现有真实Finish。runtimeAppliedDay继续原有confirmed更新，不能为重试跟日改变Today事实。此许可只决定UI离页，不回滚已确认磁盘或伪报operation结果。
+
+独立测试原断言保留：TestReviewerMidnightAutofollowCannotDiscardFailedNativeFinish 的成功/失败双分支。并回归普通无恢复跨日仍跟随、guarded导航/close、重复publication不撤lease、全量18项导航旧红（真实hit目标）、四fault结果与六目标编译/CLI。
+
+## 完整写点审查（2026-11-06）
+
+- `titleHub.publish` 自动午夜跟日：原先只检查标题，无composer屏障；本次共享许可必须覆盖，旧date/selection整体保持。calendarDate仅日历浏览坐标，无Day输入owner，不扩大拦截。
+- `submitCarryover` 成功callback：入队前titleTransition只证明当时输入；异步期间仍有新的native输入。已有window/navigation/purpose/page/date/selection精确fence防陈旧callback，另需共享自动离页许可；先关闭原sheet，再决定是否选择已确认的新trace，拒绝离页不改变保存成功事实。
+- `returnTaskToPool` 成功callback清selection：已有titleTransition及window/navigation/page/date/selection fence，但异步窗口仍可能有受同source guard保护的晚输入；使用同一许可。
+- `finishPoolSelection` 选择已确认的新trace：已有picker epoch/page/date/selection fence，仍应在实际selection写点使用同一许可。失败许可仅保留当前UI，不重发已保存Schedule。
+- `observeRuntimeDay` legacy refreshDay日期更新：生产titleHub readView不提供AdvanceTo，因此不能安装该fallback；现有无hub测试路径无carryover准入。仍在其日期写点调用同一轻量许可，保持无hub默认行为。
+- 日待办日期、详情选择、详情收起/返回统计；sidebar页面切换；池列表选择/详情关闭；恢复入口：用户显式navigation，均经titleTransition→真实Finish→coordinator确认。恢复入口复核原source，旧purpose随navigation失效。
+- Calendar进入Day是显式按钮直接写page/date/selection；来源是calendar，无普通Day composer挂载；到calendar本身已经由sidebar titleTransition最终化。既有offscreen恢复owner已拥有安全离屏证据，不在此新增domain例外。
+- liveMain旧Day箭头写date是不可达Day渲染分支：runtimeView在page=day调用liveDayView并return。初始化newRuntimeApp、fixture配置、独立utility创建的page/date写入发生于任何Day native owner前；prototype/sidebar和静态memo/settings非生产runtime Day分支。
+
+## 无页面写入的清理审查
+
+`h.publish` 为锁定干净title调用titleTransition(empty)，`publishSubtaskEditors`也会通过同一入口处置编辑器。该入口虽fn为空，仍会注册标题并finalizeSubtaskComposers。现有窗口/navigation最新target fence只能防陈旧请求，不能证明不会撤销后来重新focus的稳定recovery lease。已请求独立真实native复现，当前不把静态疑点当故障或加入未经证实的修补。原R4全部字节保留；新最终冻结须包含该审查结论。
+
+共享许可只读取本窗口被source guard或recovery保护的composer的真实Finish证明，不调用Finish，不读Service，不改变当前native owner，不把Snapshot当最终化证明。未受保护composer不新增阻断。所有相关自动写点使用相同方法，避免仅修午夜单行。
+
+## 已复现的非离页清理边界
+
+独立native原红 `TestReviewer...`（r4/reviewer_title_disposal_test.go，SHA50ee989f970ee12413cbdbf5e6a7a10f32cb3b8c8a7f4607d08a6a63f4a7b61e）确认：publication后的空titleTransition排队清理，在恢复composer重新focus后仍执行全窗口Finish，撤销新native lease，尽管selection从未改变。
+
+根本修复：显式区分“标题编辑器处置”与“离页”。两处自动已锁定clean title/subtask-title处置走专门title-only入口，继续已有coordinator注册、实际标题Finish、窗口/目标fence与编辑器清理，但不finalizeSubtaskComposers，因为其closure严格为空，不更改任何composer挂载条件。公开titleTransition继续完整composer Finish，不给任意导航可选择跳过屏障的入口。共享内部实现只接受固定disposal入口传递的策略；无页面写入closure不得通过该入口。既有guarded publication先按实际mount转换保全composer，不能用title-only处置替代该保全。
+
+实现验证纠正：完全跳过composer的初版造成四个原Continue测试红（binding-r5-disposal-focused.log）：无guard普通空composer的历史化原本依赖清理Finish建立offscreen证明。最终策略保留这种原屏障，只在非离页清理跳过已有独立recovery owner；其稳定挂载已由publication/recovery合同维护，不因清title改变。真正navigation仍Finish全部。不会借恢复例外绕过普通输入的可靠证明，也不修改既有Continue断言。

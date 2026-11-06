@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+# SPDX-License-Identifier: AGPL-3.0-only
+set -euo pipefail
+source "$(dirname -- "$0")/environment"
+
+# Each run preserves its own raw native images and isolated development session.
+# This is not the upstream Swift demo, an importer or an OS/Swift screenshot run.
+RUN=$(mktemp -d "$BUILD_ROOT/evidence/carryover-year-XXXXXX")
+export NOONMARK_UI_EVIDENCE_DIR="$RUN/native"
+export NOONMARK_CARRYOVER_YEAR_EVIDENCE_DIR="$RUN"
+{
+  printf 'started_utc=%s\nsource=%s\nbuild=%s\nrun=%s\n' "$(date -u +%FT%TZ)" "$SOURCE_ROOT" "$BUILD_ROOT" "$RUN"
+  "$GO" version
+  printf 'DISPLAY=%s\n' "${DISPLAY:-unset}"
+  printf 'evidence=headless native Tester; real SerialLane and Service; development session; no OS/Swift parity claim\n'
+  set -x
+  "$GO" test -p=1 -race -count=1 -buildvcs=false -timeout=15m -run='^TestCarryoverYearMiddleNativeService$' -v .
+} 2>&1 | tee "$RUN/command.log"
+
+(
+  cd -- "$RUN"
+  find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS
+)
+printf 'Preserved yearly development evidence: %s\n' "$RUN"

@@ -209,7 +209,7 @@ func (h *titleHub) publishSubtaskEditors(s *app, g core.TaskGraph, today core.Lo
 		}
 	}
 	if needsDisposal {
-		s.titleTransition(func() {})
+		s.disposeTitleEditors()
 	}
 }
 
@@ -398,7 +398,7 @@ func (s *app) liveSubtaskTitle(c *ui.Context, width, height float32, surface str
 	e := s.subtaskEditors[owner]
 	h := s.titles
 	_, available := s.subtaskStore()
-	canCreate := r.editable && available && h != nil && h.windows[s.titleWindowID] != nil && h.windows[s.titleWindowID].commands == 0 && !s.runtimePoolPicker
+	canCreate := r.editable && available && h != nil && h.windows[s.titleWindowID] != nil && h.windows[s.titleWindowID].commands == 0 && !s.livePickerOpen()
 	if e == nil && !canCreate {
 		color := ink
 		if r.status == core.SubtaskCompleted {
@@ -479,6 +479,9 @@ const subtaskComposerFailureMessage = "子任务添加尚未确认，草稿已�
 
 type runtimeSubtaskComposer struct {
 	failure                      error
+	finalizedText                string
+	finalizedValid               bool
+	carryoverRecovery            carryoverRecoveryReason
 	surface                      string
 	target                       runtimeSubtaskTarget
 	native                       titleNative
@@ -508,6 +511,7 @@ func (s *app) liveSubtaskComposer(c *ui.Context, width float32, surface string, 
 	}
 	composer.native.context = c
 	composer.mounted = true
+	composer.finalizedValid = false
 	if composer.hasAcknowledged && !composer.clearQueued {
 		composer.clearQueued = true
 		s.titles.post(func() { composer.clearQueued = false; s.clearAcknowledgedComposer(composer) })
@@ -521,15 +525,29 @@ func (s *app) liveSubtaskComposer(c *ui.Context, width float32, surface string, 
 	})
 }
 func (s *app) finalizeSubtaskComposers() bool {
+	return s.finalizeComposerOwners(true)
+}
+
+func (s *app) finalizeComposerOwners(leaving bool) bool {
 	for _, composer := range s.subtaskComposers {
-		if !composer.mounted {
+		if !composer.mounted || (!leaving && composer.carryoverRecovery != carryoverRecoveryNone) {
 			continue
 		}
+		composer.finalizedValid = false
 		if snapshot, ok := composer.native.Finish(); !ok {
 			s.runtimeError = "子任务输入尚未能安全读取，草稿已保留。"
 			return false
-		} else if !snapshot.Composing && strings.TrimSpace(snapshot.Text) == "" {
-			composer.failure = nil
+		} else {
+			composer.finalizedText, composer.finalizedValid = snapshot.Text, !snapshot.Composing
+			if !snapshot.Composing && strings.TrimSpace(snapshot.Text) == "" {
+				composer.failure = nil
+				if !composer.pending && !composer.hasAcknowledged {
+					composer.carryoverRecovery = carryoverRecoveryNone
+				}
+			}
+			if s.titles != nil && s.titles.carryoverInFlight[carryoverSourceKey{composer.target.chain, composer.target.trace}] > 0 {
+				s.retainCarryoverComposer(composer, snapshot, true, carryoverRecoveryUnconfirmed)
+			}
 		}
 	}
 	return true
@@ -608,8 +626,13 @@ func (s *app) canAddSubtask(target runtimeSubtaskTarget) bool {
 		}
 		return false
 	}
+	return actualSubtaskTargetEditable(g, s.runtime.Today(), target)
+}
+
+// This exact predicate also controls guarded native-owner retirement.
+func actualSubtaskTargetEditable(g core.TaskGraph, today core.LocalDate, target runtimeSubtaskTarget) bool {
 	for _, t := range g.Traces {
-		if t.ID != target.trace || t.ChainID != target.chain || t.Status != core.TracePending || t.Date.Compare(s.runtime.Today()) < 0 {
+		if t.ID != target.trace || t.ChainID != target.chain || t.Status != core.TracePending || t.Date.Compare(today) < 0 {
 			continue
 		}
 		for _, day := range g.Days {
@@ -718,6 +741,10 @@ func (s *app) clearAcknowledgedComposer(composer *runtimeSubtaskComposer) {
 	}
 	if current.Text != composer.acknowledged || composer.native.Replace("") {
 		composer.hasAcknowledged = false
+		fresh, ok := composer.native.Snapshot()
+		if ok && !fresh.Composing && strings.TrimSpace(fresh.Text) == "" && !composer.pending && composer.failure == nil {
+			composer.carryoverRecovery = carryoverRecoveryNone
+		}
 	}
 }
 
@@ -729,7 +756,7 @@ func subtaskDisclosureWidth(c *ui.Context, key string, count int) float32 {
 
 func (s *app) hasSubtaskComposerFailure() bool {
 	for _, composer := range s.subtaskComposers {
-		if composer.failure != nil {
+		if composer.failure != nil || composer.carryoverRecovery != carryoverRecoveryNone {
 			return true
 		}
 	}
@@ -741,15 +768,16 @@ func (s *app) hasSubtaskComposerFailure() bool {
 // the user can return to retry; only close/quit need this additional barrier.
 func (s *app) subtaskComposersCanClose() bool {
 	for _, composer := range s.subtaskComposers {
-		if composer.failure == nil {
+		if composer.failure == nil && composer.carryoverRecovery == carryoverRecoveryNone {
 			continue
 		}
 		if composer.mounted {
 			snapshot, ok := composer.native.Snapshot()
-			if ok && !snapshot.Composing && strings.TrimSpace(snapshot.Text) == "" {
+			if ok && !snapshot.Composing && strings.TrimSpace(snapshot.Text) == "" && !composer.pending && !composer.hasAcknowledged {
 				// An explicit user edit to blank is a native-proven discard, never an
 				// assistant-side timeout, stale binding or failed-save acknowledgment.
 				composer.failure = nil
+				composer.carryoverRecovery = carryoverRecoveryNone
 				continue
 			}
 		}
@@ -765,7 +793,7 @@ func (s *app) subtaskComposersCanClose() bool {
 func (s *app) failedSubtaskComposers(chain core.TaskChainID) []*runtimeSubtaskComposer {
 	keys := make([]string, 0, len(s.subtaskComposers))
 	for key, c := range s.subtaskComposers {
-		if c.failure != nil && (chain == "" || c.target.chain == chain) {
+		if (c.failure != nil || c.carryoverRecovery != carryoverRecoveryNone) && (chain == "" || c.target.chain == chain) {
 			keys = append(keys, key)
 		}
 	}
@@ -786,6 +814,9 @@ func (s *app) subtaskRecoveryLabel(c *runtimeSubtaskComposer) string {
 				break
 			}
 		}
+	}
+	if c.carryoverRecovery != carryoverRecoveryNone {
+		return origin + "的未提交输入已保留；可复制或清空。"
 	}
 	return origin + "的新增草稿尚未确认；可重试或清空。"
 }

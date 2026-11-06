@@ -114,8 +114,10 @@ type titleWindow struct {
 	closing           bool
 }
 type titleHub struct {
+	carryoverInFlight                  map[carryoverSourceKey]int
 	actionPending                      map[string]bool
 	graph                              core.TaskGraph
+	progress                           *runtimeProgressCache
 	today                              core.LocalDate
 	store                              titleStore
 	coordinator                        *coordinator.Coordinator
@@ -149,7 +151,9 @@ func (a titleServiceAdapter) SaveTraceTitleInputAcknowledged(trace, title string
 	return text, err
 }
 func newTitleHub(store titleStore, lane coordinator.Lane, post func(func()), clock coordinator.Clock, now func() time.Time, quit func()) *titleHub {
-	h := &titleHub{graph: store.Snapshot(), today: store.Today(), store: store, lane: lane, post: post, now: now, quit: quit, windows: map[string]*titleWindow{}, targets: map[string]func(){}, observedDay: store.Today()}
+	h := &titleHub{today: store.Today(), store: store, lane: lane, post: post, now: now, quit: quit, windows: map[string]*titleWindow{}, targets: map[string]func(){}, observedDay: store.Today()}
+	h.progress = newRuntimeProgressCache(store.Snapshot())
+	h.graph = h.progress.graph
 	c, err := coordinator.New(coordinator.Config{
 		Service: titleServiceAdapter{h}, Lane: lane, Post: post, Clock: clock,
 		Today: func() coordinator.Date {
@@ -202,6 +206,10 @@ func (h *titleHub) attach(s *app, invalidate, close func()) {
 	s.titleWindowID = fmt.Sprint(h.nextWindow)
 	s.titles = h
 	s.runtime = h.readView()
+	s.progress = h.progress
+	if h.progress.err != nil {
+		s.runtimeError = progressFailureMessage
+	}
 	h.windows[s.titleWindowID] = &titleWindow{app: s, invalidate: invalidate, close: close}
 }
 
@@ -301,6 +309,7 @@ func (h *titleHub) registerEditor(s *app, e *runtimeTitleEditor) bool {
 	return true
 }
 func (s *app) titleTransition(fn func()) {
+	s.titleDisposal = nil
 	if s.titles == nil {
 		fn()
 		return
@@ -330,7 +339,7 @@ func (s *app) titleTransition(fn func()) {
 func (s *app) liveTitle(c *ui.Context, width float32, row taskview.DayRow) {
 	h := s.titles
 	editable := row.Status == core.TracePending && s.runtimeDate.Compare(s.runtime.Today()) >= 0
-	if h == nil || h.windows[s.titleWindowID] == nil || (!editable && s.titleEditor == nil) || (s.titleEditor == nil && (h.windows[s.titleWindowID].commands > 0 || s.runtimePoolPicker)) {
+	if h == nil || h.windows[s.titleWindowID] == nil || (!editable && s.titleEditor == nil) || (s.titleEditor == nil && (h.windows[s.titleWindowID].commands > 0 || s.livePickerOpen())) {
 		title := row.Title
 		if title == "" {
 			title = "无标题"
@@ -373,7 +382,7 @@ func (h *titleHub) beforeClose(s *app) bool {
 	if w == nil {
 		return true
 	}
-	if !h.register(s) || !s.finalizeSubtaskComposers() || !s.subtaskComposersCanClose() {
+	if !h.register(s) || !s.finalizeSubtaskComposers() || !s.subtaskComposersCanClose() || !h.carryoverInputsCanClose(s) {
 		w.invalidate()
 		return false
 	}
@@ -396,7 +405,7 @@ func (h *titleHub) beforeClose(s *app) bool {
 }
 func (h *titleHub) beforeQuit() bool {
 	for _, w := range h.windows {
-		if !h.register(w.app) || !w.app.finalizeSubtaskComposers() || !w.app.subtaskComposersCanClose() {
+		if !h.register(w.app) || !w.app.finalizeSubtaskComposers() || !w.app.subtaskComposersCanClose() || !h.carryoverInputsCanClose(w.app) {
 			w.invalidate()
 			return false
 		}
@@ -417,10 +426,21 @@ func (h *titleHub) publishFromLane() {
 	h.post(func() { h.publish(graph, today) })
 }
 func (h *titleHub) publish(graph core.TaskGraph, today core.LocalDate) {
-	h.graph = graph.Clone()
+	previous, previousToday := h.graph, h.today
+	if !h.progress.publish(graph) {
+		for _, w := range h.windows {
+			w.app.runtimeError = progressFailureMessage
+			w.invalidate()
+		}
+		return
+	}
+	h.graph = h.progress.graph
 	h.today = today
 	for _, w := range h.windows {
 		s := w.app
+		if s.runtimeError == progressFailureMessage {
+			s.runtimeError = ""
+		}
 		e := s.titleEditor
 		if e != nil && e.registered {
 			var trace *core.DayTrace
@@ -445,13 +465,14 @@ func (h *titleHub) publish(graph core.TaskGraph, today core.LocalDate) {
 				state, ok := h.coordinator.State(e.reg)
 				if ok && !state.Dirty && !state.InFlight && !state.AwaitingVerification && state.LastError == nil {
 					// Disposal still requires a fresh native proof; do not simply remove it.
-					s.titleTransition(func() {})
+					s.disposeTitleEditors()
 				}
 			}
 		}
+		s.preserveGuardedComposerOwners(previous, previousToday, graph, today)
 		h.publishSubtaskEditors(s, graph, today)
 		if today != s.runtimeAppliedDay {
-			if len(s.titleEditors()) == 0 && s.runtimeDate == s.runtimeAppliedDay {
+			if len(s.titleEditors()) == 0 && s.runtimeDate == s.runtimeAppliedDay && s.automaticOwnerExitAllowed() {
 				s.runtimeDate = today
 				s.runtimeSelection = ""
 				s.runtimeDayFocus = ""
@@ -521,6 +542,11 @@ func (h *titleHub) stopOnError(err error) {
 // Immutable action keys suppress repeated activation of the same pending
 // operation, not unrelated commands or a later intentional activation.
 func (h *titleHub) commandOnce(s *app, key string, fn func() error, done func(error)) bool {
+	return h.commandOnceAdmitted(s, key, nil, fn, done)
+}
+
+// Admission is after deduplication but before dispatch can invoke completion.
+func (h *titleHub) commandOnceAdmitted(s *app, key string, admitted func(), fn func() error, done func(error)) bool {
 	w := h.windows[s.titleWindowID]
 	if w == nil {
 		return false
@@ -532,6 +558,9 @@ func (h *titleHub) commandOnce(s *app, key string, fn func() error, done func(er
 		return false
 	}
 	h.actionPending[key] = true
+	if admitted != nil {
+		admitted()
+	}
 	h.command(s, fn, false, func(err error) {
 		delete(h.actionPending, key)
 		if done != nil {

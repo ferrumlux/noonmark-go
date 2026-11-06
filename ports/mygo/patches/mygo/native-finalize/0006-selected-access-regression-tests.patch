@@ -1,0 +1,137 @@
+--- /dev/null
++++ b/internal/windows/noonmark_selected_access_test.go
+@@ -0,0 +1,36 @@
++//go:build windows && (amd64 || arm64)
++
++package windows
++
++import (
++	"github.com/egoist/mygo/internal/platform"
++	"testing"
++)
++
++func TestNoonmarkSelectionPatternTransitions(t *testing.T) {
++	plain := platform.AccessNode{Role: platform.RoleButton, Actions: platform.ActionPress}
++	selected := plain
++	selected.States = platform.AccessSelectionKnown | platform.AccessSelected
++	off := plain
++	off.States = platform.AccessSelectionKnown
++	for _, pair := range [][2]platform.AccessNode{{selected, off}, {selected, plain}, {off, selected}, {plain, selected}} {
++		if !(selectionItem(pair[0]) || selectionItem(pair[1])) || pair[0].Selected() == pair[1].Selected() {
++			t.Fatalf("missing transition: %+v", pair)
++		}
++	}
++	for _, n := range []platform.AccessNode{selected, off, plain} {
++		e := uiaElement{n: n}
++		if !e.supports(ifaceInvoke) || e.supports(ifaceToggle) || e.supports(ifaceSelectionItem) != (n.States&platform.AccessSelectionKnown != 0) {
++			t.Fatalf("button semantics: %+v", n)
++		}
++	}
++	checked := platform.AccessNode{Role: platform.RoleCheckBox, States: platform.AccessChecked}
++	e := uiaElement{n: checked}
++	if !e.supports(ifaceToggle) || e.supports(ifaceSelectionItem) {
++		t.Fatal("checkbox patterns changed")
++	}
++	e.n.States |= platform.AccessSelectionKnown
++	if !e.supports(ifaceToggle) || !e.supports(ifaceSelectionItem) {
++		t.Fatal("independent patterns lost")
++	}
++}
+--- /dev/null
++++ b/ui/noonmark_selected_access_test.go
+@@ -0,0 +1,95 @@
++package ui
++
++import (
++	"github.com/egoist/mygo/internal/platform"
++	"testing"
++)
++
++func TestNoonmarkSelectedButtonIndependentState(t *testing.T) {
++	selected, checked, explicit, clicks := true, false, true, 0
++	tt := coreNewTester(func(c *context) {
++		b := coreButtonBase(c).Label("Day").Size(80, 40).Background(Transparent)
++		if explicit {
++			b.Selected(selected).Background(Transparent)
++		}
++		b.Checked(checked)
++		if b.Clicked() {
++			clicks++
++		}
++	}, 120, 80)
++	tt.send(platform.SurfaceEvent{Kind: platform.AccessibilityOn})
++	check := func(wantSelected, wantChecked bool) {
++		t.Helper()
++		n := accessNode(t, tt.h.access, platform.RoleButton, "Day")
++		a := accessInfoOf(RoleButton, &n, tt.h.access.Focus)
++		if a.Selected != wantSelected || a.Checked != wantChecked || n.Actions&platform.ActionPress == 0 {
++			t.Fatalf("state: %+v node=%+v", a, n)
++		}
++	}
++	check(true, false)
++	selected = false
++	checked = true
++	tt.Frame()
++	check(false, true)
++	selected = true
++	tt.Frame()
++	check(true, true)
++	explicit = false
++	tt.Frame()
++	check(false, true)
++	if err := tt.Click("Day"); err != nil {
++		t.Fatal(err)
++	}
++	tt.Key(0, KeySpace)
++	if clicks != 2 {
++		t.Fatalf("clicks=%d", clicks)
++	}
++}
++
++func TestNoonmarkSelectedOrderAndLegacyRoles(t *testing.T) {
++	for _, role := range []Role{RoleButton, RoleCheckBox, RoleSwitch, RoleRadio, RoleToggleButton, RoleTab, RoleTreeItem, RoleRow, RoleListItem} {
++		for _, on := range []bool{false, true} {
++			for _, checked := range []bool{false, true} {
++				for _, mixed := range []bool{false, true} {
++					for _, first := range []bool{false, true} {
++						tt := coreNewTester(func(c *context) {
++							b := coreButtonBase(c).Role(role).Label("Item")
++							check := func() {
++								b.Checked(checked)
++								if mixed {
++									b.Mixed()
++								}
++							}
++							if first {
++								b.Selected(on)
++								check()
++							} else {
++								check()
++								b.Selected(on)
++							}
++						}, 100, 60)
++						tt.send(platform.SurfaceEvent{Kind: platform.AccessibilityOn})
++						n := accessNode(t, tt.h.access, platform.AccessRole(role-RoleGroup), "Item")
++						if (n.States&platform.AccessChecked != 0) != (checked && !mixed) || (n.States&platform.AccessMixed != 0) != mixed || n.Selected() != on || n.States&platform.AccessSelectionKnown == 0 {
++							t.Fatalf("role=%d selected=%v checked=%v mixed=%v first=%v node=%+v", role, on, checked, mixed, first, n)
++						}
++					}
++				}
++			}
++		}
++	}
++	for _, role := range []platform.AccessRole{platform.RoleTab, platform.RoleTreeItem, platform.RoleRow, platform.RoleListItem} {
++		n := platform.AccessNode{Role: role, States: platform.AccessChecked}
++		a := accessInfoOf(Role(role)+RoleGroup, &n, 0)
++		if !a.Selected || a.Checked {
++			t.Fatalf("legacy selection lost: %+v", a)
++		}
++	}
++	for _, role := range []platform.AccessRole{platform.RoleCheckBox, platform.RoleSwitch, platform.RoleRadio, platform.RoleToggleButton} {
++		n := platform.AccessNode{Role: role, States: platform.AccessChecked}
++		a := accessInfoOf(Role(role)+RoleGroup, &n, 0)
++		if a.Selected || !a.Checked {
++			t.Fatalf("legacy check lost: %+v", a)
++		}
++	}
++}

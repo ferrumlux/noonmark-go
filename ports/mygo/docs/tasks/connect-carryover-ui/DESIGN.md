@@ -1,0 +1,51 @@
+# Day 延期与延续接线
+
+task-id: connect-carryover-ui
+
+## 需求
+
+只接普通 Day 原生菜单「延期到…」「延续到…」，共享已冻结日期组件。保留中文、42格、340宽／18内距、30高日期／24圆选中等来源配方。不新增常驻按钮、确认窗、未实现菜单。来源为 Swift 43e6eef 的 DayTodoPage TaskContextMenu、PresentationUndo contextMenuActions/performDateChoice 与 TaskMutations deferTrace/continueUnfinishedTrace。本轮已逐段复核。
+
+## 现状
+
+独立副本来自正式8c68c3b及当前未提交Service18文件。已有titleTransition原生输入注册、子任务composer终结、共享FIFO、AdvanceTo、confirmed图publication、commandOnce及window/navigation原生菜单host。共享日期组件只产intent并关闭本地open，不访问Service。Service返回ID须完整audit及磁盘确认。正式源码及MyGo不改。
+
+## 设计
+
+新Day binding持有picker purpose、窗口指针、hub身份、页面／日期／选择及navigation，fresh presentation递增。菜单只投影当前confirmed图：今天未锁pending可延期；过去或locked unfinished且链active、无pending可延续，ordinary过滤；不添加pool/frontier隐藏条件。Service单独拒绝非法业务状态。
+
+打开及确认均走titleTransition；不开同步fallback。确认日期失败保留hint，选择／取消不写盘。确认由binding重新保持sheet可见，待原生保存屏障及异步命令完成后才关闭原sheet；pending时重复confirm无效，取消仅撤销视觉目的。共享writer执行前AdvanceTo，调用真实Service；kind/chain/source/target键去重。只使用确认返回ID，completion必须purpose、hub、window、navigation、页面日期选择都匹配才导航。原sheet失败亦关闭，但旧回调不得关新sheet。没有新per-frame kernel clone或进度缓存。
+
+根modal输入门禁沿用MyGo Modal。新增统一live picker布尔供既有输入/composer门禁，保留既有native root guards。引用组件3文件原样复制，不重写。底层错误沿用runtimeError持久提示；不实现危险磁盘倒带undo。
+
+## 风险、验证与回滚
+
+输入组合与跨窗口历史dirty editor不能丢稿；验证真实Tester原生菜单／键、延迟队列、重复／旧purpose／navigation／close、Service故障及重开。正式集成须独立review与完整scripts/check、六目标和entrypoints。四阶段fault、CAS、after-persist不得自动retry或假导航。源码token不是Swift像素验收，真实系统IME／macOS／Windows不在headless证据内。
+
+延期snapshot undo、延续undo invalidate及成功toast未完整移植；完整Unfinished actionPlan页面不在本轮，不声称全应用完成。回滚只撤UI入口，不删除或降级已确认资料。仅隔离development/e2e合成资料；不碰production/iCloud/Keychain/AI，不作GitHub写入。
+
+## Composer 安全差异（运行证据后补充）
+
+来源 TaskDetail 使用 transient composer，不会在日期操作时自动新增子项；SelectionProductivity 会清空 detailSubtaskText。本移植不复制该清空行为：只检查相同 chain/source trace 的所有已挂窗口composer，其他chain不阻断。pending、失败、已确认但native尚未安全清空、非空未提交及无法证明安全的native状态均保留并拒绝本次动作。已离屏composer仅接受导航Finish留下的native proof，不用应用draft当作成功证明。用户明确Return并确认成功，或原生清空后再主动调用，才解除。不会自动重放carryover；pending目前保守拒绝而非自动等待重开，这是异步port安全差异，不是Swift来源要求。对其他窗口dirty title/subtask editor仍按既有历史只读保留，不擅自清空。
+
+## 原生生命周期复审与恢复入口
+
+独立真实Tester红证据证明：跨窗失败新增被用户清空仍被旧failure拦住；准入后另一窗晚输入及无Frame marked text在来源变历史时被拆除；pending日期可改但writer仍提交原目标。修订不是再加一次Snapshot：publication在UI线程旧node仍在时真实Finish，专用finalizedText/finalizedValid仅记录Finish证据，每次重新挂载即失效。成功空且无pending/ack/真实Add错误才可退场；未知、非空或未确认输入用独立carryoverRecovery状态保留，不伪造一次Add失败。仍沿原chain/trace/surface/key/handle，正文不移给新trace，Return不自动新增。
+
+恢复入口只在需要处理时出现于现有sidebar底部，正文不进入sidebar或诊断。显式点击才经titleTransition回原日期/trace/详情；点击时重查confirmed身份。多来源按稳定对象key依次可达，明确清空第一项后第二项仍可达；无关chain页面也可发现。提示区分“延期已保存”与“输入仍需处理”，不覆盖其他新错误/notice。Close/Quit须先可靠Finish并确认原生空白；pending/ack未完成不能被空白解除。
+
+条件恢复控件曾导致native祖先scope变化，实际Finish失败用例出现丢marked内容的红色。修复为始终存在的keyed anchor host，条件控件只在固定子树内增删，不改变日详情原生祖先identity。旧native client在Finish后再交付marked text被拒；失败时同key字段保留原生内容，重新点击并清空可解除恢复。
+
+日期组件variant以作者最终Go da013fbc/test bd4d6ee/design8593b47为before，不改作者副本。新增可选drawPending入口，默认draw保留行为；准入后所有日期、月份、今天、确认节点disabled，方向键/Return消费但不改目标，Cancel/Esc只关闭展示。借用Selected patch005/006及manifest精确冻结版本，旧四patch不变；旧KnownAccessibilityMapping明确改成Selected=true/Checked=false，保留旧依赖红、新依赖绿日志。此variant不是作者原freeze。
+
+一次Finish只发生在confirmed图的来源状态进入deferred时；后续无关publication不能再次Finish恢复字段并撤销新编辑lease。新增真实原生旧lease用例已证明原红与修订绿，不增加graph clone。Selected最终借用0005为ab7aa8f5、manifest e80ed46（macOS显式通知），旧借用证据另存，不沿用旧aggregate结论。
+
+## R4 最终实现合同（取代前述局部生命周期方案）
+
+完整状态图见LIFECYCLE.md，实施后fixed定义：shared actualSubtaskTargetEditable同时控制实际渲染与guarded publication判断，传精确old graph/old today和new graph/new today；stable恢复owner不反复Finish。用户导航Finish之后、离屏之前即记独立reason。reason为none/source-saved/outcome-unconfirmed，不借真实Add failure字段；错误completion保持同node且只Snapshot识别待保留内容，不把Snapshot当作终止lease证明。成功publication在真正退场边界先Finish。
+
+commandOnceAdmitted仅dedup接受后、任何dispatch前登记source lease，因此即使注入同步dispatch/completion也不先减后加。每命令先保全同source输入再释放自己的引用，Cancel不释放；不同target竞争两引用不会互相提前解除。Close/Quit在所有原node teardown前验证Finish与相关guard，非空/未知拒绝且不记录自动丢弃关闭。已停止/不确定存储不报saved，不自动重放。用户明确Return在仍可编辑source真实Add成功且native清空后解除reason。
+
+已补实际合成原生路径：五个独立原红、四fault晚输入→Close、先Complete/Return第一publication（晚于此才会Defer失败）、跨午夜、guarded导航离屏前入口、两命令竞争且稳定恢复lease不反复终结、同步dispatch顺序、重复拒绝/Cancel/AdvanceTo失败/Sessionstop/空窗口detach引用释放、用户明确Add ack及原生清空解除。既有自然日observer与显式command可能各自一次AdvanceTo尝试，测试分别计数，不把它们误称carryover重放；同一carryover绝不自行重复。
+
+基线继承正式462d6da（纯picker与Selected已整合），只交业务差异和pending组件variant，不覆盖正式SELECTED故障case/VERIFY/补丁文件。共享gates.tsv仅提供本业务新增一行。

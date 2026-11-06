@@ -45,6 +45,7 @@ type app struct {
 	subtaskComposers           map[string]*runtimeSubtaskComposer
 	subtaskExpanded            map[core.DayTraceID]bool
 	titleWindowID, titleTarget string
+	titleDisposal              *runtimeTitleDisposal
 
 	page                 string
 	draft                string
@@ -55,12 +56,15 @@ type app struct {
 	openUtility          func(string)
 	closeWindow          func()
 	runtime              taskService
+	progress             *runtimeProgressCache
 	runtimeError         string
 	runtimeNotice        string
 	runtimeSelection     string
 	runtimeDayRail       bool
 	runtimeDayFocus      string
 	runtimePoolPicker    bool
+	carryover            *carryoverPresentation
+	carryoverEpoch       uint64
 	runtimePoolFocus     string
 	runtimeCalendarDate  core.LocalDate
 	runtimeCalendarRail  bool

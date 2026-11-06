@@ -34,7 +34,7 @@ func (s *app) selectRuntimeDate(date core.LocalDate, focus bool) {
 	})
 }
 func (s *app) liveDayView(c *ui.Context, w, h float32) {
-	if focus := ui.FocusedValue(c, &s.runtimeDayFocus); focus != "" && !s.runtimePoolPicker {
+	if focus := ui.FocusedValue(c, &s.runtimeDayFocus); focus != "" && !s.livePickerOpen() {
 		if d, e := core.ParseLocalDate(focus); e == nil {
 			for _, key := range []struct {
 				key  ui.Key
@@ -137,7 +137,7 @@ func (s *app) liveDayMain(c *ui.Context, w, h float32, day taskview.DayPage, gra
 	top := stripY + 66 + 10
 	notice := ""
 	if day.IsHistory {
-		notice = "历史日已锁定：任务事实不可改写。复盘、延续与废弃尚未接通。"
+		notice = "历史日已锁定：任务事实不可改写。普通未完成任务可从右键菜单延续；复盘与废弃尚未接通。"
 	} else if day.IsFuture {
 		notice = "未来日：可以新增排期，不能提前完成或生成复盘。"
 	}
@@ -198,7 +198,7 @@ func (s *app) liveDayMain(c *ui.Context, w, h float32, day taskview.DayPage, gra
 				borderInset = 1
 			}
 			_, textH := dayMeasure(c, "day-row-measure-"+string(r.TraceID), w-40-64-accessory-borderInset, 13, weight, r.Title)
-			headerHeight := max(float32(28), textH) + 16
+			headerHeight := s.measureRowProgress(c, r, textH).headerHeight
 			rowHeight := headerHeight
 			if s.subtaskExpanded[r.TraceID] && len(children) > 0 {
 				rowHeight += 11 + float32(len(children)-1)*subtaskRowSpacing
@@ -264,7 +264,8 @@ func (s *app) liveDateStrip(c *ui.Context, w float32, strip taskview.DateStrip) 
 }
 func (s *app) liveDayRow(c *ui.Context, w, h, textH float32, r taskview.DayRow, enabled bool) {
 	id := string(r.TraceID)
-	headerHeight := max(float32(28), textH) + 16
+	progress := s.measureRowProgress(c, r, textH)
+	headerHeight := progress.headerHeight
 	children := s.childRows("day-list", runtimeSubtaskTarget{chain: r.ChainID, trace: r.TraceID})
 	accessory := float32(0)
 	if len(children) > 0 {
@@ -276,7 +277,7 @@ func (s *app) liveDayRow(c *ui.Context, w, h, textH float32, r taskview.DayRow, 
 	}
 	_, titleWeight := taskTitleStyle(r.Status == core.TraceCompleted)
 	intrinsic, _ := dayMeasure(c, "day-row-intrinsic-"+id, 0, 13, titleWeight, r.Title)
-	contentWidth := min(intrinsic, max(float32(1), w-64-accessory-borderInset))
+	contentWidth := min(max(intrinsic, progress.width), max(float32(1), w-64-accessory-borderInset))
 	selected := s.runtimeSelection == id
 	// Native menu choices are delivered on a later frame. Re-key the host on
 	// navigation so a menu opened before leaving cannot act after returning to
@@ -307,11 +308,14 @@ func (s *app) liveDayRow(c *ui.Context, w, h, textH float32, r taskview.DayRow, 
 		if r.Status == core.TraceUnfinished {
 			col = muted
 		}
-		t := txt(c, 52, (headerHeight-textH)/2, 13, r.Title, col, weight).Width(contentWidth)
+		t := txt(c, 52, progress.titleTop, 13, r.Title, col, weight).Width(contentWidth)
 		if r.Status == core.TraceCompleted || r.Status == core.TraceAbandoned {
 			t.Strikethrough()
 		}
 	})
+	// Progress is a sibling of the selection button: a native button is an
+	// accessibility leaf and would otherwise hide this readonly progress role.
+	liveRowProgress(c, id, progress, borderInset)
 	if b.Clicked() {
 		s.titleTransition(func() { s.runtimeSelection = id; s.runtimeDayRail = true })
 	}
@@ -389,10 +393,12 @@ func (s *app) liveDayDetail(c *ui.Context, w, h float32, day taskview.DayPage) {
 				calendarHeaderButton(c, "day-show-review", 0, 0, 100, "返回日统计", "返回日统计", true, func() { s.titleTransition(func() { s.runtimeSelection = "" }) })
 			})
 			ui.Box(c).Height(14)
+			s.liveDetailProgress(c, w-28, selected.TraceID)
+			ui.Box(c).Height(14)
 			parent := runtimeSubtaskTarget{chain: selected.ChainID, trace: selected.TraceID}
 			s.liveSubtaskSection(c, w-28, "day", parent, s.canAddSubtask(parent))
 			ui.Box(c).Height(24)
-			ui.Text(c, "分类、完整 Markdown 与撤销恢复尚未接通；加权进度待对齐。").FontSize(10.5).TextColor(muted).Width(w - 28)
+			ui.Text(c, "分类、完整 Markdown、撤销恢复与手动调整进度尚未接通。").FontSize(10.5).TextColor(muted).Width(w - 28)
 		})
 		return
 	}

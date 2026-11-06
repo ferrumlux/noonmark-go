@@ -1,0 +1,2 @@
+# 固定来源和生成输出按字节校验；Windows checkout 不可改写为 CRLF。
+* text eol=lf

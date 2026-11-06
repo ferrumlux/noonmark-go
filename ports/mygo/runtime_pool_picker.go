@@ -13,6 +13,7 @@ func (s *app) openPoolPicker() {
 	s.titleTransition(s.openPoolPickerNow)
 }
 func (s *app) openPoolPickerNow() {
+	s.carryover = nil
 	s.poolPickerEpoch++
 	s.runtimePoolPicker = true
 	s.runtimePoolFocus = "cancel"
@@ -38,7 +39,7 @@ func (s *app) schedulePoolSelection(chain core.TaskChainID) {
 	}
 }
 func (s *app) finishPoolSelection(chain core.TaskChainID, date core.LocalDate) {
-	if s.runtimeError != "" {
+	if s.runtimeError != "" || !s.automaticOwnerExitAllowed() {
 		return
 	}
 	// Schedule succeeds only after full aggregate persistence/readback. Resolve

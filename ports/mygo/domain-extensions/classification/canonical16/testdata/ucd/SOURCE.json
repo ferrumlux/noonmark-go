@@ -1,0 +1,73 @@
+{
+  "unicode_version": "16.0.0",
+  "archive_url": "https://www.unicode.org/Public/zipped/16.0.0/UCD.zip",
+  "archive_sha256": "c86dd81f2b14a43b0cc064aa5f89aa7241386801e35c59c7984e579832634eb2",
+  "archive_bytes": 9020779,
+  "files": [
+    {
+      "path": "UnicodeData.txt",
+      "bytes": 2175362,
+      "sha256": "ff58e5823bd095166564a006e47d111130813dcf8bf234ef79fa51a870edb48f",
+      "matches_pinned_repository": true
+    },
+    {
+      "path": "DerivedNormalizationProps.txt",
+      "bytes": 1372269,
+      "sha256": "4d4c03892dea9146d674b686e495df2d55a28d071ac474041d73518f887abddc",
+      "matches_pinned_repository": true
+    },
+    {
+      "path": "CompositionExclusions.txt",
+      "bytes": 9007,
+      "sha256": "89e83cf9cc8bef6c1f8bf77e42cf6f0341dfa42e66261f4dbe9b492e7a23c8ee",
+      "matches_pinned_repository": true
+    },
+    {
+      "path": "NormalizationTest.txt",
+      "bytes": 2798671,
+      "sha256": "d811971453e7075e1ad56fb1b301eece5aa80757b81f6156e74a1bfb3ae5ceb1",
+      "matches_pinned_repository": true
+    },
+    {
+      "path": "DerivedCoreProperties.txt",
+      "bytes": 1115959,
+      "sha256": "39d35161f2954497f69e08bdb9e701493f476a3d30222de20028feda36c1dabd",
+      "matches_pinned_repository": true
+    },
+    {
+      "path": "PropList.txt",
+      "bytes": 144253,
+      "sha256": "53d614508e2a0b2305a8aa21cd60d993de9326cdf65993660dfcce4503548583",
+      "matches_pinned_repository": true
+    },
+    {
+      "path": "auxiliary/GraphemeBreakProperty.txt",
+      "bytes": 98751,
+      "sha256": "c29360bd6f7132811d701d29069541e827eb44bfc4c8fbde8c370d6982689dc1",
+      "matches_pinned_repository": true
+    },
+    {
+      "path": "auxiliary/GraphemeBreakTest.txt",
+      "bytes": 171927,
+      "sha256": "ee2b9354d270ac061b29f09662cafea06341d77e704b8cc6bd72aaeeda363cb5",
+      "matches_pinned_repository": true
+    },
+    {
+      "path": "emoji/emoji-data.txt",
+      "bytes": 113024,
+      "sha256": "f1365a5173eee18e1f98b240cdc492e84a25f1ce7e0c9d1094eb29c41a22696a",
+      "matches_pinned_repository": true
+    },
+    {
+      "path": "ReadMe.txt",
+      "bytes": 693,
+      "sha256": "14cafa23788d3a20dd21d6b0cdcb8d6dab520781fcd9ad9392f3b88ea607e633",
+      "matches_pinned_repository": false
+    }
+  ],
+  "license": {
+    "path": "LICENSE",
+    "sha256": "fe5c62b543e287981db198f2acfa0ca732d12591a1024536dc8fd85dacd77104",
+    "url": "https://raw.githubusercontent.com/unicode-org/unicodetools/b91447019d1b785cd5e82193936e3c9209852e9b/LICENSE"
+  }
+}

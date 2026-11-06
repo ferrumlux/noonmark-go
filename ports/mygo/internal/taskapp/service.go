@@ -77,40 +77,56 @@ func (s *Service) AdvanceTo(today core.LocalDate) error {
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if s.closed {
-		return ErrSession
-	}
-	if today == s.today {
-		return nil
-	}
 	return s.reconcileDayLocked(today)
 }
 func (s *Service) reconcileDayLocked(today core.LocalDate) error {
-	k, e := core.NewTaskKernel(s.graph)
+	if s.closed {
+		return ErrSession
+	}
+	if s.disk.blocked {
+		return ErrIncomplete
+	}
+	// Probe at the existing finite frontier, without allocating a mutation
+	// clock. The probe is never published; real changes are replayed below.
+	frontier, e := s.persistedFrontier()
 	if e != nil {
 		return e
 	}
-	now, e := s.nextInstant()
+	settle := func(now core.Instant) (canonical.Value, core.TaskGraph, error) {
+		k, err := core.NewTaskKernel(s.graph)
+		if err != nil {
+			return canonical.Value{}, core.TaskGraph{}, err
+		}
+		if err = k.SettleTaskDays(today, now); err != nil {
+			return canonical.Value{}, core.TaskGraph{}, err
+		}
+		captured, err := CaptureEmptyHistory(s.snapshot, s.graph, k.Snapshot())
+		if err != nil {
+			return canonical.Value{}, core.TaskGraph{}, err
+		}
+		return normalizeSnapshot(captured)
+	}
+	wire, _, e := settle(frontier)
 	if e != nil {
 		return e
 	}
-	if e = k.SettleTaskDays(today, now); e != nil {
-		return e
-	}
-	captured, e := CaptureEmptyHistory(s.snapshot, s.graph, k.Snapshot())
-	if e != nil {
-		return e
-	}
-	wire, g, e := normalizeSnapshot(captured)
-	if e != nil {
-		return e
-	}
-	if !historyEqual(s.snapshot, wire) {
-		if e = s.disk.commit(wire); e != nil {
+	if historyEqual(s.snapshot, wire) {
+		if _, e = s.disk.verifyPrefix(s.disk.revision, s.disk.hash, false); e != nil {
 			return e
 		}
-		s.graph = g
-		s.snapshot = wire
+	} else {
+		now, err := s.nextInstant()
+		if err != nil {
+			return err
+		}
+		wire, graph, err := settle(now)
+		if err != nil {
+			return err
+		}
+		if err = s.disk.commit(wire); err != nil {
+			return err
+		}
+		s.graph, s.snapshot = graph, wire
 	}
 	s.today = today
 	return nil
@@ -168,6 +184,26 @@ func (s *Service) nextInstant() (core.Instant, error) {
 	if e != nil {
 		return 0, e
 	}
+	return core.NextMutationInstant(ref, s.persistedClocks()...)
+}
+
+// persistedFrontier does not advance time or sample the wall clock. Zero is a
+// valid probe for an empty graph, where settlement cannot create facts.
+func (s *Service) persistedFrontier() (core.Instant, error) {
+	clocks := s.persistedClocks()
+	var frontier core.Instant
+	for i, clock := range clocks {
+		if !clock.Finite() {
+			return 0, core.ErrInvalidClock
+		}
+		if i == 0 || clock.After(frontier) {
+			frontier = clock
+		}
+	}
+	return frontier, nil
+}
+
+func (s *Service) persistedClocks() []core.Instant {
 	var clocks []core.Instant
 	// Validate all stored clocks first, then include every frontier-bearing clock.
 	for _, d := range s.graph.Days {
@@ -197,7 +233,7 @@ func (s *Service) nextInstant() (core.Instant, error) {
 	for _, c := range s.graph.Subtasks {
 		clocks = append(clocks, c.CreatedAt, c.UpdatedAt)
 	}
-	return core.NextMutationInstant(ref, clocks...)
+	return clocks
 }
 func newIDs(n int) ([]string, error) {
 	out := make([]string, n)

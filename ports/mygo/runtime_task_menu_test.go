@@ -45,9 +45,9 @@ func TestReturnMenuNativeCurrentFutureAndReopen(t *testing.T) {
 			f.tt.Frame()
 			f.ui()
 			openReturnMenu(t, f.tt, trace.ID)
-			want := []string{"标记完成", returnToPoolLabel}
+			want := []string{"标记完成", deferTaskLabel, returnToPoolLabel}
 			if future {
-				want = want[1:]
+				want = want[2:]
 			}
 			if !reflect.DeepEqual(f.tt.Menu(), want) {
 				t.Fatalf("menu %v", f.tt.Menu())
@@ -345,7 +345,7 @@ func TestReturnMenuNewOtherTaskMenuSurvivesLateCompletion(t *testing.T) {
 	f.tt.CloseMenu()
 	openReturnMenu(t, f.tt, second.ID)
 	f.all()
-	if !reflect.DeepEqual(f.tt.Menu(), []string{"标记完成", returnToPoolLabel}) {
+	if !reflect.DeepEqual(f.tt.Menu(), []string{"标记完成", deferTaskLabel, returnToPoolLabel}) {
 		t.Fatal("newer menu lost", f.tt.Menu())
 	}
 	chooseReturn(t, f.tt)
@@ -425,7 +425,7 @@ func TestReturnMenuAndCheckboxShareCompletionCapability(t *testing.T) {
 		t.Fatal("disabled checkbox enqueued command")
 	}
 	openReturnMenu(t, f.tt, tr.ID)
-	if !reflect.DeepEqual(f.tt.Menu(), []string{returnToPoolLabel}) {
+	if !reflect.DeepEqual(f.tt.Menu(), []string{deferTaskLabel, returnToPoolLabel}) {
 		t.Fatal("menu disagrees", f.tt.Menu())
 	}
 }

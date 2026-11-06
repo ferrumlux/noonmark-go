@@ -25,6 +25,17 @@ func (s *app) liveTaskContextMenu(m *ui.Menu, row taskview.DayRow) {
 			})
 		}
 	}
+	if s.titles != nil {
+		if _, ok := s.titles.store.(carryoverStore); ok {
+			d, c := carryoverMenuCapabilities(s.titles.graph, row, s.runtime.Today())
+			if d && m.Item(deferTaskLabel).Chosen() {
+				s.openCarryover(carryoverDefer, row)
+			}
+			if c && m.Item(continueTaskLabel).Chosen() {
+				s.openCarryover(carryoverContinue, row)
+			}
+		}
+	}
 	if returnable && m.Item(returnToPoolLabel).Chosen() {
 		s.returnTaskToPool(row.ChainID, row.TraceID)
 	}
@@ -46,7 +57,7 @@ func (s *app) returnTaskToPool(chain core.TaskChainID, trace core.DayTraceID) {
 		}
 		navigation := w.navigation
 		h.commandOnce(s, "return:"+string(chain)+":"+string(trace), func() error { return s.runtime.ReturnToPool(chain, trace) }, func(err error) {
-			if err == nil && h.windows[s.titleWindowID] == w && w.navigation == navigation && s.page == page && s.runtimeDate == date && s.runtimeSelection == selection && selection == string(trace) {
+			if err == nil && h.windows[s.titleWindowID] == w && w.navigation == navigation && s.page == page && s.runtimeDate == date && s.runtimeSelection == selection && selection == string(trace) && s.automaticOwnerExitAllowed() {
 				s.runtimeSelection = ""
 			}
 		})
