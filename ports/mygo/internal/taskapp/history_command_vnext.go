@@ -46,9 +46,12 @@ const (
 	historyCommandManualProgress
 	historyCommandPlannedSubtaskEdit
 	historyCommandActualSubtaskEdit
+	historyCommandReturn
+	historyCommandDefer
+	historyCommandContinue
 )
 
-// Only the eight successful audit entries construct this closed result. Neither
+// Only successful closed audit entries construct this result. Neither
 // caller-selected captures nor mutable proofs are returned. We retain scalar
 // input identity and immutable, owned endpoints, not the caller's EventIDs.
 type auditedHistoryCommand struct{ proof *historyCommandProof }
@@ -74,6 +77,9 @@ type historyCommandProof struct {
 	requestedLineage         core.SubtaskLineageID
 	requestedDifficulty      core.Difficulty
 	requestedCancellation    core.CancellationID
+	returnDetail             *returnHistoryInput
+	deferDetail              *deferHistoryInput
+	continueDetail           *continueHistoryInput
 	changed                  bool
 }
 
@@ -83,7 +89,13 @@ func (r auditedHistoryCommand) valid() bool {
 	}
 	switch r.proof.kind {
 	case historyCommandSettlement, historyCommandComplete, historyCommandUndo, historyCommandAbandon, historyCommandReactivate, historyCommandRename, historyCommandTitleInput, historyCommandManualProgress, historyCommandPlannedSubtaskEdit, historyCommandActualSubtaskEdit:
-		return r.proof.prior.valid() && r.proof.after.valid()
+		return r.proof.prior.valid() && r.proof.after.valid() && r.proof.returnDetail == nil && r.proof.deferDetail == nil && r.proof.continueDetail == nil
+	case historyCommandReturn:
+		return r.proof.prior.valid() && r.proof.after.valid() && r.proof.returnDetail != nil && r.proof.deferDetail == nil && r.proof.continueDetail == nil
+	case historyCommandDefer:
+		return r.proof.prior.valid() && r.proof.after.valid() && r.proof.returnDetail == nil && r.proof.deferDetail != nil && r.proof.continueDetail == nil
+	case historyCommandContinue:
+		return r.proof.prior.valid() && r.proof.after.valid() && r.proof.returnDetail == nil && r.proof.deferDetail == nil && r.proof.continueDetail != nil
 	default:
 		return false
 	}

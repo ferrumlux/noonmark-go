@@ -454,7 +454,14 @@ func TestHistoryCommandBudgetASTOrderGate(t *testing.T) {
 			funcs[f.Name.Name] = f
 		}
 	}
-	for _, name := range []string{"auditSettlementHistoryVNext", "auditCompletionHistoryVNext", "auditAbandonHistoryVNext", "auditReactivateHistoryVNext", "auditTitleHistoryVNext", "auditManualProgressHistoryVNext", "auditPlannedSubtaskHistoryVNext", "auditActualSubtaskHistoryVNext"} {
+	remaining, e := parser.ParseFile(fs, "history_remaining_command_vnext.go", nil, 0)
+	must(t, e)
+	for _, decl := range remaining.Decls {
+		if f, ok := decl.(*ast.FuncDecl); ok {
+			funcs[f.Name.Name] = f
+		}
+	}
+	for _, name := range []string{"auditSettlementHistoryVNext", "auditCompletionHistoryVNext", "auditAbandonHistoryVNext", "auditReactivateHistoryVNext", "auditTitleHistoryVNext", "auditManualProgressHistoryVNext", "auditPlannedSubtaskHistoryVNext", "auditActualSubtaskHistoryVNext", "auditReturnHistoryVNext", "auditDeferHistoryVNext", "auditContinueHistoryVNext"} {
 		f := funcs[name]
 		if f == nil {
 			t.Fatal("missing entry")
@@ -480,6 +487,16 @@ func TestHistoryCommandBudgetASTOrderGate(t *testing.T) {
 			}
 			if i == 3 && name == "auditActualSubtaskHistoryVNext" {
 				want = "historyCommandActualSubtaskInputBudget"
+			}
+			if i == 3 {
+				switch name {
+				case "auditReturnHistoryVNext":
+					want = "historyCommandReturnInputBudget"
+				case "auditDeferHistoryVNext":
+					want = "historyCommandDeferInputBudget"
+				case "auditContinueHistoryVNext":
+					want = "historyCommandContinueInputBudget"
+				}
 			}
 			stmt, ok := f.Body.List[i].(*ast.IfStmt)
 			if !ok {
@@ -537,6 +554,14 @@ func TestHistoryCommandBudgetASTOrderGate(t *testing.T) {
 		}
 		if name == "auditActualSubtaskHistoryVNext" {
 			want[4] = "historyCommandActualSubtaskInputBudget"
+		}
+		switch name {
+		case "auditReturnHistoryVNext":
+			want[4] = "historyCommandReturnInputBudget"
+		case "auditDeferHistoryVNext":
+			want[4] = "historyCommandDeferInputBudget"
+		case "auditContinueHistoryVNext":
+			want[4] = "historyCommandContinueInputBudget"
 		}
 		if !reflect.DeepEqual(initial, want) {
 			t.Fatalf("unchecked pre-gate call: %v", initial)

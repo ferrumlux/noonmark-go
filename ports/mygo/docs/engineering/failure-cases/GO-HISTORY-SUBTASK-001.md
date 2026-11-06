@@ -1,6 +1,6 @@
 # GO-HISTORY-SUBTASK-001：实际子任务删除见证的独立护栏误用ID对象
 
-状态：处理中。候选根本修正及本地回归通过，修复commit待正式整合；未称已发行或正式共同head已验收。
+状态：已修复（未接线 helper 范围）。修复已整合并同步为 ed200ac5d4e269fb23c884b3f19d817f928e8d87，同 head 本地聚合、MyGo hosted CI 与产物核验通过；未发行或接入 Service/UI。
 
 ## 症状、发现与来源
 
@@ -44,7 +44,7 @@
 
 新增登记后已通过仓库`scripts/environment`准备相同官方Go／已核依赖，重跑两真实fence/oracle门禁exit0，0.095s；`TestFailureGateRegistry`实际执行exit0，0.091s。没有仅靠文本登记声称接入。
 
-本批已在e35共同基线整合双方测试，全scripts/check退出0（根/UI race541.422秒、taskapp244.296秒），六目标及隔离CLI通过；独立未读作者测试的11组focused/race通过，详见任务INDEPENDENT-ACCEPTANCE.md。故障修正源码已冻结，但修复commit和该新head的hosted CI尚待最后同步回填，因此本案状态仍处理中。本案不涉及安装、签名、启动或发行产物，故不虚设release gate；若后续切writer/UI，另须对应真实symptom、重开与故障门禁。
+本批已在e35共同基线整合双方测试，全scripts/check退出0（根/UI race541.422秒、taskapp244.296秒），六目标及隔离CLI通过；独立未读作者测试的11组focused/race通过，详见任务INDEPENDENT-ACCEPTANCE.md。修复 commit 为 ed200ac5d4e269fb23c884b3f19d817f928e8d87；GitHub MyGo run 42191600703 / attempt 1、job 127804716540 于2026-11-06 09:19:02 UTC成功。实际 artifact 13491585994 的6193字节 ZIP SHA256为8ab13654b385ae73a434824fc6bee55b8045e831c1aa97b0eed24f5a0f9a5381，与metadata及上传日志一致；完整日志含四模块race与六目标编译及隔离CLI。非verbose日志仅包级成功，不声称逐条打印测试名。来源及限制见任务目录HOSTED-CI-42191600703.json。本案不涉及安装、签名、启动或发行产物，故不虚设release gate；若后续切writer/UI，另须对应真实symptom、重开与故障门禁。
 
 ## 回退与教训
 
