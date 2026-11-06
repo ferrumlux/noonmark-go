@@ -221,6 +221,138 @@ class ContractTests(unittest.TestCase):
                 process.assert_not_called()
                 self.assertEqual(list(self.runner_temp.iterdir()), [])
 
+    def exercise_compile_commands_with_synthetic_source(self, architecture='arm64', fail_core=False):
+        # Deliberately synthetic Git/source responses. No Swift compiler runs,
+        # no upstream source is replaced, and no successful capture is emitted.
+        manifest = json.loads((HERE / 'source-manifest.json').read_text())
+        blobs = {}
+        for entry in manifest['files']:
+            blob = ('SYNTHETIC-COMMAND-CONTRACT-ONLY:' + entry['path'] + '\n').encode()
+            blobs[entry['path']] = blob
+            entry['bytes'] = len(blob)
+            entry['sha256'] = runner.sha(blob)
+        work = self.runner_temp / 'noonmark-swift-name-oracle'
+        developer = self.root / 'developer'; developer.mkdir()
+        environment = {'RUNNER_TEMP': str(self.runner_temp), 'GITHUB_ACTIONS': 'true',
+                       'RUNNER_ENVIRONMENT': 'github-hosted', 'DEVELOPER_DIR': str(developer),
+                       'SWIFT_PACKAGE_NAME': 'untrusted-caller-package', 'SWIFTFLAGS': '-package-name evil'}
+        commands = []
+
+        def fake_process(command, **kwargs):
+            commands.append(command)
+            self.assertEqual(kwargs['cwd'], work)
+            self.assertNotIn('SWIFT_PACKAGE_NAME', kwargs['env'])
+            self.assertNotIn('SWIFTFLAGS', kwargs['env'])
+            output = b''
+            code = 0
+            error = b''
+            if command == ['/usr/bin/xcodebuild', '-version']:
+                output = b'Xcode 26.2\nBuild version SYNTHETIC\n'
+            elif command == ['/usr/bin/xcrun', '--no-cache', 'swiftc', '--version']:
+                output = b'Apple Swift version SYNTHETIC-NOT-EXECUTED\n'
+            elif command == ['/usr/bin/sw_vers']:
+                output = b'ProductName: macOS SYNTHETIC-NOT-EXECUTED\n'
+            elif command == ['/usr/bin/xcrun', '--no-cache', '--sdk', 'macosx', '--show-sdk-version']:
+                output = b'26.2\n'
+            elif command[0] == '/usr/bin/git':
+                args = command[6:]
+                if args[0] in ('init', 'fetch'):
+                    pass
+                elif args[0] == 'rev-parse':
+                    output = { 'FETCH_HEAD': runner.COMMIT,
+                               runner.COMMIT + '^{tree}': manifest['rootTree'],
+                               runner.COMMIT + ':Sources/NoonmarkCore': manifest['coreTree']}[args[1]].encode()
+                elif args[0] == 'ls-tree':
+                    output = '\n'.join('100644 blob ' + x['gitBlob'] + '\t' + Path(x['path']).name
+                                       for x in manifest['files'][2:]).encode()
+                elif args[:2] == ['cat-file', 'blob']:
+                    output = blobs[args[2].split(':', 1)[1]]
+                else:
+                    self.fail('unexpected synthetic Git command: ' + repr(command))
+            elif command[:3] == ['/usr/bin/xcrun', '--no-cache', 'swiftc']:
+                # Stop at core failure, or at harness failure after inspecting
+                # both commands. Never manufacture Swift output or capture.json.
+                if fail_core or '-module-name' not in command:
+                    code = 17
+                    error = b'SYNTHETIC compiler failure, not Swift execution\n'
+            else:
+                self.fail('unexpected process after compiler failure: ' + repr(command))
+            return subprocess.CompletedProcess(command, code, output, error)
+
+        failure = 'compile-core_failed' if fail_core else 'compile-harness_failed'
+        with mock.patch.dict(os.environ, environment, clear=True), \
+             mock.patch.object(runner.platform, 'system', return_value='Darwin'), \
+             mock.patch.object(runner.platform, 'machine', return_value=architecture), \
+             mock.patch.object(runner, 'DEVELOPER', str(developer)), \
+             mock.patch.object(runner, 'validate_manifest', return_value=manifest), \
+             mock.patch.object(sys, 'argv', ['run.py']), \
+             mock.patch.object(runner.subprocess, 'run', side_effect=fake_process):
+            with self.assertRaisesRegex(runner.GuardError, failure):
+                runner.main()
+        evidence = work / 'evidence'
+        self.assertEqual([p.name for p in evidence.iterdir()], ['summary.json'])
+        summary = json.loads((evidence / 'summary.json').read_text())
+        self.assertEqual(summary['stage'], 'compile')
+        self.assertEqual(summary['oracle_capture'], 'failed')
+        self.assertEqual(summary['unicode16_comparison'], 'not_performed')
+        self.assertEqual(summary['failure'], failure)
+        for name, blob in blobs.items():
+            source = work / 'source' / name
+            self.assertEqual(source.read_bytes(), blob)
+            self.assertEqual(source.stat().st_mode & 0o222, 0)
+        return [c for c in commands if c[:3] == ['/usr/bin/xcrun', '--no-cache', 'swiftc'] and '--version' not in c]
+
+    def test_main_core_compiler_has_package_context_harness_stays_external(self):
+        commands = self.exercise_compile_commands_with_synthetic_source()
+        self.assertEqual(len(commands), 2)
+        core, harness = commands
+        self.assertEqual(core.count('-package-name'), 1)
+        self.assertEqual(core[core.index('-package-name') + 1], 'Noonmark')
+        self.assertEqual(core[core.index('-module-name') + 1], 'NoonmarkCore')
+        self.assertIn('-parse-as-library', core)
+        self.assertIn('-emit-library', core)
+        self.assertIn('-emit-module', core)
+        work = self.runner_temp / 'noonmark-swift-name-oracle'
+        manifest = json.loads((HERE / 'source-manifest.json').read_text())
+        self.assertEqual([x for x in core if x.endswith('.swift')],
+                         [str(work / 'source' / x['path']) for x in manifest['files'][2:]])
+        self.assertNotIn('-package-name', harness)
+        self.assertNotIn('-enable-testing', harness)
+        self.assertIn('-lNoonmarkCore', harness)
+        for command in commands:
+            self.assertEqual(command[command.index('-swift-version') + 1], '6')
+            self.assertEqual(command[command.index('-target') + 1], 'arm64-apple-macosx14.0')
+            self.assertEqual(command[command.index('-module-cache-path') + 1], str(work / 'cache' / 'swift'))
+
+    def test_main_core_compile_failure_stops_before_harness_and_capture(self):
+        commands = self.exercise_compile_commands_with_synthetic_source(architecture='x86_64', fail_core=True)
+        self.assertEqual(len(commands), 1)
+        self.assertEqual(commands[0][commands[0].index('-target') + 1], 'x86_64-apple-macosx14.0')
+
+    def test_failure_gate_mapping_is_enforced_by_capture_workflow(self):
+        registry = runner.ROOT / 'ports/mygo/docs/engineering/failure-cases/swift-oracle-gates.tsv'
+        lines = registry.read_text().splitlines()
+        self.assertEqual(lines[0], 'case_id\tfast_gate\tsymptom_gate\taggregate\tstatus')
+        self.assertEqual(len(lines), 2)
+        case, fast, symptom, aggregate, status = lines[1].split('\t')
+        self.assertEqual(case, 'GO-SWIFT-ORACLE-001')
+        self.assertTrue((registry.parent / (case + '.md')).is_file())
+        self.assertEqual(fast, 'TestSwiftNameOracleCompilationContract')
+        main_registry = (registry.parent / 'gates.tsv').read_text().splitlines()
+        registered = [line.split('\t') for line in main_registry[1:] if line.split('\t')[0] == case]
+        self.assertEqual(registered, [[case, fast, fast, 'scripts/check',
+                                     'in_progress_offline_contract_only_real_macos_symptom_in_swift_oracle_gates']])
+        self.assertEqual(symptom, 'python3 -B ports/mygo/scripts/swift-name-oracle/run.py')
+        self.assertEqual(aggregate, 'scripts/check;.github/workflows/swift-name-oracle.yml#jobs.capture')
+        self.assertIn(status, ('in_progress_macos_ci_pending', 'fixed_hosted_run_verified'))
+        workflow_path = aggregate.split(';')[1].split('#')[0]
+        workflow = runner.read_checked(runner.ROOT / workflow_path, runner.WORKFLOW_SHA, 8192).decode()
+        fast_step = '      - name: Test isolated capture contract\n        run: python3 -B ports/mygo/scripts/swift-name-oracle/test_oracle.py'
+        symptom_step = '      - name: Capture actual upstream Swift behavior\n        run: ' + symptom
+        self.assertIn(fast_step, workflow)
+        self.assertIn(symptom_step, workflow)
+        self.assertLess(workflow.index(fast_step), workflow.index(symptom_step))
+
     def test_cli_does_not_accept_external_inputs(self):
         outcome = subprocess.run([sys.executable, '-B', str(HERE/'run.py'), '/Users/production'],
                                  capture_output=True, text=True)

@@ -3,7 +3,7 @@
 - task-id：`verify-swift-name-oracle`
 - 等级：A
 - 日期：2026-11-05（UTC）
-- 状态：入口及离线门禁已准备；真实 macOS 捕获 **pending**。
+- 状态：2026-11-06 真实 macOS 捕获在 Core 编译失败；package 上下文修复及离线回归已准备，新 commit 真实 CI 复验 **pending**。见 [修复任务](../fix-swift-oracle-package/README.md) 和 [故障案例](../../engineering/failure-cases/GO-SWIFT-ORACLE-001.md)。
 - 本目录不会宣称分类名称互通或完整 Go 复刻已完成。
 
 ## 需求、现状与范围
@@ -22,7 +22,7 @@
 2. 只在 GitHub-hosted macOS 执行。固定 `macos-15` 和 `/Applications/Xcode_26.2.app/Contents/Developer`，缺失或实际版本不为 Xcode 26.2 时失败，不尝试其他 Xcode。
 3. 在全新 `$RUNNER_TEMP/noonmark-swift-name-oracle` 建立隔离 HOME、TMP、cache、source、build、logs、evidence。拒绝目录复用、悬空或实际 work-root symlink、与源码重叠。macOS 系统 `/var` 的既有链接先解析为实际父路径。
 4. 使用无凭证、无用户 Git config、无 hook 的 bare fetch，仅访问上述公开仓库的固定 commit。核对 commit、完整 tree、Core tree、Core 全部文件清单，以及 14 个源码文件、Package、LICENSE 的 Git blob、SHA256 和字节数。只向外置 source 导出白名单文件，Core 源码只读。
-5. `swiftc -swift-version 6 -target <实际架构>-apple-macosx14.0` 编译完整、未改写的 Core 为 `NoonmarkCore` module／dylib，再编译独立 `NameOracle.swift` 并 import 此模块。所有 module cache 显式外置，`xcrun --no-cache` 不建立全局 xcrun cache。不导入或运行 App、runtime、storage、sync、AI target，不运行 reset。
+5. `swiftc -swift-version 6 -target <实际架构>-apple-macosx14.0 -package-name Noonmark` 编译完整、未改写的 Core 为 `NoonmarkCore` module／dylib，显式保留上游 `package` 声明所需上下文；再编译包外独立 `NameOracle.swift` 并 import 此模块，harness 不使用该 package flag。所有 module cache 显式外置，`xcrun --no-cache` 不建立全局 xcrun cache。不导入或运行 App、runtime、storage、sync、AI target，不运行 reset。
 6. harness 仅从 stdin 接收经过 SHA 校验的合成 JSON；没有文件路径、网络、账户或环境输入。运行加 `sandbox-exec`：拒绝网络、外置根以外写入，以及用户常用资料目录和 `/Volumes` 读取。进程不继承凭证、原 HOME 或 DYLD 注入环境。未调用任何 production、iCloud、Keychain 或 AI API。
 7. harness 直接调用上游 public API 和 Swift 标准库，Python 只校验结构、标量／UTF-8 自洽及输入身份，不实现 Swift 行为、不代替 oracle。
 
@@ -74,7 +74,7 @@ harness 在写出前检查 16 MiB 上限，调用器接收后及追加 metadata 
 - source manifest 与只读 reference 的 commit、tree、14 个 Core 源码及 Package／LICENSE 字节和 Git objects 完整核对：通过。
 - Linux 运行入口非零退出 `macos_required_not_swift_verified`，未伪造 Swift 结果。
 
-这些测试只证明捕获入口的离线契约。当前 Linux 没有 Swift／Darwin，Swift 编译、macOS sandbox 与真实上游运行均 **未执行**。正式树合并并 push 后须跟踪该精确 commit 的 workflow 到终态、读取 artifact 的实际平台／ICU／版本和所有向量，再安排 Go 对账。workflow 绿色也不等于互通绿色。
+这些测试只证明捕获入口的离线契约。本地 Linux 没有 Swift／Darwin。2026-11-06 的 [真实 run](https://github.com/ferrumlux/noonmark-go/actions/runs/42182456188) 已执行 Swift 编译，但因缺少 package 编译上下文失败；harness、macOS sandbox 与真实上游捕获尚未执行。修复整合并 push 后须跟踪该精确 commit 的新 workflow 到终态、读取 artifact 的实际平台／ICU／版本和所有向量，再安排 Go 对账。workflow 绿色也不等于互通绿色。
 
 ## 风险、回滚与后续
 

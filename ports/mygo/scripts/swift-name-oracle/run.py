@@ -232,7 +232,10 @@ def main():
         build = work / 'build'
         target = architecture + '-apple-macosx14.0'
         flags = ['-swift-version', '6', '-target', target, '-module-cache-path', str(work / 'cache' / 'swift')]
+        # Direct swiftc needs a package context for the unchanged upstream
+        # package declarations. Keep it off the separate public-API harness.
         run('compile-core', ['/usr/bin/xcrun', '--no-cache', 'swiftc', *flags, '-parse-as-library', '-module-name', 'NoonmarkCore',
+            '-package-name', 'Noonmark',
             '-emit-library', '-emit-module', '-emit-module-path', str(build / 'NoonmarkCore.swiftmodule'),
             '-o', str(build / 'libNoonmarkCore.dylib'), *sources], timeout=900)
         harness_bytes = (HERE / 'NameOracle.swift').read_bytes()

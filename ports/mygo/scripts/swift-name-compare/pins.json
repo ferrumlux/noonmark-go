@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "files": {
     ".github/workflows/swift-name-oracle.yml": "61f45789c162e12d0836d79b87fa8481c9472ebd9566beb07b0fdd457615d04b",
-    "ports/mygo/scripts/swift-name-oracle/run.py": "435585c4e932e95c72ecf07e2ed2b07ad6e2347dfcb3d029a5367a0917ce8370",
+    "ports/mygo/scripts/swift-name-oracle/run.py": "47a6a225f124a80cf3461ba6aad772607ab787dd7f9aaf3f32b5603c8642b3ee",
     "ports/mygo/scripts/swift-name-oracle/NameOracle.swift": "ede42fb462b04b761e3461bdfba1fe5616c2933738c39dcebfde96426d8a900d",
     "ports/mygo/scripts/swift-name-oracle/source-manifest.json": "a62e1974c004a9509f5cd48c9a3f1cc326fbab089719126d20c84cf608e2860d",
     "ports/mygo/scripts/swift-name-oracle/vectors.json": "564fe5cde3f4d30b946d8153ce48d899380e41d79be43cb2a2fd6cbee8ca687d",
