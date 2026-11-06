@@ -1,0 +1,134 @@
+[
+  {
+    "id": "nil",
+    "input": {
+      "present": false,
+      "utf8Hex": ""
+    },
+    "goInitialNote": {
+      "present": false,
+      "bodyUTF8Hex": ""
+    },
+    "swiftExpected": "independent hypothesis; compare actual, never derive Go mapping from capture"
+  },
+  {
+    "id": "empty",
+    "input": {
+      "present": true,
+      "utf8Hex": ""
+    },
+    "goInitialNote": {
+      "present": false,
+      "bodyUTF8Hex": ""
+    },
+    "swiftExpected": "independent hypothesis; compare actual, never derive Go mapping from capture"
+  },
+  {
+    "id": "ascii",
+    "input": {
+      "present": true,
+      "utf8Hex": "20090d0a"
+    },
+    "goInitialNote": {
+      "present": false,
+      "bodyUTF8Hex": ""
+    },
+    "swiftExpected": "independent hypothesis; compare actual, never derive Go mapping from capture"
+  },
+  {
+    "id": "nbsp",
+    "input": {
+      "present": true,
+      "utf8Hex": "c2a0"
+    },
+    "goInitialNote": {
+      "present": false,
+      "bodyUTF8Hex": ""
+    },
+    "swiftExpected": "independent hypothesis; compare actual, never derive Go mapping from capture"
+  },
+  {
+    "id": "figure",
+    "input": {
+      "present": true,
+      "utf8Hex": "e28087"
+    },
+    "goInitialNote": {
+      "present": false,
+      "bodyUTF8Hex": ""
+    },
+    "swiftExpected": "independent hypothesis; compare actual, never derive Go mapping from capture"
+  },
+  {
+    "id": "nnbsp",
+    "input": {
+      "present": true,
+      "utf8Hex": "e280af"
+    },
+    "goInitialNote": {
+      "present": false,
+      "bodyUTF8Hex": ""
+    },
+    "swiftExpected": "independent hypothesis; compare actual, never derive Go mapping from capture"
+  },
+  {
+    "id": "ideographic",
+    "input": {
+      "present": true,
+      "utf8Hex": "e38080"
+    },
+    "goInitialNote": {
+      "present": false,
+      "bodyUTF8Hex": ""
+    },
+    "swiftExpected": "independent hypothesis; compare actual, never derive Go mapping from capture"
+  },
+  {
+    "id": "nel",
+    "input": {
+      "present": true,
+      "utf8Hex": "c285"
+    },
+    "goInitialNote": {
+      "present": false,
+      "bodyUTF8Hex": ""
+    },
+    "swiftExpected": "independent hypothesis; compare actual, never derive Go mapping from capture"
+  },
+  {
+    "id": "zwsp",
+    "input": {
+      "present": true,
+      "utf8Hex": "e2808b"
+    },
+    "goInitialNote": {
+      "present": true,
+      "bodyUTF8Hex": "e2808b"
+    },
+    "swiftExpected": "independent hypothesis; compare actual, never derive Go mapping from capture"
+  },
+  {
+    "id": "bom",
+    "input": {
+      "present": true,
+      "utf8Hex": "efbbbf"
+    },
+    "goInitialNote": {
+      "present": true,
+      "bodyUTF8Hex": "efbbbf"
+    },
+    "swiftExpected": "independent hypothesis; compare actual, never derive Go mapping from capture"
+  },
+  {
+    "id": "valid",
+    "input": {
+      "present": true,
+      "utf8Hex": "2009e6ada3e69687202f2022f09f9880220a65cc81200a"
+    },
+    "goInitialNote": {
+      "present": true,
+      "bodyUTF8Hex": "e6ada3e69687202f2022f09f9880220a65cc81"
+    },
+    "swiftExpected": "independent hypothesis; compare actual, never derive Go mapping from capture"
+  }
+]

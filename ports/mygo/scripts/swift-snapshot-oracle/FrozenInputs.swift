@@ -1,0 +1,405 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+import Foundation
+let registryJSON = #"""
+{
+  "schemaVersion": 2,
+  "seeds": [
+    {
+      "id": "empty",
+      "file": "r2-seeds/empty.json",
+      "sha256": "9a7523eca7c2938824edaf548c44af04e8d96587c49bc53d06c09c57c066da65",
+      "validity": "pending-validation",
+      "origin": "explicit synthetic fixture boundary; not command reachability"
+    },
+    {
+      "id": "planned-12",
+      "file": "r2-seeds/planned-12.json",
+      "sha256": "aecba81054e72fbdf749c928cbd5d8346c856c258e3e718f30a6f0ff71c2decb",
+      "validity": "pending-validation",
+      "origin": "explicit synthetic fixture boundary; not command reachability"
+    },
+    {
+      "id": "planned-21",
+      "file": "r2-seeds/planned-21.json",
+      "sha256": "0a9c83113057da75914e27425988abd102a3218e7679c7bed0517a755e9eda18",
+      "validity": "pending-validation",
+      "origin": "explicit synthetic fixture boundary; not command reachability"
+    },
+    {
+      "id": "multi-interleaved",
+      "file": "r2-seeds/multi-interleaved.json",
+      "sha256": "4e3159d88491d994a2410972513c6312258609d8ce3ad89aceed28c5585120da",
+      "validity": "pending-validation",
+      "origin": "explicit synthetic fixture boundary; not command reachability"
+    }
+  ],
+  "cases": [
+    {
+      "id": "observe-empty",
+      "seed": "empty",
+      "steps": [],
+      "required": true
+    },
+    {
+      "id": "observe-planned-12",
+      "seed": "planned-12",
+      "steps": [],
+      "required": true
+    },
+    {
+      "id": "observe-planned-21",
+      "seed": "planned-21",
+      "steps": [],
+      "required": true
+    },
+    {
+      "id": "observe-multi-interleaved",
+      "seed": "multi-interleaved",
+      "steps": [],
+      "required": true
+    },
+    {
+      "id": "schedule-planned-12",
+      "seed": "planned-12",
+      "steps": [
+        {
+          "op": "schedule",
+          "commandKey": "schedule-one",
+          "chainRawID": "00000000-0000-4000-8000-000000000001",
+          "traceGoID": "00000000-0000-4000-8000-000000000385",
+          "dayGoID": "00000000-0000-4000-8000-000000000386",
+          "date": {
+            "year": 2026,
+            "month": 11,
+            "day": 6
+          },
+          "today": {
+            "year": 2026,
+            "month": 11,
+            "day": 6
+          },
+          "nowBits": "4059400000000000",
+          "childrenGoIDs": [
+            {
+              "lineageRawID": "00000000-0000-4000-8000-000000002B5C",
+              "id": "00000000-0000-4000-8000-000000000387"
+            },
+            {
+              "lineageRawID": "00000000-0000-4000-8000-000000002B5D",
+              "id": "00000000-0000-4000-8000-000000000388"
+            }
+          ]
+        }
+      ],
+      "required": true
+    },
+    {
+      "id": "schedule-planned-21",
+      "seed": "planned-21",
+      "steps": [
+        {
+          "op": "schedule",
+          "commandKey": "schedule-one",
+          "chainRawID": "00000000-0000-4000-8000-000000000001",
+          "traceGoID": "00000000-0000-4000-8000-000000000385",
+          "dayGoID": "00000000-0000-4000-8000-000000000386",
+          "date": {
+            "year": 2026,
+            "month": 11,
+            "day": 6
+          },
+          "today": {
+            "year": 2026,
+            "month": 11,
+            "day": 6
+          },
+          "nowBits": "4059400000000000",
+          "childrenGoIDs": [
+            {
+              "lineageRawID": "00000000-0000-4000-8000-000000002B5C",
+              "id": "00000000-0000-4000-8000-000000000387"
+            },
+            {
+              "lineageRawID": "00000000-0000-4000-8000-000000002B5D",
+              "id": "00000000-0000-4000-8000-000000000388"
+            }
+          ]
+        }
+      ],
+      "required": true
+    },
+    {
+      "id": "schedule-multi-interleaved",
+      "seed": "multi-interleaved",
+      "steps": [
+        {
+          "op": "schedule",
+          "commandKey": "schedule-one",
+          "chainRawID": "00000000-0000-4000-8000-000000000001",
+          "traceGoID": "00000000-0000-4000-8000-000000000385",
+          "dayGoID": "00000000-0000-4000-8000-000000000386",
+          "date": {
+            "year": 2026,
+            "month": 11,
+            "day": 6
+          },
+          "today": {
+            "year": 2026,
+            "month": 11,
+            "day": 6
+          },
+          "nowBits": "4059400000000000",
+          "childrenGoIDs": [
+            {
+              "lineageRawID": "00000000-0000-4000-8000-000000002B5C",
+              "id": "00000000-0000-4000-8000-000000000387"
+            },
+            {
+              "lineageRawID": "00000000-0000-4000-8000-000000002B5D",
+              "id": "00000000-0000-4000-8000-000000000388"
+            }
+          ]
+        }
+      ],
+      "required": true
+    },
+    {
+      "id": "create-nil",
+      "seed": "empty",
+      "steps": [
+        {
+          "op": "create",
+          "commandKey": "create-one",
+          "chainGoID": "00000000-0000-4000-8000-000000000385",
+          "definitionGoID": "00000000-0000-4000-8000-000000000386",
+          "noteGoID": "00000000-0000-4000-8000-000000000387",
+          "titleUTF8Hex": "706f6f6c",
+          "description": {
+            "present": false,
+            "utf8Hex": ""
+          },
+          "noteVectorID": "nil",
+          "nowBits": "4059400000000000"
+        }
+      ],
+      "required": true
+    },
+    {
+      "id": "create-empty",
+      "seed": "empty",
+      "steps": [
+        {
+          "op": "create",
+          "commandKey": "create-one",
+          "chainGoID": "00000000-0000-4000-8000-000000000385",
+          "definitionGoID": "00000000-0000-4000-8000-000000000386",
+          "noteGoID": "00000000-0000-4000-8000-000000000387",
+          "titleUTF8Hex": "706f6f6c",
+          "description": {
+            "present": false,
+            "utf8Hex": ""
+          },
+          "noteVectorID": "empty",
+          "nowBits": "4059400000000000"
+        }
+      ],
+      "required": true
+    },
+    {
+      "id": "create-ascii",
+      "seed": "empty",
+      "steps": [
+        {
+          "op": "create",
+          "commandKey": "create-one",
+          "chainGoID": "00000000-0000-4000-8000-000000000385",
+          "definitionGoID": "00000000-0000-4000-8000-000000000386",
+          "noteGoID": "00000000-0000-4000-8000-000000000387",
+          "titleUTF8Hex": "706f6f6c",
+          "description": {
+            "present": false,
+            "utf8Hex": ""
+          },
+          "noteVectorID": "ascii",
+          "nowBits": "4059400000000000"
+        }
+      ],
+      "required": true
+    },
+    {
+      "id": "create-nbsp",
+      "seed": "empty",
+      "steps": [
+        {
+          "op": "create",
+          "commandKey": "create-one",
+          "chainGoID": "00000000-0000-4000-8000-000000000385",
+          "definitionGoID": "00000000-0000-4000-8000-000000000386",
+          "noteGoID": "00000000-0000-4000-8000-000000000387",
+          "titleUTF8Hex": "706f6f6c",
+          "description": {
+            "present": false,
+            "utf8Hex": ""
+          },
+          "noteVectorID": "nbsp",
+          "nowBits": "4059400000000000"
+        }
+      ],
+      "required": true
+    },
+    {
+      "id": "create-figure",
+      "seed": "empty",
+      "steps": [
+        {
+          "op": "create",
+          "commandKey": "create-one",
+          "chainGoID": "00000000-0000-4000-8000-000000000385",
+          "definitionGoID": "00000000-0000-4000-8000-000000000386",
+          "noteGoID": "00000000-0000-4000-8000-000000000387",
+          "titleUTF8Hex": "706f6f6c",
+          "description": {
+            "present": false,
+            "utf8Hex": ""
+          },
+          "noteVectorID": "figure",
+          "nowBits": "4059400000000000"
+        }
+      ],
+      "required": true
+    },
+    {
+      "id": "create-nnbsp",
+      "seed": "empty",
+      "steps": [
+        {
+          "op": "create",
+          "commandKey": "create-one",
+          "chainGoID": "00000000-0000-4000-8000-000000000385",
+          "definitionGoID": "00000000-0000-4000-8000-000000000386",
+          "noteGoID": "00000000-0000-4000-8000-000000000387",
+          "titleUTF8Hex": "706f6f6c",
+          "description": {
+            "present": false,
+            "utf8Hex": ""
+          },
+          "noteVectorID": "nnbsp",
+          "nowBits": "4059400000000000"
+        }
+      ],
+      "required": true
+    },
+    {
+      "id": "create-ideographic",
+      "seed": "empty",
+      "steps": [
+        {
+          "op": "create",
+          "commandKey": "create-one",
+          "chainGoID": "00000000-0000-4000-8000-000000000385",
+          "definitionGoID": "00000000-0000-4000-8000-000000000386",
+          "noteGoID": "00000000-0000-4000-8000-000000000387",
+          "titleUTF8Hex": "706f6f6c",
+          "description": {
+            "present": false,
+            "utf8Hex": ""
+          },
+          "noteVectorID": "ideographic",
+          "nowBits": "4059400000000000"
+        }
+      ],
+      "required": true
+    },
+    {
+      "id": "create-nel",
+      "seed": "empty",
+      "steps": [
+        {
+          "op": "create",
+          "commandKey": "create-one",
+          "chainGoID": "00000000-0000-4000-8000-000000000385",
+          "definitionGoID": "00000000-0000-4000-8000-000000000386",
+          "noteGoID": "00000000-0000-4000-8000-000000000387",
+          "titleUTF8Hex": "706f6f6c",
+          "description": {
+            "present": false,
+            "utf8Hex": ""
+          },
+          "noteVectorID": "nel",
+          "nowBits": "4059400000000000"
+        }
+      ],
+      "required": true
+    },
+    {
+      "id": "create-zwsp",
+      "seed": "empty",
+      "steps": [
+        {
+          "op": "create",
+          "commandKey": "create-one",
+          "chainGoID": "00000000-0000-4000-8000-000000000385",
+          "definitionGoID": "00000000-0000-4000-8000-000000000386",
+          "noteGoID": "00000000-0000-4000-8000-000000000387",
+          "titleUTF8Hex": "706f6f6c",
+          "description": {
+            "present": false,
+            "utf8Hex": ""
+          },
+          "noteVectorID": "zwsp",
+          "nowBits": "4059400000000000"
+        }
+      ],
+      "required": true
+    },
+    {
+      "id": "create-bom",
+      "seed": "empty",
+      "steps": [
+        {
+          "op": "create",
+          "commandKey": "create-one",
+          "chainGoID": "00000000-0000-4000-8000-000000000385",
+          "definitionGoID": "00000000-0000-4000-8000-000000000386",
+          "noteGoID": "00000000-0000-4000-8000-000000000387",
+          "titleUTF8Hex": "706f6f6c",
+          "description": {
+            "present": false,
+            "utf8Hex": ""
+          },
+          "noteVectorID": "bom",
+          "nowBits": "4059400000000000"
+        }
+      ],
+      "required": true
+    },
+    {
+      "id": "create-valid",
+      "seed": "empty",
+      "steps": [
+        {
+          "op": "create",
+          "commandKey": "create-one",
+          "chainGoID": "00000000-0000-4000-8000-000000000385",
+          "definitionGoID": "00000000-0000-4000-8000-000000000386",
+          "noteGoID": "00000000-0000-4000-8000-000000000387",
+          "titleUTF8Hex": "706f6f6c",
+          "description": {
+            "present": false,
+            "utf8Hex": ""
+          },
+          "noteVectorID": "valid",
+          "nowBits": "4059400000000000"
+        }
+      ],
+      "required": true
+    }
+  ],
+  "checks": "fixed 7 comparison layers; no caller checks field",
+  "snapshotCountPerCase": "seed plus after each command",
+  "allSeedIDsFixedAcrossSides": true
+}
+
+"""#
+let vectorSHA256 = "8651e7dab7dbb359202c0d84d8ad6e02010f4b5e7e8f280208105d9a33c48a5e"
+let preferencesJSON = #"{"backupPolicy":{"destination":"iCloudDrive","frequency":"off"},"dataMode":"localFirst","language":"chinese","localFirstSyncPolicy":{"enabled":true,"endpoint":"localFolder","generateConflictCopy":true,"intervalSeconds":300,"mode":"manual","snapshotRetention":{"indexRetentionDays":30,"retentionIndexesDaily":1}},"settingsPoemDisplayPolicy":{"enabled":false,"text":"合成测试 / no network"},"syncEndpointOptions":[],"theme":"coolGray","themeLanguageUpdatedAt":0,"themeLanguageWriterID":"synthetic.fixture"}"#

@@ -1,0 +1,1009 @@
+{
+  "version": 2,
+  "fieldOrderMeaning": "documentation only; product arrays never sorted",
+  "objects": {
+    "Envelope": [
+      {
+        "wire": "formatVersion",
+        "type": "int",
+        "optional": false,
+        "swift": "Envelope.formatVersion",
+        "go": "canonical.Value at Envelope.formatVersion",
+        "m1": "typed-value"
+      },
+      {
+        "wire": "snapshot",
+        "type": "Snapshot",
+        "optional": false,
+        "swift": "Envelope.snapshot",
+        "go": "canonical.Value at Envelope.snapshot",
+        "m1": "typed-value"
+      }
+    ],
+    "Snapshot": [
+      {
+        "wire": "days",
+        "type": "[]Day",
+        "optional": false,
+        "swift": "Snapshot.days",
+        "go": "canonical.Value at Snapshot.days",
+        "m1": "typed-value"
+      },
+      {
+        "wire": "taskCycleSeries",
+        "type": "[]Series",
+        "optional": false,
+        "swift": "Snapshot.taskCycleSeries",
+        "go": "canonical.Value at Snapshot.taskCycleSeries",
+        "m1": "empty-array-only"
+      },
+      {
+        "wire": "chains",
+        "type": "[]Chain",
+        "optional": false,
+        "swift": "Snapshot.chains",
+        "go": "canonical.Value at Snapshot.chains",
+        "m1": "typed-value"
+      },
+      {
+        "wire": "definitions",
+        "type": "[]Definition",
+        "optional": false,
+        "swift": "Snapshot.definitions",
+        "go": "canonical.Value at Snapshot.definitions",
+        "m1": "typed-value"
+      },
+      {
+        "wire": "traces",
+        "type": "[]Trace",
+        "optional": false,
+        "swift": "Snapshot.traces",
+        "go": "canonical.Value at Snapshot.traces",
+        "m1": "typed-value"
+      },
+      {
+        "wire": "subtasks",
+        "type": "[]Subtask",
+        "optional": false,
+        "swift": "Snapshot.subtasks",
+        "go": "canonical.Value at Snapshot.subtasks",
+        "m1": "typed-value"
+      },
+      {
+        "wire": "preferences",
+        "type": "Preferences",
+        "optional": false,
+        "swift": "Snapshot.preferences",
+        "go": "canonical.Value at Snapshot.preferences",
+        "m1": "typed-value"
+      },
+      {
+        "wire": "classifications",
+        "type": "Classifications",
+        "optional": false,
+        "swift": "Snapshot.classifications",
+        "go": "canonical.Value at Snapshot.classifications",
+        "m1": "typed-value"
+      },
+      {
+        "wire": "ideas",
+        "type": "[]Idea",
+        "optional": false,
+        "swift": "Snapshot.ideas",
+        "go": "canonical.Value at Snapshot.ideas",
+        "m1": "empty-array-only"
+      }
+    ],
+    "ID": [
+      {
+        "wire": "rawValue",
+        "type": "uuid",
+        "optional": false,
+        "swift": "ID.rawValue",
+        "go": "canonical.Value at ID.rawValue",
+        "m1": "typed-value"
+      }
+    ],
+    "LocalDate": [
+      {
+        "wire": "year",
+        "type": "int",
+        "optional": false,
+        "swift": "LocalDate.year",
+        "go": "core.LocalDate.Year",
+        "m1": "typed-value"
+      },
+      {
+        "wire": "month",
+        "type": "int",
+        "optional": false,
+        "swift": "LocalDate.month",
+        "go": "core.LocalDate.Month",
+        "m1": "typed-value"
+      },
+      {
+        "wire": "day",
+        "type": "int",
+        "optional": false,
+        "swift": "LocalDate.day",
+        "go": "core.LocalDate.Day",
+        "m1": "typed-value"
+      }
+    ],
+    "Day": [
+      {
+        "wire": "id",
+        "type": "ID",
+        "optional": false,
+        "swift": "Day.id",
+        "go": "core.Day.ID",
+        "m1": "typed-value"
+      },
+      {
+        "wire": "date",
+        "type": "LocalDate",
+        "optional": false,
+        "swift": "Day.date",
+        "go": "core.Day.Date",
+        "m1": "typed-value"
+      },
+      {
+        "wire": "lockedAt",
+        "type": "stamp",
+        "optional": true,
+        "swift": "Day.lockedAt",
+        "go": "core.Day.LockedAt",
+        "m1": "absent-only except descriptionText may be absent or string"
+      },
+      {
+        "wire": "reviewSummary",
+        "type": "string",
+        "optional": true,
+        "swift": "Day.reviewSummary",
+        "go": "core.Day.ReviewSummary",
+        "m1": "absent-only except descriptionText may be absent or string"
+      },
+      {
+        "wire": "reviewUnfinishedReason",
+        "type": "string",
+        "optional": true,
+        "swift": "Day.reviewUnfinishedReason",
+        "go": "core.Day.ReviewUnfinishedReason",
+        "m1": "absent-only except descriptionText may be absent or string"
+      },
+      {
+        "wire": "reviewTomorrowNote",
+        "type": "string",
+        "optional": true,
+        "swift": "Day.reviewTomorrowNote",
+        "go": "core.Day.ReviewTomorrowNote",
+        "m1": "absent-only except descriptionText may be absent or string"
+      },
+      {
+        "wire": "createdAt",
+        "type": "stamp",
+        "optional": false,
+        "swift": "Day.createdAt",
+        "go": "core.Day.CreatedAt",
+        "m1": "typed-value"
+      },
+      {
+        "wire": "updatedAt",
+        "type": "stamp",
+        "optional": false,
+        "swift": "Day.updatedAt",
+        "go": "core.Day.UpdatedAt",
+        "m1": "typed-value"
+      }
+    ],
+    "Chain": [
+      {
+        "wire": "id",
+        "type": "ID",
+        "optional": false,
+        "swift": "TaskChain.id",
+        "go": "core.TaskChain.ID",
+        "m1": "typed-value"
+      },
+      {
+        "wire": "state",
+        "type": "enum:active,abandoned",
+        "optional": false,
+        "swift": "TaskChain.state",
+        "go": "core.TaskChain.State",
+        "m1": "active"
+      },
+      {
+        "wire": "cycleMembership",
+        "type": "Membership",
+        "optional": true,
+        "swift": "TaskChain.cycleMembership",
+        "go": "core.TaskChain.CycleMembership",
+        "m1": "absent-only except descriptionText may be absent or string"
+      },
+      {
+        "wire": "noteEntries",
+        "type": "[]Note",
+        "optional": false,
+        "swift": "TaskChain.noteEntries",
+        "go": "core.TaskChain.NoteEntries",
+        "m1": "typed-value"
+      },
+      {
+        "wire": "createdAt",
+        "type": "stamp",
+        "optional": false,
+        "swift": "TaskChain.createdAt",
+        "go": "core.TaskChain.CreatedAt",
+        "m1": "typed-value"
+      },
+      {
+        "wire": "updatedAt",
+        "type": "stamp",
+        "optional": false,
+        "swift": "TaskChain.updatedAt",
+        "go": "core.TaskChain.UpdatedAt",
+        "m1": "typed-value"
+      }
+    ],
+    "Note": [
+      {
+        "wire": "id",
+        "type": "ID",
+        "optional": false,
+        "swift": "TaskNoteEntry.id",
+        "go": "core.TaskNoteEntry.ID",
+        "m1": "typed-value"
+      },
+      {
+        "wire": "body",
+        "type": "string",
+        "optional": false,
+        "swift": "TaskNoteEntry.body",
+        "go": "core.TaskNoteEntry.Body",
+        "m1": "typed-value"
+      },
+      {
+        "wire": "createdAt",
+        "type": "stamp",
+        "optional": false,
+        "swift": "TaskNoteEntry.createdAt",
+        "go": "core.TaskNoteEntry.CreatedAt",
+        "m1": "typed-value"
+      },
+      {
+        "wire": "updatedAt",
+        "type": "stamp",
+        "optional": false,
+        "swift": "TaskNoteEntry.updatedAt",
+        "go": "core.TaskNoteEntry.UpdatedAt",
+        "m1": "typed-value"
+      },
+      {
+        "wire": "deletedAt",
+        "type": "stamp",
+        "optional": true,
+        "swift": "TaskNoteEntry.deletedAt",
+        "go": "core.TaskNoteEntry.DeletedAt",
+        "m1": "absent-only"
+      }
+    ],
+    "PlannedSubtask": [
+      {
+        "wire": "id",
+        "type": "ID",
+        "optional": false,
+        "swift": "PlannedSubtask.id",
+        "go": "core.PlannedSubtask.ID",
+        "m1": "typed-value"
+      },
+      {
+        "wire": "lineageID",
+        "type": "ID",
+        "optional": false,
+        "swift": "PlannedSubtask.lineageID",
+        "go": "core.PlannedSubtask.LineageID",
+        "m1": "typed-value"
+      },
+      {
+        "wire": "title",
+        "type": "string",
+        "optional": false,
+        "swift": "PlannedSubtask.title",
+        "go": "core.PlannedSubtask.Title",
+        "m1": "typed-value"
+      },
+      {
+        "wire": "difficulty",
+        "type": "enumint:1,2,3",
+        "optional": false,
+        "swift": "PlannedSubtask.difficulty",
+        "go": "core.PlannedSubtask.Difficulty",
+        "m1": "typed-value"
+      },
+      {
+        "wire": "position",
+        "type": "int",
+        "optional": false,
+        "swift": "PlannedSubtask.position",
+        "go": "core.PlannedSubtask.Position",
+        "m1": "typed-value"
+      },
+      {
+        "wire": "createdAt",
+        "type": "stamp",
+        "optional": false,
+        "swift": "PlannedSubtask.createdAt",
+        "go": "core.PlannedSubtask.CreatedAt",
+        "m1": "typed-value"
+      }
+    ],
+    "Definition": [
+      {
+        "wire": "id",
+        "type": "ID",
+        "optional": false,
+        "swift": "TaskDefinition.id",
+        "go": "core.TaskDefinition.ID",
+        "m1": "typed-value"
+      },
+      {
+        "wire": "chainID",
+        "type": "ID",
+        "optional": false,
+        "swift": "TaskDefinition.chainID",
+        "go": "core.TaskDefinition.ChainID",
+        "m1": "typed-value"
+      },
+      {
+        "wire": "sequence",
+        "type": "int",
+        "optional": false,
+        "swift": "TaskDefinition.sequence",
+        "go": "core.TaskDefinition.Sequence",
+        "m1": "1"
+      },
+      {
+        "wire": "title",
+        "type": "string",
+        "optional": false,
+        "swift": "TaskDefinition.title",
+        "go": "core.TaskDefinition.Title",
+        "m1": "typed-value"
+      },
+      {
+        "wire": "descriptionText",
+        "type": "string",
+        "optional": true,
+        "swift": "TaskDefinition.descriptionText",
+        "go": "core.TaskDefinition.DescriptionText",
+        "m1": "absent-only except descriptionText may be absent or string"
+      },
+      {
+        "wire": "plannedSubtasks",
+        "type": "[]PlannedSubtask",
+        "optional": false,
+        "swift": "TaskDefinition.plannedSubtasks",
+        "go": "core.TaskDefinition.PlannedSubtasks",
+        "m1": "typed-value"
+      },
+      {
+        "wire": "createdAt",
+        "type": "stamp",
+        "optional": false,
+        "swift": "TaskDefinition.createdAt",
+        "go": "core.TaskDefinition.CreatedAt",
+        "m1": "typed-value"
+      },
+      {
+        "wire": "contentUpdatedAt",
+        "type": "stamp",
+        "optional": false,
+        "swift": "TaskDefinition.contentUpdatedAt",
+        "go": "core.TaskDefinition.ContentUpdatedAt",
+        "m1": "typed-value"
+      },
+      {
+        "wire": "supersededAt",
+        "type": "stamp",
+        "optional": true,
+        "swift": "TaskDefinition.supersededAt",
+        "go": "core.TaskDefinition.SupersededAt",
+        "m1": "absent-only except descriptionText may be absent or string"
+      },
+      {
+        "wire": "supersededByDefinitionID",
+        "type": "ID",
+        "optional": true,
+        "swift": "TaskDefinition.supersededByDefinitionID",
+        "go": "core.TaskDefinition.SupersededByDefinitionID",
+        "m1": "absent-only except descriptionText may be absent or string"
+      }
+    ],
+    "Trace": [
+      {
+        "wire": "id",
+        "type": "ID",
+        "optional": false,
+        "swift": "DayTrace.id",
+        "go": "core.DayTrace.ID",
+        "m1": "typed-value"
+      },
+      {
+        "wire": "chainID",
+        "type": "ID",
+        "optional": false,
+        "swift": "DayTrace.chainID",
+        "go": "core.DayTrace.ChainID",
+        "m1": "typed-value"
+      },
+      {
+        "wire": "definitionID",
+        "type": "ID",
+        "optional": false,
+        "swift": "DayTrace.definitionID",
+        "go": "core.DayTrace.DefinitionID",
+        "m1": "typed-value"
+      },
+      {
+        "wire": "date",
+        "type": "LocalDate",
+        "optional": false,
+        "swift": "DayTrace.date",
+        "go": "core.DayTrace.Date",
+        "m1": "typed-value"
+      },
+      {
+        "wire": "status",
+        "type": "TraceStatus",
+        "optional": false,
+        "swift": "DayTrace.status",
+        "go": "core.DayTrace.Status",
+        "m1": "pending"
+      },
+      {
+        "wire": "priority",
+        "type": "int",
+        "optional": false,
+        "swift": "DayTrace.priority",
+        "go": "core.DayTrace.Priority",
+        "m1": "typed-value"
+      },
+      {
+        "wire": "pinOrder",
+        "type": "int",
+        "optional": true,
+        "swift": "DayTrace.pinOrder",
+        "go": "core.DayTrace.PinOrder",
+        "m1": "absent-only except descriptionText may be absent or string"
+      },
+      {
+        "wire": "continuationSeq",
+        "type": "int",
+        "optional": false,
+        "swift": "DayTrace.continuationSeq",
+        "go": "core.DayTrace.ContinuationSeq",
+        "m1": "0"
+      },
+      {
+        "wire": "descriptionText",
+        "type": "string",
+        "optional": true,
+        "swift": "DayTrace.descriptionText",
+        "go": "core.DayTrace.DescriptionText",
+        "m1": "absent-only except descriptionText may be absent or string"
+      },
+      {
+        "wire": "noteEntries",
+        "type": "[]Note",
+        "optional": false,
+        "swift": "DayTrace.noteEntries",
+        "go": "core.DayTrace.NoteEntries",
+        "m1": "typed-value"
+      },
+      {
+        "wire": "manualProgressPercent",
+        "type": "int",
+        "optional": true,
+        "swift": "DayTrace.manualProgressPercent",
+        "go": "core.DayTrace.ManualProgressPercent",
+        "m1": "absent-only except descriptionText may be absent or string"
+      },
+      {
+        "wire": "carriedFromTraceID",
+        "type": "ID",
+        "optional": true,
+        "swift": "DayTrace.carriedFromTraceID",
+        "go": "core.DayTrace.CarriedFromTraceID",
+        "m1": "absent-only except descriptionText may be absent or string"
+      },
+      {
+        "wire": "changedToTraceID",
+        "type": "ID",
+        "optional": true,
+        "swift": "DayTrace.changedToTraceID",
+        "go": "core.DayTrace.ChangedToTraceID",
+        "m1": "absent-only except descriptionText may be absent or string"
+      },
+      {
+        "wire": "createdAt",
+        "type": "stamp",
+        "optional": false,
+        "swift": "DayTrace.createdAt",
+        "go": "core.DayTrace.CreatedAt",
+        "m1": "typed-value"
+      },
+      {
+        "wire": "contentUpdatedAt",
+        "type": "stamp",
+        "optional": false,
+        "swift": "DayTrace.contentUpdatedAt",
+        "go": "core.DayTrace.ContentUpdatedAt",
+        "m1": "typed-value"
+      },
+      {
+        "wire": "completedAt",
+        "type": "stamp",
+        "optional": true,
+        "swift": "DayTrace.completedAt",
+        "go": "core.DayTrace.CompletedAt",
+        "m1": "absent-only except descriptionText may be absent or string"
+      },
+      {
+        "wire": "settledAt",
+        "type": "stamp",
+        "optional": true,
+        "swift": "DayTrace.settledAt",
+        "go": "core.DayTrace.SettledAt",
+        "m1": "absent-only except descriptionText may be absent or string"
+      },
+      {
+        "wire": "draftCancellationID",
+        "type": "uuid",
+        "optional": true,
+        "swift": "DayTrace.draftCancellationID",
+        "go": "core.DayTrace.DraftCancellationID",
+        "m1": "absent-only except descriptionText may be absent or string"
+      },
+      {
+        "wire": "draftCancelledOn",
+        "type": "LocalDate",
+        "optional": true,
+        "swift": "DayTrace.draftCancelledOn",
+        "go": "core.DayTrace.DraftCancelledOn",
+        "m1": "absent-only except descriptionText may be absent or string"
+      }
+    ],
+    "Subtask": [
+      {
+        "wire": "id",
+        "type": "ID",
+        "optional": false,
+        "swift": "Subtask.id",
+        "go": "core.Subtask.ID",
+        "m1": "typed-value"
+      },
+      {
+        "wire": "lineageID",
+        "type": "ID",
+        "optional": false,
+        "swift": "Subtask.lineageID",
+        "go": "core.Subtask.LineageID",
+        "m1": "typed-value"
+      },
+      {
+        "wire": "traceID",
+        "type": "ID",
+        "optional": false,
+        "swift": "Subtask.traceID",
+        "go": "core.Subtask.TraceID",
+        "m1": "typed-value"
+      },
+      {
+        "wire": "title",
+        "type": "string",
+        "optional": false,
+        "swift": "Subtask.title",
+        "go": "core.Subtask.Title",
+        "m1": "typed-value"
+      },
+      {
+        "wire": "status",
+        "type": "enum:pending,completed,unfinished,deferred,abandoned,cancelledDraft",
+        "optional": false,
+        "swift": "Subtask.status",
+        "go": "core.Subtask.Status",
+        "m1": "pending"
+      },
+      {
+        "wire": "difficulty",
+        "type": "enumint:1,2,3",
+        "optional": false,
+        "swift": "Subtask.difficulty",
+        "go": "core.Subtask.Difficulty",
+        "m1": "typed-value"
+      },
+      {
+        "wire": "position",
+        "type": "int",
+        "optional": false,
+        "swift": "Subtask.position",
+        "go": "core.Subtask.Position",
+        "m1": "typed-value"
+      },
+      {
+        "wire": "carriedFromSubtaskID",
+        "type": "ID",
+        "optional": true,
+        "swift": "Subtask.carriedFromSubtaskID",
+        "go": "core.Subtask.CarriedFromSubtaskID",
+        "m1": "absent-only except descriptionText may be absent or string"
+      },
+      {
+        "wire": "createdAt",
+        "type": "stamp",
+        "optional": false,
+        "swift": "Subtask.createdAt",
+        "go": "core.Subtask.CreatedAt",
+        "m1": "typed-value"
+      },
+      {
+        "wire": "updatedAt",
+        "type": "stamp",
+        "optional": false,
+        "swift": "Subtask.updatedAt",
+        "go": "core.Subtask.UpdatedAt",
+        "m1": "typed-value"
+      },
+      {
+        "wire": "completedAt",
+        "type": "stamp",
+        "optional": true,
+        "swift": "Subtask.completedAt",
+        "go": "core.Subtask.CompletedAt",
+        "m1": "absent-only except descriptionText may be absent or string"
+      },
+      {
+        "wire": "settledAt",
+        "type": "stamp",
+        "optional": true,
+        "swift": "Subtask.settledAt",
+        "go": "core.Subtask.SettledAt",
+        "m1": "absent-only except descriptionText may be absent or string"
+      },
+      {
+        "wire": "draftCancellationID",
+        "type": "uuid",
+        "optional": true,
+        "swift": "Subtask.draftCancellationID",
+        "go": "core.Subtask.DraftCancellationID",
+        "m1": "absent-only except descriptionText may be absent or string"
+      }
+    ],
+    "Preferences": [
+      {
+        "wire": "theme",
+        "type": "enum:coolGray,warmPaper",
+        "optional": false,
+        "swift": "AppPreferences.theme",
+        "go": "canonical.Value at Preferences.theme",
+        "m1": "exact registry value"
+      },
+      {
+        "wire": "language",
+        "type": "enum:chinese,english",
+        "optional": false,
+        "swift": "AppPreferences.language",
+        "go": "canonical.Value at Preferences.language",
+        "m1": "exact registry value"
+      },
+      {
+        "wire": "themeLanguageUpdatedAt",
+        "type": "stamp",
+        "optional": false,
+        "swift": "AppPreferences.themeLanguageUpdatedAt",
+        "go": "canonical.Value at Preferences.themeLanguageUpdatedAt",
+        "m1": "exact registry value"
+      },
+      {
+        "wire": "themeLanguageWriterID",
+        "type": "string",
+        "optional": false,
+        "swift": "AppPreferences.themeLanguageWriterID",
+        "go": "canonical.Value at Preferences.themeLanguageWriterID",
+        "m1": "exact registry value"
+      },
+      {
+        "wire": "dataMode",
+        "type": "enum:localFirst,onlineFirst",
+        "optional": false,
+        "swift": "AppPreferences.dataMode",
+        "go": "canonical.Value at Preferences.dataMode",
+        "m1": "exact registry value"
+      },
+      {
+        "wire": "backupPolicy",
+        "type": "BackupPolicy",
+        "optional": false,
+        "swift": "AppPreferences.backupPolicy",
+        "go": "canonical.Value at Preferences.backupPolicy",
+        "m1": "exact registry value"
+      },
+      {
+        "wire": "localFirstSyncPolicy",
+        "type": "SyncPolicy",
+        "optional": false,
+        "swift": "AppPreferences.localFirstSyncPolicy",
+        "go": "canonical.Value at Preferences.localFirstSyncPolicy",
+        "m1": "exact registry value"
+      },
+      {
+        "wire": "settingsPoemDisplayPolicy",
+        "type": "PoemPolicy",
+        "optional": false,
+        "swift": "AppPreferences.settingsPoemDisplayPolicy",
+        "go": "canonical.Value at Preferences.settingsPoemDisplayPolicy",
+        "m1": "exact registry value"
+      },
+      {
+        "wire": "syncEndpointOptions",
+        "type": "[]SyncEndpoint",
+        "optional": false,
+        "swift": "AppPreferences.syncEndpointOptions",
+        "go": "canonical.Value at Preferences.syncEndpointOptions",
+        "m1": "empty-array-only"
+      }
+    ],
+    "BackupPolicy": [
+      {
+        "wire": "frequency",
+        "type": "enum:off,daily,weekly",
+        "optional": false,
+        "swift": "ScheduledBackupPolicy.frequency",
+        "go": "canonical.Value at BackupPolicy.frequency",
+        "m1": "exact registry value"
+      },
+      {
+        "wire": "destination",
+        "type": "enum:iCloudDrive,s3",
+        "optional": false,
+        "swift": "ScheduledBackupPolicy.destination",
+        "go": "canonical.Value at BackupPolicy.destination",
+        "m1": "exact registry value"
+      }
+    ],
+    "SyncPolicy": [
+      {
+        "wire": "enabled",
+        "type": "bool",
+        "optional": false,
+        "swift": "LocalFirstCloudSyncPolicy.enabled",
+        "go": "canonical.Value at SyncPolicy.enabled",
+        "m1": "exact registry value"
+      },
+      {
+        "wire": "endpoint",
+        "type": "enum:iCloud,s3,webDAV,localFolder",
+        "optional": false,
+        "swift": "LocalFirstCloudSyncPolicy.endpoint",
+        "go": "canonical.Value at SyncPolicy.endpoint",
+        "m1": "exact registry value"
+      },
+      {
+        "wire": "mode",
+        "type": "enum:manual,automatic",
+        "optional": false,
+        "swift": "LocalFirstCloudSyncPolicy.mode",
+        "go": "canonical.Value at SyncPolicy.mode",
+        "m1": "exact registry value"
+      },
+      {
+        "wire": "intervalSeconds",
+        "type": "int",
+        "optional": false,
+        "swift": "LocalFirstCloudSyncPolicy.intervalSeconds",
+        "go": "canonical.Value at SyncPolicy.intervalSeconds",
+        "m1": "exact registry value"
+      },
+      {
+        "wire": "generateConflictCopy",
+        "type": "bool",
+        "optional": false,
+        "swift": "LocalFirstCloudSyncPolicy.generateConflictCopy",
+        "go": "canonical.Value at SyncPolicy.generateConflictCopy",
+        "m1": "exact registry value"
+      },
+      {
+        "wire": "snapshotRetention",
+        "type": "RetentionPolicy",
+        "optional": false,
+        "swift": "LocalFirstCloudSyncPolicy.snapshotRetention",
+        "go": "canonical.Value at SyncPolicy.snapshotRetention",
+        "m1": "exact registry value"
+      }
+    ],
+    "RetentionPolicy": [
+      {
+        "wire": "indexRetentionDays",
+        "type": "int",
+        "optional": false,
+        "swift": "SyncSnapshotRetentionPolicy.indexRetentionDays",
+        "go": "canonical.Value at RetentionPolicy.indexRetentionDays",
+        "m1": "exact registry value"
+      },
+      {
+        "wire": "retentionIndexesDaily",
+        "type": "int",
+        "optional": false,
+        "swift": "SyncSnapshotRetentionPolicy.retentionIndexesDaily",
+        "go": "canonical.Value at RetentionPolicy.retentionIndexesDaily",
+        "m1": "exact registry value"
+      }
+    ],
+    "PoemPolicy": [
+      {
+        "wire": "enabled",
+        "type": "bool",
+        "optional": false,
+        "swift": "SettingsPoemDisplayPolicy.enabled",
+        "go": "canonical.Value at PoemPolicy.enabled",
+        "m1": "exact registry value"
+      },
+      {
+        "wire": "text",
+        "type": "string",
+        "optional": false,
+        "swift": "SettingsPoemDisplayPolicy.text",
+        "go": "canonical.Value at PoemPolicy.text",
+        "m1": "exact registry value"
+      }
+    ],
+    "Classifications": [
+      {
+        "wire": "formatVersion",
+        "type": "int",
+        "optional": false,
+        "swift": "TaskClassificationState.formatVersion",
+        "go": "canonical.Value at Classifications.formatVersion",
+        "m1": "1"
+      },
+      {
+        "wire": "revision",
+        "type": "uint",
+        "optional": false,
+        "swift": "TaskClassificationState.revision",
+        "go": "canonical.Value at Classifications.revision",
+        "m1": "0"
+      },
+      {
+        "wire": "categories",
+        "type": "pairs:ID:Category",
+        "optional": false,
+        "swift": "TaskClassificationState.categories",
+        "go": "canonical.Value at Classifications.categories",
+        "m1": "empty-array-only"
+      },
+      {
+        "wire": "labels",
+        "type": "pairs:ID:Label",
+        "optional": false,
+        "swift": "TaskClassificationState.labels",
+        "go": "canonical.Value at Classifications.labels",
+        "m1": "empty-array-only"
+      },
+      {
+        "wire": "currentByChainID",
+        "type": "pairs:ID:Current",
+        "optional": false,
+        "swift": "TaskClassificationState.currentByChainID",
+        "go": "canonical.Value at Classifications.currentByChainID",
+        "m1": "empty-array-only"
+      },
+      {
+        "wire": "relationHistory",
+        "type": "[]RelationHistory",
+        "optional": false,
+        "swift": "TaskClassificationState.relationHistory",
+        "go": "canonical.Value at Classifications.relationHistory",
+        "m1": "empty-array-only"
+      },
+      {
+        "wire": "categoryMerges",
+        "type": "pairs:ID:Merge",
+        "optional": false,
+        "swift": "TaskClassificationState.categoryMerges",
+        "go": "canonical.Value at Classifications.categoryMerges",
+        "m1": "empty-array-only"
+      },
+      {
+        "wire": "labelMerges",
+        "type": "pairs:ID:Merge",
+        "optional": false,
+        "swift": "TaskClassificationState.labelMerges",
+        "go": "canonical.Value at Classifications.labelMerges",
+        "m1": "empty-array-only"
+      },
+      {
+        "wire": "categoryDeletionTombstones",
+        "type": "pairs:ID:Tombstone",
+        "optional": false,
+        "swift": "TaskClassificationState.categoryDeletionTombstones",
+        "go": "canonical.Value at Classifications.categoryDeletionTombstones",
+        "m1": "empty-array-only"
+      },
+      {
+        "wire": "labelDeletionTombstones",
+        "type": "pairs:ID:Tombstone",
+        "optional": false,
+        "swift": "TaskClassificationState.labelDeletionTombstones",
+        "go": "canonical.Value at Classifications.labelDeletionTombstones",
+        "m1": "empty-array-only"
+      },
+      {
+        "wire": "snapshotsByTraceID",
+        "type": "pairs:ID:TraceSnapshot",
+        "optional": false,
+        "swift": "TaskClassificationState.snapshotsByTraceID",
+        "go": "canonical.Value at Classifications.snapshotsByTraceID",
+        "m1": "empty-array-only"
+      },
+      {
+        "wire": "snapshotEventsByTraceID",
+        "type": "pairs:ID:[]TraceSnapshot",
+        "optional": false,
+        "swift": "TaskClassificationState.snapshotEventsByTraceID",
+        "go": "canonical.Value at Classifications.snapshotEventsByTraceID",
+        "m1": "empty-array-only"
+      },
+      {
+        "wire": "committedReceiptsByInteractionID",
+        "type": "pairs:uuid:Receipt",
+        "optional": false,
+        "swift": "TaskClassificationState.committedReceiptsByInteractionID",
+        "go": "canonical.Value at Classifications.committedReceiptsByInteractionID",
+        "m1": "empty-array-only"
+      },
+      {
+        "wire": "changeRecords",
+        "type": "[]ChangeRecord",
+        "optional": false,
+        "swift": "TaskClassificationState.changeRecords",
+        "go": "canonical.Value at Classifications.changeRecords",
+        "m1": "empty-array-only"
+      }
+    ]
+  },
+  "emptyOnlyElementTypes": [
+    "Series",
+    "Idea",
+    "SyncEndpoint",
+    "Category",
+    "Label",
+    "Current",
+    "RelationHistory",
+    "Merge",
+    "Tombstone",
+    "TraceSnapshot",
+    "Receipt",
+    "ChangeRecord",
+    "Membership"
+  ],
+  "unknownOrNonemptyUnsupportedType": "reject before domain decoder",
+  "IDMapping": "Swift typed ID.rawValue UUID; Go typed uppercase UUID string",
+  "stamp": "exact UInt64 decimal lexeme, finite Double reference-date bits",
+  "optionalEncoding": "absent or typed value; null rejected; capture negatives record null as unexpected-value",
+  "snapshotGoMapping": {
+    "days": "State.Tasks.Days",
+    "chains": "State.Tasks.Chains",
+    "definitions": "State.Tasks.Definitions",
+    "traces": "State.Tasks.Traces",
+    "subtasks": "State.Tasks.Subtasks",
+    "taskCycleSeries": "State.Series",
+    "preferences": "Supplement.Preferences",
+    "classifications": "Supplement.Classifications",
+    "ideas": "Supplement.Ideas"
+  },
+  "aliases": {
+    "TraceStatus": "enum:pending,completed,unfinished,deferred,changed,returnedToPool,cancelledDraft,abandoned"
+  }
+}

@@ -1,0 +1,50 @@
+{
+  "kind": "static-source-verification-not-runtime-capture",
+  "upstreamCommit": "43e6eefaae3a04be89cab3e234d470111afd80ef",
+  "coreCompiledSwiftFileCount": 14,
+  "manifestTotalFiles": 16,
+  "files": [
+    {
+      "path": "App/NoonmarkMacApp/NoonmarkStore+NaturalDayPersistenceImport.swift",
+      "gitBlob": "71ed423d30dc9722d47faa2585cc60ecb5cc1307",
+      "sha256": "4ea42339c44cb2cea1983499b08ff74315d0f64748c135c1978d5b9d0fa5bd5b",
+      "bytes": 55223,
+      "fixedURL": "https://github.com/quboliu/noonmark/blob/43e6eefaae3a04be89cab3e234d470111afd80ef/App/NoonmarkMacApp/NoonmarkStore%2BNaturalDayPersistenceImport.swift",
+      "blobMatchesFixedTree": true
+    },
+    {
+      "path": "Sources/NoonmarkCore/Models.swift",
+      "gitBlob": "f66ac6828b9d58e8842930c3355445ae6e2a9be9",
+      "sha256": "14b961a337ceae9671ea1d5c9202ec0848fd25bffc1f0fb7ab433d8b47fb41f2",
+      "bytes": 43650,
+      "fixedURL": "https://github.com/quboliu/noonmark/blob/43e6eefaae3a04be89cab3e234d470111afd80ef/Sources/NoonmarkCore/Models.swift",
+      "blobMatchesFixedTree": true
+    },
+    {
+      "path": "Sources/NoonmarkCore/NoonmarkSnapshot.swift",
+      "gitBlob": "cc5dd14c439bb6f836196a9b49c478c5440e3313",
+      "sha256": "259e7764c3b76520628820fc1c463584ff0cf11c5ea202cae17b804821cdbc2d",
+      "bytes": 27726,
+      "fixedURL": "https://github.com/quboliu/noonmark/blob/43e6eefaae3a04be89cab3e234d470111afd80ef/Sources/NoonmarkCore/NoonmarkSnapshot.swift",
+      "blobMatchesFixedTree": true
+    },
+    {
+      "path": "Sources/NoonmarkStorage/ExactDateJSONCoding.swift",
+      "gitBlob": "daad702299da7e921a4753ea78bba868b88235be",
+      "sha256": "98c4a7a0bdb8a57d1355b51e52ce70c4ffb362888d0ac95f934ae16010c07bb0",
+      "bytes": 1407,
+      "fixedURL": "https://github.com/quboliu/noonmark/blob/43e6eefaae3a04be89cab3e234d470111afd80ef/Sources/NoonmarkStorage/ExactDateJSONCoding.swift",
+      "blobMatchesFixedTree": true
+    },
+    {
+      "path": "Sources/NoonmarkStorage/NoonmarkDataPackage.swift",
+      "gitBlob": "b1ac493f17473ae8f3aa2676291375c0d01e0567",
+      "sha256": "0b39bfbf0eec56909d8056eece568192116ce6dd449d6f241738e3c06dc4bb1c",
+      "bytes": 23057,
+      "fixedURL": "https://github.com/quboliu/noonmark/blob/43e6eefaae3a04be89cab3e234d470111afd80ef/Sources/NoonmarkStorage/NoonmarkDataPackage.swift",
+      "blobMatchesFixedTree": true
+    }
+  ],
+  "localEngineMatchesExistingManifest": true,
+  "runtimeExecuted": false
+}

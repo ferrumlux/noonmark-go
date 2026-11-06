@@ -1,0 +1,325 @@
+{
+  "formatVersion": 7,
+  "snapshot": {
+    "days": [
+      {
+        "id": {
+          "rawValue": "00000000-0000-4000-8000-000000000029"
+        },
+        "date": {
+          "year": 2026,
+          "month": 11,
+          "day": 6
+        },
+        "createdAt": 4636737291354636288,
+        "updatedAt": 4636737291354636288
+      }
+    ],
+    "taskCycleSeries": [],
+    "chains": [
+      {
+        "id": {
+          "rawValue": "00000000-0000-4000-8000-000000000001"
+        },
+        "state": "active",
+        "noteEntries": [],
+        "createdAt": 4636737291354636288,
+        "updatedAt": 4636737291354636288
+      },
+      {
+        "id": {
+          "rawValue": "00000000-0000-4000-8000-000000000002"
+        },
+        "state": "active",
+        "noteEntries": [],
+        "createdAt": 4636737291354636288,
+        "updatedAt": 4636737291354636288
+      },
+      {
+        "id": {
+          "rawValue": "00000000-0000-4000-8000-000000000003"
+        },
+        "state": "active",
+        "noteEntries": [],
+        "createdAt": 4636737291354636288,
+        "updatedAt": 4636737291354636288
+      }
+    ],
+    "definitions": [
+      {
+        "id": {
+          "rawValue": "00000000-0000-4000-8000-00000000000B"
+        },
+        "chainID": {
+          "rawValue": "00000000-0000-4000-8000-000000000001"
+        },
+        "sequence": 1,
+        "title": "pool-1",
+        "plannedSubtasks": [
+          {
+            "id": {
+              "rawValue": "00000000-0000-4000-8000-00000000044D"
+            },
+            "lineageID": {
+              "rawValue": "00000000-0000-4000-8000-000000002B5D"
+            },
+            "title": "child-2",
+            "difficulty": 2,
+            "position": 2,
+            "createdAt": 4636737291354636288
+          },
+          {
+            "id": {
+              "rawValue": "00000000-0000-4000-8000-00000000044C"
+            },
+            "lineageID": {
+              "rawValue": "00000000-0000-4000-8000-000000002B5C"
+            },
+            "title": "child-1",
+            "difficulty": 1,
+            "position": 1,
+            "createdAt": 4636737291354636288
+          }
+        ],
+        "createdAt": 4636737291354636288,
+        "contentUpdatedAt": 4636737291354636288
+      },
+      {
+        "id": {
+          "rawValue": "00000000-0000-4000-8000-00000000000C"
+        },
+        "chainID": {
+          "rawValue": "00000000-0000-4000-8000-000000000002"
+        },
+        "sequence": 1,
+        "title": "pool-2",
+        "plannedSubtasks": [
+          {
+            "id": {
+              "rawValue": "00000000-0000-4000-8000-0000000004B0"
+            },
+            "lineageID": {
+              "rawValue": "00000000-0000-4000-8000-000000002BC0"
+            },
+            "title": "child-1",
+            "difficulty": 1,
+            "position": 1,
+            "createdAt": 4636737291354636288
+          },
+          {
+            "id": {
+              "rawValue": "00000000-0000-4000-8000-0000000004B1"
+            },
+            "lineageID": {
+              "rawValue": "00000000-0000-4000-8000-000000002BC1"
+            },
+            "title": "child-2",
+            "difficulty": 2,
+            "position": 2,
+            "createdAt": 4636737291354636288
+          }
+        ],
+        "createdAt": 4636737291354636288,
+        "contentUpdatedAt": 4636737291354636288
+      },
+      {
+        "id": {
+          "rawValue": "00000000-0000-4000-8000-00000000000D"
+        },
+        "chainID": {
+          "rawValue": "00000000-0000-4000-8000-000000000003"
+        },
+        "sequence": 1,
+        "title": "pool-3",
+        "plannedSubtasks": [
+          {
+            "id": {
+              "rawValue": "00000000-0000-4000-8000-000000000514"
+            },
+            "lineageID": {
+              "rawValue": "00000000-0000-4000-8000-000000002C24"
+            },
+            "title": "child-1",
+            "difficulty": 1,
+            "position": 1,
+            "createdAt": 4636737291354636288
+          },
+          {
+            "id": {
+              "rawValue": "00000000-0000-4000-8000-000000000515"
+            },
+            "lineageID": {
+              "rawValue": "00000000-0000-4000-8000-000000002C25"
+            },
+            "title": "child-2",
+            "difficulty": 2,
+            "position": 2,
+            "createdAt": 4636737291354636288
+          }
+        ],
+        "createdAt": 4636737291354636288,
+        "contentUpdatedAt": 4636737291354636288
+      }
+    ],
+    "traces": [
+      {
+        "id": {
+          "rawValue": "00000000-0000-4000-8000-000000000021"
+        },
+        "chainID": {
+          "rawValue": "00000000-0000-4000-8000-000000000003"
+        },
+        "definitionID": {
+          "rawValue": "00000000-0000-4000-8000-00000000000D"
+        },
+        "date": {
+          "year": 2026,
+          "month": 11,
+          "day": 6
+        },
+        "status": "pending",
+        "priority": 2,
+        "continuationSeq": 0,
+        "noteEntries": [],
+        "createdAt": 4636737291354636288,
+        "contentUpdatedAt": 4636737291354636288
+      },
+      {
+        "id": {
+          "rawValue": "00000000-0000-4000-8000-000000000020"
+        },
+        "chainID": {
+          "rawValue": "00000000-0000-4000-8000-000000000002"
+        },
+        "definitionID": {
+          "rawValue": "00000000-0000-4000-8000-00000000000C"
+        },
+        "date": {
+          "year": 2026,
+          "month": 11,
+          "day": 6
+        },
+        "status": "pending",
+        "priority": 1,
+        "continuationSeq": 0,
+        "noteEntries": [],
+        "createdAt": 4636737291354636288,
+        "contentUpdatedAt": 4636737291354636288
+      }
+    ],
+    "subtasks": [
+      {
+        "id": {
+          "rawValue": "00000000-0000-4000-8000-00000000014C"
+        },
+        "lineageID": {
+          "rawValue": "00000000-0000-4000-8000-000000002C25"
+        },
+        "traceID": {
+          "rawValue": "00000000-0000-4000-8000-000000000021"
+        },
+        "title": "child-2",
+        "status": "pending",
+        "difficulty": 2,
+        "position": 2,
+        "createdAt": 4636737291354636288,
+        "updatedAt": 4636737291354636288
+      },
+      {
+        "id": {
+          "rawValue": "00000000-0000-4000-8000-000000000141"
+        },
+        "lineageID": {
+          "rawValue": "00000000-0000-4000-8000-000000002BC0"
+        },
+        "traceID": {
+          "rawValue": "00000000-0000-4000-8000-000000000020"
+        },
+        "title": "child-1",
+        "status": "pending",
+        "difficulty": 1,
+        "position": 1,
+        "createdAt": 4636737291354636288,
+        "updatedAt": 4636737291354636288
+      },
+      {
+        "id": {
+          "rawValue": "00000000-0000-4000-8000-00000000014B"
+        },
+        "lineageID": {
+          "rawValue": "00000000-0000-4000-8000-000000002C24"
+        },
+        "traceID": {
+          "rawValue": "00000000-0000-4000-8000-000000000021"
+        },
+        "title": "child-1",
+        "status": "pending",
+        "difficulty": 1,
+        "position": 1,
+        "createdAt": 4636737291354636288,
+        "updatedAt": 4636737291354636288
+      },
+      {
+        "id": {
+          "rawValue": "00000000-0000-4000-8000-000000000142"
+        },
+        "lineageID": {
+          "rawValue": "00000000-0000-4000-8000-000000002BC1"
+        },
+        "traceID": {
+          "rawValue": "00000000-0000-4000-8000-000000000020"
+        },
+        "title": "child-2",
+        "status": "pending",
+        "difficulty": 2,
+        "position": 2,
+        "createdAt": 4636737291354636288,
+        "updatedAt": 4636737291354636288
+      }
+    ],
+    "preferences": {
+      "backupPolicy": {
+        "destination": "iCloudDrive",
+        "frequency": "off"
+      },
+      "dataMode": "localFirst",
+      "language": "chinese",
+      "localFirstSyncPolicy": {
+        "enabled": true,
+        "endpoint": "localFolder",
+        "generateConflictCopy": true,
+        "intervalSeconds": 300,
+        "mode": "manual",
+        "snapshotRetention": {
+          "indexRetentionDays": 30,
+          "retentionIndexesDaily": 1
+        }
+      },
+      "settingsPoemDisplayPolicy": {
+        "enabled": false,
+        "text": "合成测试 / no network"
+      },
+      "syncEndpointOptions": [],
+      "theme": "coolGray",
+      "themeLanguageUpdatedAt": 0,
+      "themeLanguageWriterID": "synthetic.fixture"
+    },
+    "classifications": {
+      "categories": [],
+      "categoryDeletionTombstones": [],
+      "categoryMerges": [],
+      "changeRecords": [],
+      "committedReceiptsByInteractionID": [],
+      "currentByChainID": [],
+      "formatVersion": 1,
+      "labelDeletionTombstones": [],
+      "labelMerges": [],
+      "labels": [],
+      "relationHistory": [],
+      "revision": 0,
+      "snapshotEventsByTraceID": [],
+      "snapshotsByTraceID": []
+    },
+    "ideas": []
+  }
+}

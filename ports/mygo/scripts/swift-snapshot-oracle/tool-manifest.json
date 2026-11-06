@@ -1,0 +1,320 @@
+{
+  "schemaVersion": 2,
+  "files": [
+    {
+      "path": ".github/workflows/swift-snapshot-oracle.yml",
+      "role": "tool",
+      "gitBlob": "",
+      "sha256": "167be6c541f9215882b0a8719d1314dcfb1a77def97f3b63776e48af1767cb95",
+      "bytes": 1744
+    },
+    {
+      "path": "ports/mygo/scripts/swift-snapshot-oracle/BoundedJSON.swift",
+      "role": "tool",
+      "gitBlob": "",
+      "sha256": "52ff5feeffccb884634355e648ef22d51e3d983c963b7f0eb53ae99cbd8dcd24",
+      "bytes": 7713
+    },
+    {
+      "path": "ports/mygo/scripts/swift-snapshot-oracle/DirectProjection.swift",
+      "role": "tool",
+      "gitBlob": "",
+      "sha256": "55f7624c84f3aee9bfc82b596dc99dd0c4370a188b30f77aab1b3f5fe63a2e68",
+      "bytes": 11551
+    },
+    {
+      "path": "ports/mygo/scripts/swift-snapshot-oracle/FrozenInputs.swift",
+      "role": "tool",
+      "gitBlob": "",
+      "sha256": "624c5100a02086f811f01dd14add1238c4bcab819749bdeb56400636f8611b33",
+      "bytes": 12175
+    },
+    {
+      "path": "ports/mygo/scripts/swift-snapshot-oracle/FrozenSchema.swift",
+      "role": "tool",
+      "gitBlob": "",
+      "sha256": "9a063046701ea8046be39f4a26a54aa2a091829113abc6e6c1b85ab9f5c75bc3",
+      "bytes": 13693
+    },
+    {
+      "path": "ports/mygo/scripts/swift-snapshot-oracle/MutationGate.swift",
+      "role": "tool",
+      "gitBlob": "",
+      "sha256": "41208b262faac5f28cc3c99e5bc44dde53d237dd906c229131d83f15e06c7be8",
+      "bytes": 22877
+    },
+    {
+      "path": "ports/mygo/scripts/swift-snapshot-oracle/README.md",
+      "role": "tool",
+      "gitBlob": "",
+      "sha256": "e5c94b3f1b4fa9c649bcf69978228c7ed124553b06fc27e2c289b00b3bbfad73",
+      "bytes": 8820
+    },
+    {
+      "path": "ports/mygo/scripts/swift-snapshot-oracle/SnapshotOracle.swift",
+      "role": "tool",
+      "gitBlob": "",
+      "sha256": "72942f6ca0226772a2c64e9018507520534a9886b98472437f27608bef8677b8",
+      "bytes": 17502
+    },
+    {
+      "path": "ports/mygo/scripts/swift-snapshot-oracle/bounded.py",
+      "role": "tool",
+      "gitBlob": "",
+      "sha256": "05d54cd17eba5c3ee64542d9749c113ea272a36725290ca2467278ebbd35e699",
+      "bytes": 19095
+    },
+    {
+      "path": "ports/mygo/scripts/swift-snapshot-oracle/comparator.py",
+      "role": "tool",
+      "gitBlob": "",
+      "sha256": "a1d9aa3c0c23af9e893a180437da1a3c7bc10eef6f14272b826bda2e59bec3c3",
+      "bytes": 21555
+    },
+    {
+      "path": "ports/mygo/scripts/swift-snapshot-oracle/controller.py",
+      "role": "tool",
+      "gitBlob": "",
+      "sha256": "7b6ec20057641ce13ee4a58c9e243aa2980e37cfc9d5971043f8ff62289dc713",
+      "bytes": 65774
+    },
+    {
+      "path": "ports/mygo/scripts/swift-snapshot-oracle/gate_receipts.py",
+      "role": "tool",
+      "gitBlob": "",
+      "sha256": "df2ba14d661ce468970b5a5511d16526006d7eea06d1be63ceae00a33c63110a",
+      "bytes": 196554
+    },
+    {
+      "path": "ports/mygo/scripts/swift-snapshot-oracle/gates.py",
+      "role": "tool",
+      "gitBlob": "",
+      "sha256": "10401daafa0b2776d4332c6e5a17bf6c56ec184697f81e0686311498630de2a9",
+      "bytes": 47397
+    },
+    {
+      "path": "ports/mygo/scripts/swift-snapshot-oracle/gates_comparison.py",
+      "role": "tool",
+      "gitBlob": "",
+      "sha256": "0e6aad61b8ec9b7ee309fa5ee86eb0b733ac0f94022dcab7e5bf148828c2ea44",
+      "bytes": 14841
+    },
+    {
+      "path": "ports/mygo/scripts/swift-snapshot-oracle/go-probe/README.md",
+      "role": "tool",
+      "gitBlob": "",
+      "sha256": "1916396e60934e314447471aec21ad3683a0950200b5b82403d3985aa494996b",
+      "bytes": 6526
+    },
+    {
+      "path": "ports/mygo/scripts/swift-snapshot-oracle/go-probe/frozen.go",
+      "role": "tool",
+      "gitBlob": "",
+      "sha256": "398df5327b412df04ec240b6a6263bfdd54ed51679b370df094de44a23e6e3f3",
+      "bytes": 3753
+    },
+    {
+      "path": "ports/mygo/scripts/swift-snapshot-oracle/go-probe/instrument.go",
+      "role": "tool",
+      "gitBlob": "",
+      "sha256": "46ec4e01bb9d9300355b4d247b2d0e935e77c8709002e2b8917a521d73dfb1e1",
+      "bytes": 1874
+    },
+    {
+      "path": "ports/mygo/scripts/swift-snapshot-oracle/go-probe/main.go",
+      "role": "tool",
+      "gitBlob": "",
+      "sha256": "82ea413b84ffa9358267ad0469e9d357934e96c2d2393f80a81df269c1168108",
+      "bytes": 15305
+    },
+    {
+      "path": "ports/mygo/scripts/swift-snapshot-oracle/go-probe/main_test.go",
+      "role": "tool",
+      "gitBlob": "",
+      "sha256": "6f5bc040db97f902bc637aa3d36b88a639efeca2cffc399711492cde3a1bb87d",
+      "bytes": 7824
+    },
+    {
+      "path": "ports/mygo/scripts/swift-snapshot-oracle/go-probe/mutation.go",
+      "role": "tool",
+      "gitBlob": "",
+      "sha256": "fa3d088de9a1b5505b561665de0b07449b4b9ad86f7e4c178910e9a7ee71da19",
+      "bytes": 19700
+    },
+    {
+      "path": "ports/mygo/scripts/swift-snapshot-oracle/go-probe/profile.go",
+      "role": "tool",
+      "gitBlob": "",
+      "sha256": "bd8c386a2addb39db6d1e448d597e6b38e9e98521766b22b00bce23340e1033f",
+      "bytes": 8065
+    },
+    {
+      "path": "ports/mygo/scripts/swift-snapshot-oracle/go-probe/scan.go",
+      "role": "tool",
+      "gitBlob": "",
+      "sha256": "6199797a22379ba27f2022d92932b7c7d159132f6787b122f0159d7d5358bfc5",
+      "bytes": 6290
+    },
+    {
+      "path": "ports/mygo/scripts/swift-snapshot-oracle/offline.py",
+      "role": "tool",
+      "gitBlob": "",
+      "sha256": "0a811681e9fcdf771e524e23a525fd6b1143260b70e3368c63f84400de5df074",
+      "bytes": 14212
+    },
+    {
+      "path": "ports/mygo/scripts/swift-snapshot-oracle/process.py",
+      "role": "tool",
+      "gitBlob": "",
+      "sha256": "49dd17ee98fae9146808277a5faa1567681dcd12d0f857566ca63d5f5fd71529",
+      "bytes": 17651
+    },
+    {
+      "path": "ports/mygo/scripts/swift-snapshot-oracle/runner.py",
+      "role": "tool",
+      "gitBlob": "",
+      "sha256": "24800a5797f1e7748093a503186462a6acac31a498099a3695a47bd868dd6c75",
+      "bytes": 140533
+    },
+    {
+      "path": "ports/mygo/scripts/swift-snapshot-oracle/spec/ARTIFACT-SHA256.tsv",
+      "role": "tool",
+      "gitBlob": "",
+      "sha256": "dba942f479e998d050cd02c927e62b01b64394b34aa65f7258d4a30206516aed",
+      "bytes": 1111
+    },
+    {
+      "path": "ports/mygo/scripts/swift-snapshot-oracle/spec/Design.md",
+      "role": "tool",
+      "gitBlob": "",
+      "sha256": "dc6fea57ba43e19fa8f2dfdf742fa1ea17e32fc711daa45ad80b910ab7f541a2",
+      "bytes": 10654
+    },
+    {
+      "path": "ports/mygo/scripts/swift-snapshot-oracle/spec/FieldSchema-R2.json",
+      "role": "tool",
+      "gitBlob": "",
+      "sha256": "7a0940e9a1fbc7b847aaa7ea059042e008faaac74b132b8300d0fbb35341d07c",
+      "bytes": 29490
+    },
+    {
+      "path": "ports/mygo/scripts/swift-snapshot-oracle/spec/FixtureSchema.md",
+      "role": "tool",
+      "gitBlob": "",
+      "sha256": "51f99d6b21b8df13891d50da9be986dc7af77227ed5cdd186702119a9eb7c00b",
+      "bytes": 19725
+    },
+    {
+      "path": "ports/mygo/scripts/swift-snapshot-oracle/spec/Matrix.md",
+      "role": "tool",
+      "gitBlob": "",
+      "sha256": "b1b9e531417a3fbfb5a1a0267d9c17bcdaeb25ea21b28c9422839522349a5719",
+      "bytes": 7386
+    },
+    {
+      "path": "ports/mygo/scripts/swift-snapshot-oracle/spec/NoteVectors-R2.json",
+      "role": "tool",
+      "gitBlob": "",
+      "sha256": "8651e7dab7dbb359202c0d84d8ad6e02010f4b5e7e8f280208105d9a33c48a5e",
+      "bytes": 3123
+    },
+    {
+      "path": "ports/mygo/scripts/swift-snapshot-oracle/spec/SOURCE-SHA256.tsv",
+      "role": "tool",
+      "gitBlob": "",
+      "sha256": "a62dc8acf664b70eb0f8d92fc16f9923a5e1bb80ba5dab9f79a518137b43fc65",
+      "bytes": 3986
+    },
+    {
+      "path": "ports/mygo/scripts/swift-snapshot-oracle/spec/SOURCE-VERIFICATION.json",
+      "role": "tool",
+      "gitBlob": "",
+      "sha256": "23aedd34bbdc31041b68a9b6d6f7b15cec1b0cbc4636a06d32ac32b7c857c1ef",
+      "bytes": 2448
+    },
+    {
+      "path": "ports/mygo/scripts/swift-snapshot-oracle/spec/SeedRegistry-R2.json",
+      "role": "tool",
+      "gitBlob": "",
+      "sha256": "b15a50ddaa5315913aceb3d2b14bb823caf57580c7dd8e9c2db32bb71914032a",
+      "bytes": 11464
+    },
+    {
+      "path": "ports/mygo/scripts/swift-snapshot-oracle/spec/SourceManifest-R2.json",
+      "role": "tool",
+      "gitBlob": "",
+      "sha256": "eaa83e76297691c122fb018629df44d4659dd0bd1937d092e805b59dfdfe8d35",
+      "bytes": 5509
+    },
+    {
+      "path": "ports/mygo/scripts/swift-snapshot-oracle/spec/r2-seeds/empty.json",
+      "role": "tool",
+      "gitBlob": "",
+      "sha256": "9a7523eca7c2938824edaf548c44af04e8d96587c49bc53d06c09c57c066da65",
+      "bytes": 1397
+    },
+    {
+      "path": "ports/mygo/scripts/swift-snapshot-oracle/spec/r2-seeds/multi-interleaved.json",
+      "role": "tool",
+      "gitBlob": "",
+      "sha256": "4e3159d88491d994a2410972513c6312258609d8ce3ad89aceed28c5585120da",
+      "bytes": 8851
+    },
+    {
+      "path": "ports/mygo/scripts/swift-snapshot-oracle/spec/r2-seeds/planned-12.json",
+      "role": "tool",
+      "gitBlob": "",
+      "sha256": "aecba81054e72fbdf749c928cbd5d8346c856c258e3e718f30a6f0ff71c2decb",
+      "bytes": 2754
+    },
+    {
+      "path": "ports/mygo/scripts/swift-snapshot-oracle/spec/r2-seeds/planned-21.json",
+      "role": "tool",
+      "gitBlob": "",
+      "sha256": "0a9c83113057da75914e27425988abd102a3218e7679c7bed0517a755e9eda18",
+      "bytes": 2754
+    },
+    {
+      "path": "ports/mygo/scripts/swift-snapshot-oracle/test_bounded.py",
+      "role": "tool",
+      "gitBlob": "",
+      "sha256": "ff0ec811075d981fd4af37e55c89c8ef014d734a30233eaaebba32343e57ffa7",
+      "bytes": 8950
+    },
+    {
+      "path": "ports/mygo/scripts/swift-snapshot-oracle/test_comparator.py",
+      "role": "tool",
+      "gitBlob": "",
+      "sha256": "af5599150b00456090ceb6900576b239627be04a3475204152d61f2a763b0fb7",
+      "bytes": 11968
+    },
+    {
+      "path": "ports/mygo/scripts/swift-snapshot-oracle/test_controller.py",
+      "role": "tool",
+      "gitBlob": "",
+      "sha256": "f7af6a27e04bc716584a3a92e05c7334b6cf36e0867eb7349fe64b11f2c4c274",
+      "bytes": 7218
+    },
+    {
+      "path": "ports/mygo/scripts/swift-snapshot-oracle/test_gates_comparison.py",
+      "role": "tool",
+      "gitBlob": "",
+      "sha256": "bacbcc3faf49925827723417c844a5448fbe94cfd3e1ff25458ed3f4e66ce42d",
+      "bytes": 2106
+    },
+    {
+      "path": "ports/mygo/scripts/swift-snapshot-oracle/test_process.py",
+      "role": "tool",
+      "gitBlob": "",
+      "sha256": "accbefd585537d3aa393329a3284746cff2404909cf6d0308b8e46d37fc41914",
+      "bytes": 3516
+    },
+    {
+      "path": "ports/mygo/scripts/swift-snapshot-oracle/test_swift_runner.py",
+      "role": "tool",
+      "gitBlob": "",
+      "sha256": "186d4b9cdedfd2a7b90e216ab5dd61b1e56548021f9e36b63dbcff4f260714a0",
+      "bytes": 70945
+    }
+  ]
+}

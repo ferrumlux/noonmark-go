@@ -1,0 +1,55 @@
+{
+  "formatVersion": 7,
+  "snapshot": {
+    "days": [],
+    "taskCycleSeries": [],
+    "chains": [],
+    "definitions": [],
+    "traces": [],
+    "subtasks": [],
+    "preferences": {
+      "backupPolicy": {
+        "destination": "iCloudDrive",
+        "frequency": "off"
+      },
+      "dataMode": "localFirst",
+      "language": "chinese",
+      "localFirstSyncPolicy": {
+        "enabled": true,
+        "endpoint": "localFolder",
+        "generateConflictCopy": true,
+        "intervalSeconds": 300,
+        "mode": "manual",
+        "snapshotRetention": {
+          "indexRetentionDays": 30,
+          "retentionIndexesDaily": 1
+        }
+      },
+      "settingsPoemDisplayPolicy": {
+        "enabled": false,
+        "text": "合成测试 / no network"
+      },
+      "syncEndpointOptions": [],
+      "theme": "coolGray",
+      "themeLanguageUpdatedAt": 0,
+      "themeLanguageWriterID": "synthetic.fixture"
+    },
+    "classifications": {
+      "categories": [],
+      "categoryDeletionTombstones": [],
+      "categoryMerges": [],
+      "changeRecords": [],
+      "committedReceiptsByInteractionID": [],
+      "currentByChainID": [],
+      "formatVersion": 1,
+      "labelDeletionTombstones": [],
+      "labelMerges": [],
+      "labels": [],
+      "relationHistory": [],
+      "revision": 0,
+      "snapshotEventsByTraceID": [],
+      "snapshotsByTraceID": []
+    },
+    "ideas": []
+  }
+}

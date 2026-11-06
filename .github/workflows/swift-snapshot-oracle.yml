@@ -1,0 +1,45 @@
+name: Swift snapshot representation observer
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/swift-snapshot-oracle.yml'
+      - 'ports/mygo/scripts/swift-snapshot-oracle/**'
+permissions:
+  contents: read
+concurrency:
+  group: swift-snapshot-oracle-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  observe:
+    runs-on: macos-15
+    timeout-minutes: 60
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.2.app/Contents/Developer
+      PYTHONDONTWRITEBYTECODE: '1'
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6, verified existing repository pin
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6, existing repository pin
+        with:
+          go-version: '1.27.3'
+          cache: false
+      - name: Host-independent observer contracts
+        working-directory: ports/mygo/scripts/swift-snapshot-oracle
+        run: python3 -B -m unittest discover -p 'test_*.py'
+      - name: Authenticated isolated real Swift and Go observation
+        id: capture
+        run: python3 -B ports/mygo/scripts/swift-snapshot-oracle/runner.py
+      - name: Upload only manifest-listed synthetic evidence
+        if: always() && steps.capture.outputs.artifact_paths != ''
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6, existing oracle pin
+        with:
+          name: swift-snapshot-observer-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ steps.capture.outputs.artifact_paths }}
+          if-no-files-found: error
+          retention-days: 7
+          include-hidden-files: false
+          overwrite: false
