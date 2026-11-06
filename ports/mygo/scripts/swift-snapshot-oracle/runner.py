@@ -1804,7 +1804,7 @@ def _i1_source_ref(name,raw):
     return {'name':name,'bytes':len(raw),'sha256':sha(raw)}
 
 
-def i1_source_raw_members(commits,trees,products,stdin,stdout,probes):
+def i1_source_raw_members(commits,trees,products,stdin,stdout,probes,*,manifest_bytes=None):
     """Build immutable, full path-accounted evidence; not a source snapshot.
 
     Includes all duplicate-OID paths independently, plus stdin AND framing.
@@ -1814,7 +1814,7 @@ def i1_source_raw_members(commits,trees,products,stdin,stdout,probes):
     i1_authenticate_source_originals(commits,trees);batch=i1_parse_source_batch(stdin,stdout,commits,trees)
     rows=i1_source_rows();require(type(products) is dict and set(products)=={r['path'] for r in rows},'i1-product-path-set')
     require(type(probes) is dict,'i1-probe-set')
-    manifest=json.loads(checked(HERE/'tool-manifest.json',validate_tool_manifest(HERE/'tool-manifest.json'),131072))
+    manifest=json.loads(checked(HERE/'tool-manifest.json',validate_tool_manifest(HERE/'tool-manifest.json'),131072)) if manifest_bytes is None else _i1_capture_manifest(manifest_bytes)
     expected=[r for r in manifest['files'] if r['path'].startswith('ports/mygo/scripts/swift-snapshot-oracle/go-probe/') and r['path'].endswith('.go')]
     require(len(expected)==7 and set(probes)=={r['path'] for r in expected},'i1-probe-set')
     members={};inputs=[];chunks=0
@@ -1865,14 +1865,21 @@ _I1_BATCH_PENDING_CHILDREN = {}
 
 
 def _i1_batch_transport(argv, work, env, raw):
+    if type(raw) is not bytes or len(raw) != 205:
+        raise ValueError('i1-batch-stdin-length')
+    return _i1_fixed_source_transport(argv, work, env, raw, False)
+
+
+def _i1_fixed_source_transport(argv, work, env, raw, single):
     """No public command entry point, retries, evidence append, or success hashes.
 
     The caller supplies only its authenticated fixed argv/env and derived stdin.
     Returned bytes are diagnostic unless complete is true AND caller validates
     the complete fixed framing. Cleanup gets at most one additional second.
     """
-    if type(raw) is not bytes or len(raw) != 205:
-        raise ValueError('i1-batch-stdin-length')
+    if type(single) is not bool or type(raw) is not bytes or len(raw) != (0 if single else 205):
+        raise ValueError('i1-source-stdin-length')
+    stdout_cap = 4194304 if single else 131072
     start = time.monotonic_ns()
     deadline = start + I1_BATCH_TIMEOUT_NS
     proc = None
@@ -1880,7 +1887,7 @@ def _i1_batch_transport(argv, work, env, raw):
     selector = None
     out, tail = bytearray(), bytearray()
     out_count = err_count = sent = 0
-    stdin_closed = False
+    stdin_closed = single
     eof = set()
     issues = []
     transport = ''
@@ -1904,8 +1911,8 @@ def _i1_batch_transport(argv, work, env, raw):
         nonlocal out_count, err_count
         if tag == 'out':
             out_count += len(block)
-            out.extend(block[:max(0, 131072 - len(out))])
-            if out_count > 131072:
+            out.extend(block[:max(0, stdout_cap - len(out))])
+            if out_count > stdout_cap:
                 raise TransportFailure('stdout-resource-limit')
         else:
             err_count += len(block)
@@ -1919,15 +1926,15 @@ def _i1_batch_transport(argv, work, env, raw):
         selector = selectors.DefaultSelector()
         check_deadline()
         proc = subprocess.Popen(argv, cwd=work, env=env, shell=False,
-                                stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                                stdin=subprocess.DEVNULL if single else subprocess.PIPE, stdout=subprocess.PIPE,
                                 stderr=subprocess.PIPE, start_new_session=True,
                                 bufsize=0)
         pgid = os.getpgid(proc.pid)
         if pgid != proc.pid:
             raise TransportFailure('i1-owned-group')
-        for stream, event, tag in ((proc.stdin, selectors.EVENT_WRITE, 'in'),
-                                   (proc.stdout, selectors.EVENT_READ, 'out'),
-                                   (proc.stderr, selectors.EVENT_READ, 'err')):
+        streams=[(proc.stdout, selectors.EVENT_READ, 'out'),(proc.stderr, selectors.EVENT_READ, 'err')]
+        if not single:streams.insert(0,(proc.stdin, selectors.EVENT_WRITE, 'in'))
+        for stream, event, tag in streams:
             os.set_blocking(stream.fileno(), False)
             selector.register(stream, event, tag)
         while selector.get_map():
@@ -2016,7 +2023,7 @@ def _i1_batch_transport(argv, work, env, raw):
     if issues and not transport:
         transport = 'cleanup-error'
     complete = (proc is not None and reaped is not None and reaped < deadline
-                and sent == 205 and stdin_closed and eof == {'out', 'err'}
+                and sent == len(raw) and stdin_closed and eof == {'out', 'err'}
                 and code == 0 and not transport and not issues)
     if proc is not None and reaped is None:
         _I1_BATCH_PENDING_CHILDREN[proc.pid] = proc
@@ -2039,6 +2046,10 @@ def _i1_batch_transport(argv, work, env, raw):
 
 
 def i1_validate_batch_transport(receipt,stdout,stderr):
+    return _i1_validate_source_transport(receipt,stdout,stderr,50352,205)
+
+
+def _i1_validate_source_transport(receipt,stdout,stderr,expected_size,stdin_size):
     """Closed success schema. No null/false/number aliases for transportError."""
     integers=('pid','pgid','parentStartedNs','deadlineNs','endedNs','reapedNs','returncode','stdinBytes','stdoutObservedBytes','stderrObservedBytes','stdoutRetainedBytes','stderrRetainedBytes')
     bools=('stdinClosed','stdoutEOFObserved','stderrEOFObserved','complete')
@@ -2051,9 +2062,9 @@ def i1_validate_batch_transport(receipt,stdout,stderr):
     require(receipt['firstDeadlineObservedNs'] is None and receipt['killRequestedNs'] is None and receipt['signal'] is None and receipt['cleanupIssues']==[],'i1-batch-process')
     start=receipt['parentStartedNs'];deadline=receipt['deadlineNs'];reaped=receipt['reapedNs']
     require(0<start<reaped<deadline and deadline-start==120000000000 and receipt['endedNs']>=reaped,'i1-batch-deadline')
-    require(type(stdout) is bytes and len(stdout)==50352 and receipt['stdoutObservedBytes']==receipt['stdoutRetainedBytes']==len(stdout),'i1-batch-output-complete')
+    require(type(stdout) is bytes and len(stdout)==expected_size and receipt['stdoutObservedBytes']==receipt['stdoutRetainedBytes']==len(stdout),'i1-batch-output-complete')
     require(type(stderr) is bytes and 0<=receipt['stderrObservedBytes']<=1048576 and len(stderr)==receipt['stderrRetainedBytes']==min(receipt['stderrObservedBytes'],65536),'i1-batch-stderr')
-    require(receipt['stdinBytes']==205,'i1-batch-stdin-complete')
+    require(receipt['stdinBytes']==stdin_size,'i1-batch-stdin-complete')
     return True
 
 
@@ -2085,6 +2096,783 @@ def i1_verify_batch_mechanical_evidence(members,context,commits,trees):
     rebuilt=_i1_batch_mechanical_record(context,record['transport'],members['provenance/integration-batch-stdin.bin'],members['provenance/integration-batch-stdout.bin'],members['provenance/integration-batch-stderr.bin'],commits,trees)
     require(_i1_exact(members,rebuilt),'i1-batch-evidence-mismatch')
     return {'mechanicalEvidenceVerified':True,'runtimeAdmission':False,'offlineOSReexecution':False,'receiptID':record['receiptID']}
+
+# SPDX-License-Identifier: AGPL-3.0-only
+"""Finite source-stage filesystem operations, not a runtime sandbox.
+
+All traversal starts at an opened / and opens each component no-follow. Repeated
+measurements detect observed changes; they do not exclude replace-and-restore
+races by a malicious same-user process between measurements.
+"""
+import hashlib
+import os
+from pathlib import Path
+import re
+import stat
+import time
+import zlib
+
+
+DB_CONFIG = b'[core]\n\trepositoryformatversion = 0\n\tbare = true\n\tfilemode = true\n\tlogallrefupdates = false\n'
+_DIR_FLAGS = os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW | os.O_CLOEXEC
+_FILE_FLAGS = os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_CLOEXEC
+SCOPES = ('ports/mygo/domain-codec', 'ports/mygo/domain-core',
+          'ports/mygo/domain-extensions', 'ports/mygo/go.mod', 'ports/mygo/go.sum')
+
+
+def _i1_capture_fs_sha(raw):
+    return hashlib.sha256(raw).hexdigest()
+
+
+def _i1_capture_fs_relative(name):
+    require(type(name) is str and name and len(name.encode('utf-8')) <= 240,
+            'capture-path')
+    parts = name.split('/')
+    require(len(parts) <= 16 and all(p not in ('', '.', '..') for p in parts)
+            and not any(c in name for c in ('\\', '\0', '\n', '\r')), 'capture-path')
+    return parts
+
+
+def _i1_capture_fs_absolute(path):
+    value = os.fspath(path)
+    require(type(value) is str and value.startswith('/') and value != '/'
+            and os.path.normpath(value) == value and not value.startswith('//'), 'capture-absolute-path')
+    require(all(p not in ('', '.', '..') for p in value[1:].split('/')), 'capture-absolute-path')
+    return value
+
+
+def _i1_capture_fs_identity(st):
+    kind = 'directory' if stat.S_ISDIR(st.st_mode) else 'file' if stat.S_ISREG(st.st_mode) else 'special'
+    return {'type': kind, 'mode': stat.S_IMODE(st.st_mode), 'dev': st.st_dev,
+            'inode': st.st_ino, 'nlink': st.st_nlink, 'size': st.st_size,
+            'allocatedBytes': st.st_blocks * 512}
+
+
+def _i1_capture_fs_open_root(path):
+    """Caller owns returned safe root fd; chain evidence excludes volatile size."""
+    value = _i1_capture_fs_absolute(path)
+    fd = os.open('/', _DIR_FLAGS)
+    chain = []
+    try:
+        for part in value[1:].split('/'):
+            child = os.open(part, _DIR_FLAGS, dir_fd=fd)
+            os.close(fd)
+            fd = child
+            st = os.fstat(fd)
+            chain.append({'component': part, 'dev': st.st_dev, 'inode': st.st_ino,
+                          'type': 'directory', 'mode': stat.S_IMODE(st.st_mode)})
+        return fd, chain
+    except BaseException:
+        os.close(fd)
+        raise
+
+
+def _i1_capture_fs_root_identity(path):
+    fd, chain = _i1_capture_fs_open_root(path)
+    try:
+        st = os.fstat(fd)
+        return {'path': _i1_capture_fs_absolute(path), 'dev': st.st_dev, 'inode': st.st_ino,
+                'type': 'directory', 'mode': stat.S_IMODE(st.st_mode), 'chain': chain}
+    finally:
+        os.close(fd)
+
+
+def _i1_capture_fs_validate_roots(checkout, object_db, work):
+    roots = [_i1_capture_fs_root_identity(p) for p in (checkout, object_db, work)]
+    for i, left in enumerate(roots):
+        for right in roots[i + 1:]:
+            a, b = Path(left['path']), Path(right['path'])
+            require(not a.is_relative_to(b) and not b.is_relative_to(a)
+                    and (left['dev'], left['inode']) != (right['dev'], right['inode']),
+                    'capture-root-overlap')
+    return dict(zip(('checkout', 'objectDB', 'work'), roots))
+
+
+def _i1_capture_fs_open_relative(root, name, directory=False):
+    parts = _i1_capture_fs_relative(name)
+    fd = os.dup(root)
+    try:
+        for part in parts[:-1]:
+            child = os.open(part, _DIR_FLAGS, dir_fd=fd)
+            os.close(fd)
+            fd = child
+        return os.open(parts[-1], _DIR_FLAGS if directory else _FILE_FLAGS, dir_fd=fd)
+    finally:
+        os.close(fd)
+
+
+def _i1_capture_fs_read(root, name, limit):
+    fd = _i1_capture_fs_open_relative(root, name)
+    try:
+        before = os.fstat(fd)
+        require(stat.S_ISREG(before.st_mode) and before.st_nlink == 1, 'capture-regular-single-link')
+        require(0 <= before.st_size <= limit, 'capture-file-limit')
+        raw = bytearray()
+        while True:
+            block = os.read(fd, min(65536, limit + 1 - len(raw)))
+            if not block:
+                break
+            raw.extend(block)
+            require(len(raw) <= limit, 'capture-file-limit')
+        after = os.fstat(fd)
+        require(_i1_capture_fs_identity(before) == _i1_capture_fs_identity(after) and len(raw) == after.st_size,
+                'capture-read-drift')
+        return bytes(raw), {**_i1_capture_fs_identity(after), 'bytes': len(raw), 'sha256': _i1_capture_fs_sha(raw)}
+    finally:
+        os.close(fd)
+
+
+def _i1_capture_fs_directories(files):
+    result = {''}
+    for name in files:
+        parts = _i1_capture_fs_relative(name)
+        result.update('/'.join(parts[:i]) for i in range(1, len(parts)))
+    return result
+
+
+def _i1_capture_fs_scan(root, files, directories, readonly=False):
+    """Scan only the fixed expected directories; never recurse into extras."""
+    result = {}
+    for name in sorted(directories):
+        fd = os.dup(root) if not name else _i1_capture_fs_open_relative(root, name, True)
+        try:
+            st = os.fstat(fd)
+            if readonly:
+                require(stat.S_IMODE(st.st_mode) == 0o555, 'capture-directory-mode')
+            prefix = name + '/' if name else ''
+            expected = {n[len(prefix):].split('/')[0] for n in files | directories
+                        if n.startswith(prefix) and n != name}
+            actual = set()
+            with os.scandir(fd) as iterator:
+                for entry in iterator:
+                    require(entry.name in expected and entry.name not in actual, 'capture-directory-set')
+                    actual.add(entry.name)
+            require(actual == expected, 'capture-directory-set')
+            result[name] = _i1_capture_fs_identity(st)
+        finally:
+            os.close(fd)
+    return result
+
+
+def _i1_capture_fs_authenticate_db(path, objects, product_base):
+    """Accept exactly two commits, 36 trees and 133 blobs as loose originals."""
+    require(type(objects) is dict and len(objects) == 171, 'capture-db-object-count')
+    require({kind: sum(v[0] == kind for v in objects.values()) for kind in ('commit', 'tree', 'blob')}
+            == {'commit': 2, 'tree': 36, 'blob': 133}, 'capture-db-object-kinds')
+    require(product_base in objects and objects[product_base][0] == 'commit', 'capture-db-base')
+    files = {'HEAD', 'config'}
+    limits = {}
+    for oid, (kind, raw) in objects.items():
+        require(re.fullmatch('[0-9a-f]{40}', oid) is not None and type(raw) is bytes,
+                'capture-db-object')
+        require(len(raw) <= {'commit': 16384, 'tree': 65536, 'blob': 4194304}[kind], 'capture-db-raw-limit')
+        full = kind.encode() + b' ' + str(len(raw)).encode() + b'\0' + raw
+        require(hashlib.sha1(full).hexdigest() == oid, 'capture-db-object-id')
+        name = 'objects/' + oid[:2] + '/' + oid[2:]
+        files.add(name)
+        limits[name] = full
+    directories = _i1_capture_fs_directories(files) | {'refs'}
+    require(len(directories) <= 174 and len(files) == 173, 'capture-db-layout-limit')
+    fd, chain = _i1_capture_fs_open_root(path)
+    try:
+        dirs = _i1_capture_fs_scan(fd, files, directories)
+        records = {}
+        for name in sorted(files):
+            expected = DB_CONFIG if name == 'config' else (product_base + '\n').encode() if name == 'HEAD' else limits[name]
+            raw, record = _i1_capture_fs_read(fd, name, 4096 if name in ('HEAD', 'config') else len(expected) + 1024)
+            if name in ('HEAD', 'config'):
+                require(raw == expected, 'capture-db-fixed-file')
+            else:
+                decoder = zlib.decompressobj()
+                decoded = decoder.decompress(raw, len(expected) + 1)
+                require(decoded == expected and decoder.eof and not decoder.unconsumed_tail
+                        and not decoder.unused_data, 'capture-db-loose-stream')
+                record['objectSHA1'] = hashlib.sha1(decoded).hexdigest()
+            records[name] = record
+        total = sum(row['bytes'] for row in records.values())
+        require(total <= 10485760, 'capture-db-byte-limit')
+        return {'path': _i1_capture_fs_absolute(path), 'chain': chain, 'directories': dirs, 'files': records,
+                'logicalBytes': total, 'allocatedBytes': sum(r['allocatedBytes'] for r in list(dirs.values()) + list(records.values()))}
+    finally:
+        os.close(fd)
+
+
+def _i1_capture_fs_inputs(inputs, exact=False):
+    require(type(inputs) is dict and len(inputs) <= 146, 'capture-input-count')
+    for name, value in inputs.items():
+        _i1_capture_fs_relative(name)
+        require(type(value) is dict and type(value.get('bytes')) is bytes
+                and value.get('mode') in ('100644', '100755') and len(value['bytes']) <= 4194304,
+                'capture-input')
+    total = sum(len(v['bytes']) for v in inputs.values())
+    require(total <= 10485760, 'capture-input-bytes')
+    if exact:
+        require(len(inputs) == 146 and total == 9525260, 'capture-current-input-identity')
+    directories = _i1_capture_fs_directories(set(inputs))
+    require(len(directories) <= 64, 'capture-directory-limit')
+    return directories
+
+
+def _i1_capture_fs_verify_checkout(root, inputs):
+    """Read exactly the five product scopes, including ignored/untracked files."""
+    _i1_capture_fs_inputs(inputs)
+    require(len(inputs) == 139 and sum(len(v['bytes']) for v in inputs.values()) == 9462103,
+            'capture-checkout-input-count')
+    require(all(any(n == s or n.startswith(s + '/') for s in SCOPES) for n in inputs), 'capture-checkout-scope')
+    fd, chain = _i1_capture_fs_open_root(root)
+    records = {}
+    directories = {}
+    try:
+        for scope in SCOPES[:3]:
+            subset = {n[len(scope) + 1:] for n in inputs if n.startswith(scope + '/')}
+            child = _i1_capture_fs_open_relative(fd, scope, True)
+            try:
+                measured = _i1_capture_fs_scan(child, subset, _i1_capture_fs_directories(subset))
+                directories.update({scope + ('/' + n if n else ''): r for n, r in measured.items()})
+            finally:
+                os.close(child)
+        for name, value in sorted(inputs.items()):
+            raw, record = _i1_capture_fs_read(fd, name, len(value['bytes']))
+            require(raw == value['bytes'] and record['mode'] == int(value['mode'][-3:], 8), 'capture-checkout-content-mode')
+            records[name] = record
+        return {'path': _i1_capture_fs_absolute(root), 'chain': chain, 'directories': directories, 'files': records}
+    finally:
+        os.close(fd)
+
+
+def _i1_capture_fs_export_snapshot(destination, inputs, usage=None):
+    """Exclusive write. Failure leaves partial evidence in place, never retries."""
+    directories = _i1_capture_fs_inputs(inputs, exact=True)
+    destination = Path(_i1_capture_fs_absolute(destination))
+    parent, _ = _i1_capture_fs_open_root(destination.parent)
+    root = None
+    try:
+        os.mkdir(destination.name, 0o700, dir_fd=parent)
+        root = os.open(destination.name, _DIR_FLAGS, dir_fd=parent)
+        for name in sorted(directories - {''}, key=lambda n: (n.count('/'), n)):
+            parts = _i1_capture_fs_relative(name)
+            fd = os.dup(root) if len(parts) == 1 else _i1_capture_fs_open_relative(root, '/'.join(parts[:-1]), True)
+            try:
+                os.mkdir(parts[-1], 0o700, dir_fd=fd)
+            finally:
+                os.close(fd)
+        written = 0
+        completed=set()
+        for name, value in sorted(inputs.items()):
+            parts = _i1_capture_fs_relative(name)
+            fd = os.dup(root) if len(parts) == 1 else _i1_capture_fs_open_relative(root, '/'.join(parts[:-1]), True)
+            try:
+                out = os.open(parts[-1], os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW | os.O_CLOEXEC, 0o600, dir_fd=fd)
+                try:
+                    raw = value['bytes']
+                    require(written + len(raw) <= 9525260, 'capture-write-budget')
+                    offset = 0
+                    while offset < len(raw):
+                        size = os.write(out, raw[offset:offset + 65536])
+                        require(size > 0, 'capture-short-write')
+                        offset += size
+                    written += offset
+                    os.fchmod(out, 0o444 if value['mode'] == '100644' else 0o555)
+                    st = os.fstat(out)
+                    require(st.st_size == len(raw) and st.st_nlink == 1, 'capture-write-drift')
+                finally:
+                    os.close(out)
+            finally:
+                os.close(fd)
+            completed.add(name)
+            if usage is not None:usage.append({'kind':'export-partial',**_i1_capture_fs_usage(destination,completed,directories,10485760)})
+        for name in sorted(directories, key=lambda n: (-n.count('/'), n)):
+            fd = os.dup(root) if not name else _i1_capture_fs_open_relative(root, name, True)
+            try:
+                os.fchmod(fd, 0o555)
+            finally:
+                os.close(fd)
+    finally:
+        if root is not None:
+            os.close(root)
+        os.close(parent)
+    return _i1_capture_fs_measure_snapshot(destination, inputs)
+
+
+def _i1_capture_fs_measure_snapshot(destination, inputs):
+    directories = _i1_capture_fs_inputs(inputs, exact=True)
+    start = time.monotonic_ns()
+    fd, chain = _i1_capture_fs_open_root(destination)
+    try:
+        dirs = _i1_capture_fs_scan(fd, set(inputs), directories, readonly=True)
+        records = {}
+        for name, value in sorted(inputs.items()):
+            raw, record = _i1_capture_fs_read(fd, name, len(value['bytes']))
+            require(raw == value['bytes'] and record['mode'] == (0o444 if value['mode'] == '100644' else 0o555),
+                    'capture-export-content-mode')
+            records[name] = record
+        return {'path': _i1_capture_fs_absolute(destination), 'startedNs': start, 'endedNs': time.monotonic_ns(),
+                'chain': chain, 'directories': dirs, 'files': records,
+                'logicalBytes': sum(r['bytes'] for r in records.values()),
+                'allocatedBytes': sum(r['allocatedBytes'] for r in list(dirs.values()) + list(records.values()))}
+    finally:
+        os.close(fd)
+
+
+def _i1_capture_fs_compare_measurements(first, second):
+    require(first['endedNs'] < second['startedNs'], 'capture-measurement-order')
+    require({k: v for k, v in first.items() if k not in ('startedNs', 'endedNs')}
+            == {k: v for k, v in second.items() if k not in ('startedNs', 'endedNs')},
+            'capture-export-identity-drift')
+    return True
+
+
+def _i1_capture_fs_reject_shared_files(measurement, *sources):
+    """Export uses new inodes, even for empty or shared-OID product paths."""
+    originals = {(row['dev'], row['inode']) for source in sources
+                 for row in source['files'].values()}
+    actual = [(row['dev'], row['inode']) for row in measurement['files'].values()]
+    require(len(actual) == len(set(actual)) and not (set(actual) & originals),
+            'capture-export-shared-inode')
+    return True
+
+
+def _i1_capture_fs_make_parent(path):
+    """Create one exclusive parent directory beneath an already safe root."""
+    path = Path(_i1_capture_fs_absolute(path))
+    fd, _ = _i1_capture_fs_open_root(path.parent)
+    try:
+        os.mkdir(path.name, 0o700, dir_fd=fd)
+        child = os.open(path.name, _DIR_FLAGS, dir_fd=fd)
+        try:
+            require(stat.S_IMODE(os.fstat(child).st_mode) == 0o700, 'capture-parent-mode')
+        finally:
+            os.close(child)
+    finally:
+        os.close(fd)
+    return _i1_capture_fs_root_identity(path)
+
+
+# Local mechanical source stage. This deliberately issues no production permit.
+def _i1_capture_manifest(raw):
+    import re
+    value=_i1_json(raw,131072,manifest=True)
+    require(type(value) is dict and set(value)=={'schemaVersion','files'} and type(value['schemaVersion']) is int and value['schemaVersion']==2,'i1-capture-manifest')
+    rows=value['files'];require(type(rows) is list and len(rows)==45,'i1-capture-tool-count');seen=set()
+    for row in rows:
+        require(type(row) is dict and set(row)=={'path','role','gitBlob','sha256','bytes'},'i1-capture-tool-row')
+        name=row['path'];i1_safe_path(name)
+        require(name not in seen and row['role']=='tool' and row['gitBlob']=='' and type(row['bytes']) is int and 0<=row['bytes']<=4194304 and type(row['sha256']) is str and re.fullmatch('[0-9a-f]{64}',row['sha256']),'i1-capture-tool-row');seen.add(name)
+    return value
+
+
+def _i1_capture_inputs(products,probes,manifest):
+    rows=i1_source_rows();expected={r['path']:r for r in rows}
+    require(type(products) is dict and set(products)==set(expected),'i1-capture-product-set')
+    inputs={};identities=[]
+    for row in rows:
+        raw=products[row['path']]
+        require(type(raw) is bytes and len(raw)==row['bytes'] and sha(raw)==row['sha256'] and _i1_object_id('blob',raw)==row['oid'],'i1-capture-product')
+        inputs[row['path']]={'bytes':raw,'mode':row['mode']}
+        identities.append({**row,'exportMode':0o444 if row['mode']=='100644' else 0o555})
+    prows=sorted((r for r in manifest['files'] if r['path'].startswith('ports/mygo/scripts/swift-snapshot-oracle/go-probe/') and r['path'].endswith('.go')),key=lambda r:r['path'])
+    require(len(prows)==7 and set(probes)=={r['path'] for r in prows} and sum(r['bytes'] for r in prows)==63157,'i1-capture-probes')
+    for row in prows:
+        raw=probes[row['path']]
+        require(type(raw) is bytes and len(raw)==row['bytes'] and sha(raw)==row['sha256'],'i1-capture-probe')
+        inputs[row['path']]={'bytes':raw,'mode':'100644'}
+        identities.append({**row,'mode':'100644','exportMode':0o444})
+    require(len(inputs)==146 and sum(len(x['bytes']) for x in inputs.values())==9525260,'i1-capture-inputs')
+    directories={'.'}
+    for name in inputs:
+        for parent in Path(name).parents:
+            if str(parent)!='.':directories.add(str(parent))
+    require(len(directories)<=64,'i1-capture-directory-limit')
+    return inputs,{'rows':sorted(identities,key=lambda x:x['path']),'directories':sorted(directories),'payloadBytes':9525260}
+
+
+def _i1_capture_single_context(stage,ordinal):
+    rows=_i1_source_policy()['sourcePolicy']['singlePathRows']
+    require(type(ordinal) is int and 1<=ordinal<=134,'i1-capture-ordinal')
+    row=rows[ordinal-1];work=Path(stage['work']['path'])
+    env=environment(work);env['GIT_NO_REPLACE_OBJECTS']='1'
+    return {'role':'frozen-go-input-object','phase':'authenticated-source-acquisition-before-snapshot','ordinal':ordinal,'slot':112+ordinal,
+            'argv':['/usr/bin/git','--no-replace-objects','-c','core.hooksPath=/dev/null','-c','protocol.file.allow=never','--git-dir='+stage['objectDB']['path'],'cat-file','blob',stage['productSourceBase']+':'+row['path']],
+            'cwd':str(work),'env':env,'shell':False,'source':row,'sourceCommit':stage['productSourceBase'],'sourceTree':stage['productSourceTree']}
+
+
+def _i1_capture_merge(target,source):
+    for name,raw in source.items():
+        require(name not in target or target[name]==raw,'i1-capture-member-collision');target[name]=raw
+
+
+def _i1_capture_original_objects(commits,trees,objects):
+    i1_authenticate_source_originals(commits,trees)
+    require(len(commits)==2 and len(trees)==36 and type(objects) is dict and len(objects)==171,'i1-capture-object-count')
+    expected={oid:('commit',raw) for oid,raw in commits.items()};expected.update({oid:('tree',raw) for oid,raw in trees.items()})
+    for row in i1_source_rows():
+        require(row['oid'] in objects,'i1-capture-object-missing')
+        kind,raw=objects[row['oid']]
+        require(kind=='blob' and type(raw) is bytes and len(raw)==row['bytes'] and sha(raw)==row['sha256'] and _i1_object_id(kind,raw)==row['oid'],'i1-capture-object-identity')
+        expected[row['oid']]=(kind,raw)
+    require(objects==expected,'i1-capture-object-set')
+
+
+def _i1_capture_source_stage(work,checkout,object_db,commits,trees,objects):
+    """Internal test slice; source originals are DB expectations, NEVER results.
+
+    No retries, production binding, build, or claim of resistance to malicious
+    same-user replacement-and-restoration between pathname measurements.
+    """
+    import uuid,controller
+    work=Path(work);checkout=Path(checkout);object_db=Path(object_db)
+    roots=[_i1_capture_fs_root_identity(p) for p in (work,checkout,object_db)]
+    for a in (work,checkout,object_db):
+        for b in (work,checkout,object_db):
+            if a!=b:require(not a.is_relative_to(b),'i1-capture-root-overlap')
+    require(len({(r['dev'],r['inode']) for r in roots})==3,'i1-capture-root-alias')
+    _i1_capture_original_objects(commits,trees,objects)
+    manifest_sha=validate_tool_manifest(HERE/'tool-manifest.json')
+    tool_root,_=_i1_capture_fs_open_root(REPO)
+    try:
+        manifest_raw,_=_i1_capture_fs_read(tool_root,str((HERE/'tool-manifest.json').relative_to(REPO)),131072)
+        require(sha(manifest_raw)==manifest_sha,'i1-capture-manifest-drift');manifest=_i1_capture_manifest(manifest_raw)
+        probes={r['path']:_i1_capture_fs_read(tool_root,r['path'],131072)[0] for r in manifest['files'] if r['path'].startswith('ports/mygo/scripts/swift-snapshot-oracle/go-probe/') and r['path'].endswith('.go')}
+    finally:os.close(tool_root)
+    policy=_i1_source_policy()
+    stage={'schemaVersion':1,'scope':'local-source-capture-mechanical-only','runtimeAdmission':False,'runnerCommit':None,'runID':str(uuid.uuid4()),'productSourceBase':policy['productSourceBase'],'productSourceTree':policy['productSourceTree'],'integrationPolicySHA256':controller.i1_integration_policy_digest(),'toolManifestSHA256':manifest_sha,'work':roots[0],'checkout':roots[1],'objectDB':roots[2]}
+    stage_sha=sha(_json_bytes(stage));db=_i1_capture_fs_authenticate_db(object_db,objects,policy['productSourceBase']);db_sha=sha(json.dumps(db,sort_keys=True,separators=(',',':')).encode())
+    members={'provenance/capture-stage.json':_json_bytes(stage),'provenance/capture-tool-manifest.json':manifest_raw};products={};receipts=[]
+    _i1_capture_store_measurement(members,'database',db,stage_sha)
+    usage=[{'kind':'work-empty',**_i1_capture_fs_usage(work,set(),{''},10485760)}]
+    exported=False
+    def work_usage():
+        files={'input/go-source/'+p for p in inputs} if exported else set()
+        dirs=_i1_capture_fs_directories(files)
+        usage.append({'kind':'work-export' if exported else 'work-empty',**_i1_capture_fs_usage(work,files,dirs,10485760)})
+    def check():
+        work_usage()
+        for p,expected in zip((work,checkout,object_db),roots):require(_i1_capture_fs_root_identity(p)==expected,'i1-capture-root-drift')
+        measured=_i1_capture_fs_authenticate_db(object_db,objects,policy['productSourceBase'])
+        require(measured==db,'i1-capture-db-drift')
+        return {'measuredNs':time.monotonic_ns(),'databaseSHA256':db_sha,'stageSHA256':stage_sha}
+    held_db,held_chain=_i1_capture_fs_open_root(object_db)
+    try:
+        require(held_chain==db['chain'],'i1-capture-held-db')
+        for ordinal,row in enumerate(policy['sourcePolicy']['singlePathRows'],1):
+            context=_i1_capture_single_context(stage,ordinal);before=check()
+            stdout,stderr,transport=_i1_fixed_source_transport(context['argv'],work,context['env'],b'',True)
+            after=check();_i1_validate_source_transport(transport,stdout,stderr,row['bytes'],0)
+            require(sha(stdout)==row['sha256'] and _i1_object_id('blob',stdout)==row['oid'],'i1-capture-single-identity')
+            products[row['path']]=stdout
+            name=f'provenance/capture-single-{ordinal:03}-stderr.bin';members[name]=stderr
+            record={'schemaVersion':1,'scope':stage['scope'],'runtimeAdmission':False,'stageSHA256':stage_sha,'context':context,'transport':transport,'before':before,'after':after,'stderr':_i1_source_ref(name,stderr)}
+            index=next(i for i,v in enumerate(i1_source_rows()) if v['path']==row['path'])
+            refs=[];empty=None
+            for piece in range(row['chunks']):
+                n=f'provenance/integration-product-{index:03}-chunk-{piece:02}.bin';data=stdout[piece*131072:(piece+1)*131072];members[n]=data;refs.append(_i1_source_ref(n,data))
+            if not stdout:
+                n=f'provenance/integration-product-{index:03}-empty.bin';members[n]=b'';empty=_i1_source_ref(n,b'')
+            record['stdout']=refs;record['emptyOriginal']=empty
+            members[f'provenance/capture-single-{ordinal:03}.json']=_json_bytes(record)
+            receipts.append(record)
+            i1_source_retention_budget(members)
+        context=_i1_source_batch_context(work,object_db);stdin=i1_source_batch_stdin(commits,trees);before=check()
+        stdout,stderr,transport=_i1_batch_transport(context['argv'],work,context['env'],stdin);after=check()
+        batch_members=_i1_batch_mechanical_record(context,transport,stdin,stdout,stderr,commits,trees)
+        for row,raw in zip(policy['sourcePolicy']['mapping'],i1_parse_source_batch(stdin,stdout,commits,trees)):products[row['path']]=raw
+        _i1_capture_merge(members,batch_members)
+        members['provenance/capture-batch-link.json']=_json_bytes({'stageSHA256':stage_sha,'before':before,'after':after,'receipt':_i1_source_ref('provenance/integration-batch-receipt.json',batch_members['provenance/integration-batch-receipt.json'])})
+        raw_members=i1_source_raw_members(commits,trees,products,stdin,stdout,probes,manifest_bytes=manifest_raw);_i1_capture_merge(members,raw_members)
+        input_rows=[]
+        for i in range(3):input_rows.extend(json.loads(raw_members[f'provenance/integration-inputs-{i:02}.json'])['rows'])
+        bypath={r['path']:r for r in input_rows}
+        for ordinal,record in enumerate(receipts,1):
+            row=bypath[record['context']['source']['path']];record['stdout']=row['raw'];record['emptyOriginal']=row['emptyOriginal']
+            members[f'provenance/capture-single-{ordinal:03}.json']=_json_bytes(record)
+        inputs,expected=_i1_capture_inputs(products,probes,manifest)
+        checkout_measurement=_i1_capture_fs_verify_checkout(checkout,{p:v for p,v in inputs.items() if p in products})
+        checkout_measurement['logicalBytes']=sum(r['bytes'] for r in checkout_measurement['files'].values())
+        checkout_measurement['allocatedBytes']=sum(r['allocatedBytes'] for r in list(checkout_measurement['files'].values())+list(checkout_measurement['directories'].values()))
+        _i1_capture_store_measurement(members,'checkout',checkout_measurement,stage_sha)
+        expected.update(stageSHA256=stage_sha);members['provenance/capture-sourceExpected.json']=_json_bytes(expected)
+        # Bounded measurements are split by fixed 64-row parts, not arbitrary metadata.
+        _i1_capture_store_measurement(members,'database',db,stage_sha)
+        destination=work/'input'/'go-source'
+        _i1_capture_fs_make_parent(work/'input')
+        postwrite=_i1_capture_fs_export_snapshot(destination,inputs,usage)
+        exported=True
+        _i1_capture_fs_reject_shared_files(postwrite,checkout_measurement,db)
+        _i1_capture_store_measurement(members,'postWrite',postwrite,stage_sha)
+        check()
+        postexport=_i1_capture_fs_measure_snapshot(destination,inputs)
+        _i1_capture_fs_compare_measurements(postwrite,postexport)
+        _i1_capture_store_measurement(members,'postExport',postexport,stage_sha)
+        work_usage()
+        _i1_capture_store_usage(members,usage,stage_sha)
+        i1_source_retention_budget(members)
+        _i1_verify_source_capture(members,manifest_sha)
+        retained=sum(map(len,members.values()))+9525260+db['logicalBytes']
+        plan,budget=_package_plan(members,retained,[],True,False)
+        bundle=work/'source-capture.tar';_write_tar(bundle,plan)
+        final_usage=_i1_capture_fs_usage(work,{'input/go-source/'+p for p in inputs}|{'source-capture.tar'},_i1_capture_fs_directories({'input/go-source/'+p for p in inputs}),79*1048576)
+        return {'scope':stage['scope'],'runtimeAdmission':False,'snapshotReady':True,'processes':135,'members':members,'bundle':str(bundle),'budget':budget,'stage':stage,'postArchiveUsage':final_usage}
+    except BaseException as error:
+        # Preserve bounded partial originals and the actual failed transport. Do
+        # not delete a partial export or a pending child from its registry.
+        _i1_capture_store_usage(members,usage,stage_sha)
+        error.capture_members=members
+        if 'transport' in locals():error.capture_transport=transport
+        if 'stdout' in locals():error.capture_stdout=stdout[:131072]
+        if 'stderr' in locals():error.capture_stderr=stderr[-65536:]
+        raise
+    finally:
+        os.close(held_db)
+
+
+def _i1_capture_store_measurement(members,label,value,stage_sha):
+    # Store deterministic bounded pieces; counts and names are derived by verifier.
+    header={k:v for k,v in value.items() if k not in ('files','directories')}
+    parts=[]
+    for group in ('directories','files'):
+        rows=sorted(value[group].items())
+        for i in range((len(rows)+63)//64):
+            name=f'provenance/capture-{label}-{group}-{i:02}.json'
+            raw=_json_bytes({'stageSHA256':stage_sha,'rows':rows[i*64:(i+1)*64]});members[name]=raw;parts.append(_i1_source_ref(name,raw))
+    members[f'provenance/capture-{label}.json']=_json_bytes({'stageSHA256':stage_sha,'header':header,'parts':parts})
+
+
+def _i1_capture_load_measurement(members,label,stage_sha,used):
+    name=f'provenance/capture-{label}.json';used.add(name);index=_i1_json(members[name],131072,manifest=True)
+    require(type(index) is dict and set(index)=={'stageSHA256','header','parts'} and index['stageSHA256']==stage_sha,'i1-capture-measurement')
+    require(type(index['header']) is dict and not {'files','directories'}&set(index['header']),'i1-capture-measurement')
+    result={**index['header'],'files':{},'directories':{}}
+    refs=index['parts'];require(type(refs) is list and len(refs)<=7,'i1-capture-measurement-parts')
+    for ref in refs:
+        target=ref['name'];require(target not in used and ref==_i1_source_ref(target,members[target]),'i1-capture-measurement-ref');used.add(target)
+        group='directories' if '-directories-' in target else 'files'
+        part=_i1_json(members[target],131072,manifest=True)
+        require(type(part) is dict and set(part)=={'stageSHA256','rows'} and part['stageSHA256']==stage_sha and type(part['rows']) is list and 1<=len(part['rows'])<=64,'i1-capture-measurement-part')
+        for row in part['rows']:
+            require(type(row) is list and len(row)==2 and type(row[0]) is str and row[0] not in result[group],'i1-capture-measurement-row');result[group][row[0]]=row[1]
+    rebuilt={};_i1_capture_store_measurement(rebuilt,label,result,stage_sha)
+    require(all(members[n]==raw for n,raw in rebuilt.items()) and set(rebuilt)=={name}|{r['name'] for r in refs},'i1-capture-measurement-canonical')
+    return result
+
+
+def _i1_capture_validate_root(value):
+    require(type(value) is dict and set(value)=={'path','dev','inode','type','mode','chain'},'i1-capture-root-schema')
+    _i1_capture_fs_absolute(value['path'])
+    require(value['type']=='directory' and all(type(value[k]) is int and value[k]>=0 for k in ('dev','inode','mode')),'i1-capture-root-schema')
+    chain=value['chain'];parts=Path(value['path']).parts[1:]
+    require(type(chain) is list and len(chain)==len(parts),'i1-capture-root-chain')
+    for name,row in zip(parts,chain):
+        require(type(row) is dict and set(row)=={'component','dev','inode','type','mode'} and row['component']==name and row['type']=='directory' and all(type(row[k]) is int and row[k]>=0 for k in ('dev','inode','mode')),'i1-capture-root-chain')
+    require(all(chain[-1][k]==value[k] for k in ('dev','inode','type','mode')),'i1-capture-root-chain')
+
+
+def _i1_capture_validate_measurement(value,inputs,root,db=False,checkout=False):
+    numeric=('mode','dev','inode','nlink','size','allocatedBytes')
+    expected_dirs=_i1_capture_fs_directories(set(inputs))|({'refs'} if db else set())
+    if checkout:expected_dirs={n for n in expected_dirs if any(n==scope or n.startswith(scope+'/') for scope in SCOPES[:3])}
+    require(set(value['files'])==set(inputs) and set(value['directories'])==expected_dirs,'i1-capture-measured-set')
+    require(value['path']==root['path'] and value['chain']==root['chain'],'i1-capture-measured-root')
+    for name,row in value['directories'].items():
+        require(type(row) is dict and set(row)=={'type',*numeric} and row['type']=='directory' and all(type(row[k]) is int and row[k]>=0 for k in numeric),'i1-capture-directory-record')
+        if not db and not checkout:require(row['mode']==0o555,'i1-capture-directory-readonly')
+    if not checkout:require(all(value['directories'][''][k]==root[k] for k in ('dev','inode','type','mode')),'i1-capture-measured-root')
+    for name,row in value['files'].items():
+        expected=inputs[name]
+        keys={'type',*numeric,'bytes','sha256'}|({'objectSHA1'} if db and name.startswith('objects/') else set())
+        require(type(row) is dict and set(row)==keys and row['type']=='file' and all(type(row[k]) is int and row[k]>=0 for k in (*numeric,'bytes')) and row['nlink']==1 and row['bytes']==row['size'],'i1-capture-file-record')
+        if db:
+            require(0<=row['bytes']<=expected['limit'],'i1-capture-db-record-limit')
+            if 'raw' in expected:require(row['bytes']==len(expected['raw']) and row['sha256']==sha(expected['raw']),'i1-capture-db-fixed-record')
+            else:require(row['objectSHA1']==expected['oid'],'i1-capture-db-object-record')
+        else:require(row['bytes']==len(expected['bytes']) and row['sha256']==sha(expected['bytes']) and row['mode']==(int(expected['mode'][-3:],8) if checkout else 0o444 if expected['mode']=='100644' else 0o555),'i1-capture-export-record')
+        require(type(row['sha256']) is str and re.fullmatch('[0-9a-f]{64}',row['sha256']),'i1-capture-file-hash')
+    require(len({(r['dev'],r['inode']) for r in value['files'].values()})==len(value['files']),'i1-capture-file-inode-unique')
+    require(len({(r['dev'],r['inode']) for r in value['directories'].values()})==len(value['directories']),'i1-capture-directory-inode-unique')
+    require(value['logicalBytes']==sum(r['bytes'] for r in value['files'].values())<=10485760 and value['allocatedBytes']==sum(r['allocatedBytes'] for r in list(value['files'].values())+list(value['directories'].values())),'i1-capture-measured-bytes')
+
+
+def _i1_verify_source_capture(members,trusted_manifest_sha):
+    """Explicit bytes only. Checks records, not historical OS or disk behavior."""
+    import uuid,controller
+    i1_source_retention_budget(members)
+    stage_raw=members['provenance/capture-stage.json'];stage=_i1_json(stage_raw,131072,manifest=True);stage_sha=sha(stage_raw)
+    expected_keys={'schemaVersion','scope','runtimeAdmission','runnerCommit','runID','productSourceBase','productSourceTree','integrationPolicySHA256','toolManifestSHA256','work','checkout','objectDB'}
+    require(type(stage) is dict and set(stage)==expected_keys and type(stage['schemaVersion']) is int and stage['schemaVersion']==1 and stage['scope']=='local-source-capture-mechanical-only' and stage['runtimeAdmission'] is False and stage['runnerCommit'] is None and str(uuid.UUID(stage['runID']))==stage['runID'],'i1-capture-stage')
+    policy=_i1_source_policy()
+    require(stage['productSourceBase']==policy['productSourceBase'] and stage['productSourceTree']==policy['productSourceTree'] and stage['integrationPolicySHA256']==controller.i1_integration_policy_digest(),'i1-capture-policy')
+    require(stage['toolManifestSHA256']==trusted_manifest_sha==sha(members['provenance/capture-tool-manifest.json']),'i1-capture-manifest-binding')
+    for name in ('work','checkout','objectDB'):_i1_capture_validate_root(stage[name])
+    roots=[stage[n] for n in ('work','checkout','objectDB')]
+    for i,left in enumerate(roots):
+        for right in roots[i+1:]:require(not Path(left['path']).is_relative_to(right['path']) and not Path(right['path']).is_relative_to(left['path']) and (left['dev'],left['inode'])!=(right['dev'],right['inode']),'i1-capture-root-overlap')
+    manifest=_i1_capture_manifest(members['provenance/capture-tool-manifest.json'])
+    commits={};trees={}
+    for name,raw in members.items():
+        match=re.fullmatch(r'provenance/integration-(commit|tree)-[0-9]{2}-([0-9a-f]{40})\.bin',name)
+        if match:
+            target=commits if match[1]=='commit' else trees
+            require(match[2] not in target,'i1-capture-duplicate-object');target[match[2]]=raw
+    i1_authenticate_source_originals(commits,trees)
+    products={}
+    for index,row in enumerate(i1_source_rows()):
+        raw=b''.join(members[f'provenance/integration-product-{index:03}-chunk-{i:02}.bin'] for i in range(row['chunks']))
+        if not row['bytes']:require(members[f'provenance/integration-product-{index:03}-empty.bin']==b'','i1-capture-empty')
+        products[row['path']]=raw
+    prows=sorted((r for r in manifest['files'] if r['path'].startswith('ports/mygo/scripts/swift-snapshot-oracle/go-probe/') and r['path'].endswith('.go')),key=lambda r:r['path'])
+    probes={r['path']:members[f'provenance/integration-probe-{i:02}.bin'] for i,r in enumerate(prows)}
+    inputs,expected=_i1_capture_inputs(products,probes,manifest);expected.update(stageSHA256=stage_sha)
+    require(members['provenance/capture-sourceExpected.json']==_json_bytes(expected),'i1-capture-sourceExpected')
+    raw_members=i1_source_raw_members(commits,trees,products,members['provenance/integration-batch-stdin.bin'],members['provenance/integration-batch-stdout.bin'],probes,manifest_bytes=members['provenance/capture-tool-manifest.json'])
+    require(all(members[n]==raw for n,raw in raw_members.items()),'i1-capture-raw-closure')
+    used=set(raw_members)|{'provenance/capture-stage.json','provenance/capture-tool-manifest.json','provenance/capture-sourceExpected.json'}
+    db=_i1_capture_load_measurement(members,'database',stage_sha,used);db_sha=sha(json.dumps(db,sort_keys=True,separators=(',',':')).encode())
+    require(set(db)=={'path','chain','directories','files','logicalBytes','allocatedBytes'},'i1-capture-database-schema')
+    objects={**{oid:('commit',raw) for oid,raw in commits.items()},**{oid:('tree',raw) for oid,raw in trees.items()}}
+    for row in i1_source_rows():objects[row['oid']]=('blob',products[row['path']])
+    require(len(objects)==171,'i1-capture-db-objects')
+    db_inputs={'HEAD':{'raw':(policy['productSourceBase']+'\n').encode(),'limit':4096},'config':{'raw':DB_CONFIG,'limit':4096}}
+    for oid,(kind,raw) in objects.items():db_inputs['objects/'+oid[:2]+'/'+oid[2:]]={'oid':oid,'limit':len(kind)+len(str(len(raw)))+2+len(raw)+1024}
+    _i1_capture_validate_measurement(db,db_inputs,stage['objectDB'],True)
+    usage=_i1_capture_verify_usage(members,inputs,stage_sha,used)
+    previous=0;processes=set();last_transport=None
+    def check_span(before,after,transport):
+        nonlocal previous,last_transport
+        for row in (before,after):require(type(row) is dict and set(row)=={'measuredNs','databaseSHA256','stageSHA256'} and row['databaseSHA256']==db_sha and row['stageSHA256']==stage_sha and type(row['measuredNs']) is int,'i1-capture-call-measurement')
+        require(previous<before['measuredNs']<=transport['parentStartedNs']<transport['endedNs']<=after['measuredNs'],'i1-capture-call-order')
+        pre=usage[1+2*len(processes)];post=usage[2+2*len(processes)]
+        require(pre['endedNs']<=before['measuredNs']<=transport['parentStartedNs'] and transport['endedNs']<=post['startedNs']<post['endedNs']<=after['measuredNs'],'i1-capture-usage-call-order')
+        previous=after['measuredNs'];last_transport=transport
+        require(transport['pid'] not in processes,'i1-capture-process-reuse');processes.add(transport['pid'])
+    input_rows=[]
+    for i in range(3):input_rows.extend(json.loads(raw_members[f'provenance/integration-inputs-{i:02}.json'])['rows'])
+    bypath={r['path']:r for r in input_rows}
+    for ordinal in range(1,135):
+        name=f'provenance/capture-single-{ordinal:03}.json';used.add(name);record=_i1_json(members[name],131072,manifest=True)
+        context=_i1_capture_single_context(stage,ordinal);row=context['source'];refs=bypath[row['path']]
+        stderr_name=f'provenance/capture-single-{ordinal:03}-stderr.bin';used.add(stderr_name);stderr=members[stderr_name]
+        require(type(record) is dict and set(record)=={'schemaVersion','scope','runtimeAdmission','stageSHA256','context','transport','before','after','stderr','stdout','emptyOriginal'},'i1-capture-receipt-schema')
+        wanted={'schemaVersion':1,'scope':stage['scope'],'runtimeAdmission':False,'stageSHA256':stage_sha,'context':context,'transport':record['transport'],'before':record['before'],'after':record['after'],'stderr':_i1_source_ref(stderr_name,stderr),'stdout':refs['raw'],'emptyOriginal':refs['emptyOriginal']}
+        require(_i1_exact(record,wanted),'i1-capture-single-receipt')
+        _i1_validate_source_transport(record['transport'],products[row['path']],stderr,row['bytes'],0);check_span(record['before'],record['after'],record['transport'])
+    batch_names={'provenance/integration-batch-'+n for n in ('stdin.bin','stdout.bin','stderr.bin','receipt.json')}|{f'provenance/integration-batch-child-{i:02}.bin' for i in range(5)}
+    batch_context=_i1_source_batch_context(Path(stage['work']['path']),Path(stage['objectDB']['path']))
+    i1_verify_batch_mechanical_evidence({n:members[n] for n in batch_names},batch_context,commits,trees);used|=batch_names
+    link_name='provenance/capture-batch-link.json';used.add(link_name);link=_i1_json(members[link_name],131072,manifest=True)
+    require(type(link) is dict and set(link)=={'stageSHA256','before','after','receipt'} and link['stageSHA256']==stage_sha and link['receipt']==_i1_source_ref('provenance/integration-batch-receipt.json',members['provenance/integration-batch-receipt.json']),'i1-capture-batch-link')
+    check_span(link['before'],link['after'],json.loads(members['provenance/integration-batch-receipt.json'])['transport'])
+    checkout=_i1_capture_load_measurement(members,'checkout',stage_sha,used)
+    require(set(checkout)=={'path','chain','directories','files','logicalBytes','allocatedBytes'},'i1-capture-checkout-schema')
+    _i1_capture_validate_measurement(checkout,{p:v for p,v in inputs.items() if p in products},stage['checkout'],checkout=True)
+    first=_i1_capture_load_measurement(members,'postWrite',stage_sha,used);second=_i1_capture_load_measurement(members,'postExport',stage_sha,used)
+    for measurement in (first,second):
+        require(set(measurement)=={'path','chain','directories','files','logicalBytes','allocatedBytes','startedNs','endedNs'} and type(measurement['startedNs']) is int and type(measurement['endedNs']) is int and previous<measurement['startedNs']<measurement['endedNs'],'i1-capture-export-time')
+        require(measurement['path']==stage['work']['path']+'/input/go-source' and measurement['chain'][:-2]==stage['work']['chain'],'i1-capture-export-path')
+        root={k:measurement['directories'][''][k] for k in ('dev','inode','type','mode')};root.update(path=measurement['path'],chain=measurement['chain']);_i1_capture_validate_root(root)
+        _i1_capture_validate_measurement(measurement,inputs,root)
+        _i1_capture_fs_reject_shared_files(measurement,checkout,db)
+        require(not {(r['dev'],r['inode']) for r in measurement['files'].values()} & {(r['dev'],r['inode']) for r in db['files'].values()},'i1-capture-export-db-alias')
+    _i1_capture_fs_compare_measurements(first,second)
+    require(previous<usage[271]['startedNs'] and usage[416]['endedNs']<first['startedNs'] and first['endedNs']<usage[417]['startedNs']<usage[417]['endedNs']<second['startedNs'] and second['endedNs']<usage[418]['startedNs'],'i1-capture-usage-export-order')
+    require(set(members)==used and len(processes)==135,'i1-capture-member-set')
+    return {'scope':stage['scope'],'runtimeAdmission':False,'mechanicalEvidenceVerified':True,'processes':135,'offlineOSReexecution':False,'offlineDiskReexecution':False,'stageSHA256':stage_sha}
+
+
+
+def _i1_verify_source_capture_archive(archive_bytes,trusted_manifest_sha):
+    """Read an explicit canonical USTAR byte string, with no filesystem access."""
+    import io,tarfile
+    require(type(archive_bytes) is bytes and len(archive_bytes)<=79*1048576,'i1-capture-archive-limit')
+    selected={}
+    with tarfile.open(fileobj=io.BytesIO(archive_bytes),mode='r:') as archive:
+        for member in archive:
+            require(len(selected)<8192 and member.isfile() and member.name not in selected and 0<=member.size<=131072,'i1-capture-archive-member')
+            i1_safe_path(member.name);raw=archive.extractfile(member).read(131073)
+            require(len(raw)==member.size,'i1-capture-archive-short');selected[member.name]=raw
+    source={n:raw for n,raw in selected.items() if n.startswith('provenance/')}
+    result=_i1_verify_source_capture(source,trusted_manifest_sha)
+    stage_sha=sha(source['provenance/capture-stage.json']);db=_i1_capture_load_measurement(source,'database',stage_sha,set())
+    retained=sum(map(len,source.values()))+9525260+db['logicalBytes']
+    plan,budget=_package_plan(source,retained,[],True,False)
+    require(dict(plan.members)==selected,'i1-capture-archive-closure')
+    expected=bytearray()
+    for (_,raw),header in zip(plan.members,plan.headers):
+        expected.extend(header);expected.extend(raw);expected.extend(b'\0'*((-len(raw))%512))
+    expected.extend(b'\0'*1024);expected.extend(b'\0'*((-len(expected))%10240))
+    require(archive_bytes==bytes(expected),'i1-capture-archive-canonical')
+    return {**result,'snapshotReady':True,'archiveBytes':len(archive_bytes),'budget':budget}
+
+
+def _i1_capture_fs_usage(work, files, directories, logical_limit):
+    """Bounded observed usage, not an OS quota or an adversarial race guarantee.
+
+    The caller derives the exact current file/directory inventory from its fixed
+    stage. Missing entries, additional entries, links and special files reject.
+    Logical bytes count regular files; allocated bytes include directories.
+    """
+    require(type(files) is set and type(directories) is set and '' in directories
+            and not (files & directories), 'capture-usage-inventory')
+    require(type(logical_limit) is int and 0 <= logical_limit <= 82837504
+            and len(files) <= 8192 and len(directories) <= 64,
+            'capture-usage-limit')
+    for name in files | (directories - {''}):
+        _i1_capture_fs_relative(name)
+    require(_i1_capture_fs_directories(files | (directories - {''})) <= directories,
+            'capture-usage-parent-set')
+    started = time.monotonic_ns()
+    fd, _ = _i1_capture_fs_open_root(work)
+    logical = 0
+    allocated = 0
+    try:
+        measured_dirs = _i1_capture_fs_scan(fd, files, directories)
+        allocated = sum(row['allocatedBytes'] for row in measured_dirs.values())
+        for name in sorted(files):
+            child = _i1_capture_fs_open_relative(fd, name)
+            try:
+                st = os.fstat(child)
+                require(stat.S_ISREG(st.st_mode) and st.st_nlink == 1,
+                        'capture-usage-regular-single-link')
+                logical += st.st_size
+                allocated += st.st_blocks * 512
+                require(logical <= logical_limit, 'capture-usage-logical-limit')
+            finally:
+                os.close(child)
+        return {'startedNs': started, 'endedNs': time.monotonic_ns(),
+                'files': len(files), 'directories': len(directories),
+                'logicalBytes': logical, 'allocatedBytes': allocated}
+    finally:
+        os.close(fd)
+
+
+
+def _i1_capture_store_usage(members,usage,stage_sha):
+    refs=[]
+    for i in range((len(usage)+63)//64):
+        name=f'provenance/capture-usage-{i:02}.json';raw=_json_bytes({'stageSHA256':stage_sha,'rows':usage[i*64:(i+1)*64]});members[name]=raw;refs.append(_i1_source_ref(name,raw))
+    members['provenance/capture-usage.json']=_json_bytes({'stageSHA256':stage_sha,'count':len(usage),'parts':refs})
+
+
+def _i1_capture_verify_usage(members,inputs,stage_sha,used):
+    name='provenance/capture-usage.json';used.add(name);index=_i1_json(members[name],131072,manifest=True)
+    require(type(index) is dict and set(index)=={'stageSHA256','count','parts'} and index['stageSHA256']==stage_sha and type(index['count']) is int and index['count']==419 and type(index['parts']) is list and len(index['parts'])==7,'i1-capture-usage-index')
+    rows=[]
+    for i,ref in enumerate(index['parts']):
+        n=f'provenance/capture-usage-{i:02}.json';used.add(n)
+        require(ref==_i1_source_ref(n,members[n]),'i1-capture-usage-ref');part=_i1_json(members[n],131072,manifest=True)
+        require(type(part) is dict and set(part)=={'stageSHA256','rows'} and part['stageSHA256']==stage_sha and type(part['rows']) is list and len(part['rows'])==min(64,419-i*64),'i1-capture-usage-part');rows.extend(part['rows'])
+    previous=0;partial=0
+    export_dirs=len(_i1_capture_fs_directories(set(inputs)))
+    work_dirs=len(_i1_capture_fs_directories({'input/go-source/'+p for p in inputs}))
+    sizes=[len(v['bytes']) for p,v in sorted(inputs.items())]
+    for i,row in enumerate(rows):
+        require(type(row) is dict and set(row)=={'kind','startedNs','endedNs','files','directories','logicalBytes','allocatedBytes'} and all(type(row[k]) is int and row[k]>=0 for k in row if k!='kind'),'i1-capture-usage-row')
+        require(previous<row['startedNs']<row['endedNs'] and row['logicalBytes']<=10485760,'i1-capture-usage-time');previous=row['endedNs']
+        if i<271:expected=('work-empty',0,1,0)
+        elif i<417:
+            partial+=sizes[i-271];expected=('export-partial',i-270,export_dirs,partial)
+        else:expected=('work-export',146,work_dirs,9525260)
+        require((row['kind'],row['files'],row['directories'],row['logicalBytes'])==expected,'i1-capture-usage-scope')
+    return rows
+
 
 if __name__=='__main__':
     # controller须共享本次runner状态，不能另导入一份空COMMAND_EVIDENCE。

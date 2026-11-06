@@ -998,3 +998,340 @@ class I1SourceCaptureBlockContracts(unittest.TestCase):
   with patch.object(sys,'argv',['runner.py']),patch.object(r,'prepare',side_effect=AssertionError('must not prepare')),patch.object(r.subprocess,'Popen',side_effect=AssertionError('must not launch')),patch.object(r,'persist_diagnostic') as diagnostic,patch.object(r,'prepare_upload'):
    self.assertEqual(r.main(),1)
   self.assertEqual(str(diagnostic.call_args.args[1]),'i1-final-runner-unbound')
+
+import zlib
+import hashlib
+import subprocess
+import sys
+import copy
+import os
+import json
+from unittest.mock import patch
+class I1SourceCaptureFilesystemContracts(unittest.TestCase):
+ def objects(self):
+  result={}
+  for kind,count in [('commit',2),('tree',36),('blob',133)]:
+   for i in range(count):
+    raw=f'{kind}-{i}'.encode();full=kind.encode()+b' '+str(len(raw)).encode()+b'\0'+raw
+    result[hashlib.sha1(full).hexdigest()]=(kind,raw)
+  return result
+ def db(self,path):
+  objects=self.objects();base=next(iter(objects));path.mkdir();(path/'HEAD').write_text(base+'\n');(path/'config').write_bytes(r.DB_CONFIG);(path/'refs').mkdir();(path/'objects').mkdir()
+  for oid,(kind,raw) in objects.items():
+   d=path/'objects'/oid[:2];d.mkdir(exist_ok=True);(d/oid[2:]).write_bytes(zlib.compress(kind.encode()+b' '+str(len(raw)).encode()+b'\0'+raw))
+  return objects,base
+ def test_db_and_fixed_config(self):
+  with tempfile.TemporaryDirectory() as d:
+   p=Path(d)/'db';o,b=self.db(p);a=r._i1_capture_fs_authenticate_db(p,o,b);self.assertEqual(len(a['files']),173)
+   (p/'config').write_bytes(r.DB_CONFIG+b'# comment\n')
+   with self.assertRaises(r.GuardError):r._i1_capture_fs_authenticate_db(p,o,b)
+ def test_tail_stream_extra_and_links(self):
+  for mutation in ('tail','multistream','extra','hardlink','fifo','symlink'):
+   with self.subTest(mutation=mutation),tempfile.TemporaryDirectory() as d:
+    p=Path(d)/'db';o,b=self.db(p);q=p/'objects'/b[:2]/b[2:]
+    if mutation=='tail':q.write_bytes(q.read_bytes()+b'x')
+    elif mutation=='multistream':q.write_bytes(q.read_bytes()+zlib.compress(b''))
+    elif mutation=='extra':(p/'objects'/'pack').mkdir()
+    else:
+     raw=q.read_bytes();q.unlink()
+     if mutation=='fifo':os.mkfifo(q)
+     else:
+      other=Path(d)/'other';other.write_bytes(raw)
+      (os.link if mutation=='hardlink' else os.symlink)(other,q)
+    with self.assertRaises((r.GuardError,OSError)):r._i1_capture_fs_authenticate_db(p,o,b)
+ def test_inode_change_observed(self):
+  with tempfile.TemporaryDirectory() as d:
+   p=Path(d)/'db';o,b=self.db(p);a=r._i1_capture_fs_authenticate_db(p,o,b);q=p/'config';new=p/'replacement';new.write_bytes(q.read_bytes());new.replace(q)
+   self.assertNotEqual(a,r._i1_capture_fs_authenticate_db(p,o,b))
+ def test_root_symlink_and_overlap(self):
+  with tempfile.TemporaryDirectory() as d:
+   p=Path(d);(p/'a').mkdir();(p/'b').mkdir();(p/'link').symlink_to(p/'a')
+   with self.assertRaises(OSError):r._i1_capture_fs_root_identity(p/'link')
+   with self.assertRaises(r.GuardError):r._i1_capture_fs_validate_roots(p/'a',p/'b',p/'a')
+ def test_real_readback_and_changes(self):
+  inputs={f'ports/mygo/f{i:03}':{'bytes':b'x'*65000,'mode':'100644'} for i in range(146)}
+  inputs['ports/mygo/f000']['bytes']+=b'x'*(9525260-146*65000)
+  with tempfile.TemporaryDirectory() as d:
+   p=Path(d)/'export';a=r._i1_capture_fs_export_snapshot(p,inputs);b=r._i1_capture_fs_measure_snapshot(p,inputs);self.assertTrue(r._i1_capture_fs_compare_measurements(a,b))
+   with self.assertRaises(FileExistsError):r._i1_capture_fs_export_snapshot(p,inputs)
+   q=p/'ports/mygo/f001';os.chmod(q.parent,0o755);new=q.parent/'tmp';new.write_bytes(q.read_bytes());new.chmod(0o444);new.replace(q);q.parent.chmod(0o555)
+   c=r._i1_capture_fs_measure_snapshot(p,inputs)
+   with self.assertRaises(r.GuardError):r._i1_capture_fs_compare_measurements(b,c)
+   q.chmod(0o644)
+   with self.assertRaises(r.GuardError):r._i1_capture_fs_measure_snapshot(p,inputs)
+ def test_two_full_reads_and_chmod_failure(self):
+  inputs={f'ports/mygo/f{i:03}':{'bytes':b'x'*65000,'mode':'100644'} for i in range(146)}
+  inputs['ports/mygo/f000']['bytes']+=b'x'*(9525260-146*65000)
+  with tempfile.TemporaryDirectory() as d:
+   p=Path(d)/'export'
+   with patch.object(r,'_i1_capture_fs_read',wraps=r._i1_capture_fs_read) as read:
+    r._i1_capture_fs_export_snapshot(p,inputs);self.assertEqual(read.call_count,146)
+    r._i1_capture_fs_measure_snapshot(p,inputs);self.assertEqual(read.call_count,292)
+   with patch.object(r.os,'fchmod',side_effect=OSError('injected chmod failure')):
+    with self.assertRaises(OSError):r._i1_capture_fs_export_snapshot(Path(d)/'failed',inputs)
+   self.assertTrue((Path(d)/'failed').exists())
+ def test_expected_path_limits(self):
+  for name in ('../x','/x','x//y','x/'+'y'*240,'x/'*17+'y'):
+   with self.subTest(name=name),self.assertRaises(r.GuardError):r._i1_capture_fs_inputs({name:{'bytes':b'','mode':'100644'}})
+ def test_parent_creation_exclusive(self):
+  with tempfile.TemporaryDirectory() as d:
+   p=Path(d)/'input';record=r._i1_capture_fs_make_parent(p);self.assertEqual(record['mode'],0o700)
+   with self.assertRaises(FileExistsError):r._i1_capture_fs_make_parent(p)
+
+CAPTURE_FAULT_RESULTS=[]
+
+class I1SourceCaptureTransportContracts(unittest.TestCase):
+    def run_child(self, source, *, timeout=None, single=True):
+        with tempfile.TemporaryDirectory(prefix='capture-fault-',dir=os.environ.get('TMPDIR','/tmp')) as d:
+            args=([sys.executable,'-c',source],Path(d),{'PATH':'/usr/bin:/bin'},b'' if single else (b'a'*40+b'\n')*5,single)
+            if timeout is None:
+                result=r._i1_fixed_source_transport(*args)
+            else:
+                with patch.object(r,'I1_BATCH_TIMEOUT_NS',timeout):
+                    result=r._i1_fixed_source_transport(*args)
+        CAPTURE_FAULT_RESULTS.append({'scope':'synthetic-transport-fault-only','case':self.id(),'transport':result[2]})
+        self.assertFalse(any('sha' in key.lower() for key in result[2]))
+        return result
+
+    def assert_failure(self,result,reason):
+        out,err,receipt=result
+        self.assertFalse(receipt['complete'])
+        self.assertEqual(receipt['transportError'],reason)
+        with self.assertRaises(r.GuardError):
+            r._i1_validate_source_transport(receipt,out,err,len(out),0)
+
+    def test_single_closed_empty_stdin_and_zero_output(self):
+        out,err,receipt=self.run_child('import sys; assert sys.stdin.buffer.read()==b""')
+        self.assertEqual((out,err),(b'',b''))
+        self.assertEqual(receipt['stdinBytes'],0)
+        self.assertTrue(receipt['stdinClosed'])
+        self.assertTrue(r._i1_validate_source_transport(receipt,out,err,0,0))
+
+    def test_single_4mib_exact_cap_does_not_expand_batch(self):
+        out,err,receipt=self.run_child('import sys; assert sys.stdin.buffer.read()==b""; sys.stdout.buffer.write(b"x"*4194304)')
+        self.assertEqual(len(out),4194304)
+        self.assertTrue(r._i1_validate_source_transport(receipt,out,err,4194304,0))
+        self.assert_failure(self.run_child('import sys; sys.stdin.buffer.read(); sys.stdout.buffer.write(b"x"*131073)',single=False),'stdout-resource-limit')
+
+    def test_single_stdout_over_cap(self):
+        result=self.run_child('import sys; sys.stdin.buffer.read(); sys.stdout.buffer.write(b"x"*4194305)')
+        self.assertEqual(len(result[0]),4194304)
+        self.assertGreater(result[2]['stdoutObservedBytes'],4194304)
+        self.assert_failure(result,'stdout-resource-limit')
+
+    def test_single_stderr_over_cap_retains_only_tail(self):
+        result=self.run_child('import sys; sys.stdin.buffer.read(); sys.stderr.buffer.write(b"z"*1048577)')
+        self.assertEqual(result[1],b'z'*65536)
+        self.assert_failure(result,'stderr-resource-limit')
+
+    def test_single_full_bytes_exit7_not_success(self):
+        result=self.run_child('import sys; sys.stdin.buffer.read(); sys.stdout.buffer.write(b"complete"); sys.stdout.flush(); sys.exit(7)')
+        self.assertEqual(result[0],b'complete')
+        self.assertEqual(result[2]['returncode'],7)
+        self.assertTrue(result[2]['stdoutEOFObserved'])
+        self.assertTrue(result[2]['stderrEOFObserved'])
+        self.assertIsNone(result[2]['killRequestedNs'])
+        self.assert_failure(result,'subprocess-rejected')
+
+    def test_single_short_output_rejected_by_fixed_expected_size(self):
+        out,err,receipt=self.run_child('import sys; sys.stdin.buffer.read(); sys.stdout.buffer.write(b"short")')
+        self.assertTrue(receipt['complete'])
+        with self.assertRaises(r.GuardError):
+            r._i1_validate_source_transport(receipt,out,err,6,0)
+
+    def test_single_timeout_after_complete_stdout(self):
+        result=self.run_child('import sys,time; sys.stdin.buffer.read(); sys.stdout.buffer.write(b"complete"); sys.stdout.flush(); time.sleep(5)',timeout=200_000_000)
+        self.assertEqual(result[0],b'complete')
+        self.assert_failure(result,'timeout')
+        self.assertIsNotNone(result[2]['killRequestedNs'])
+        self.assertIsNotNone(result[2]['reapedNs'])
+
+    def test_single_timeout_after_both_eof_before_exit(self):
+        result=self.run_child('import os,sys,time; sys.stdin.buffer.read(); os.close(1); os.close(2); time.sleep(5)',timeout=200_000_000)
+        self.assertTrue(result[2]['stdoutEOFObserved'])
+        self.assertTrue(result[2]['stderrEOFObserved'])
+        self.assert_failure(result,'timeout')
+
+    def test_single_descendant_holds_stderr_not_complete(self):
+        result=self.run_child('import os,sys,time; sys.stdin.buffer.read(); pid=os.fork(); os.close(1); time.sleep(5) if pid==0 else sys.exit(0)',timeout=200_000_000)
+        self.assertTrue(result[2]['stdoutEOFObserved'])
+        self.assertFalse(result[2]['stderrEOFObserved'])
+        self.assert_failure(result,'timeout')
+
+    def test_single_pending_wait_preserves_registry_until_reaped(self):
+        real_wait=subprocess.Popen.wait
+        held=[]
+        def failed_wait(proc,*a,**kw):
+            held.append(proc)
+            raise subprocess.TimeoutExpired(proc.args,1)
+        try:
+            with patch.object(r.subprocess.Popen,'wait',failed_wait):
+                result=self.run_child('import sys; sys.stdin.buffer.read()')
+            self.assertEqual(result[2]['outcome'],'pending-termination')
+            self.assertIsNone(result[2]['reapedNs'])
+            self.assertIn(result[2]['pid'],r._I1_BATCH_PENDING_CHILDREN)
+            self.assertFalse(result[2]['complete'])
+        finally:
+            for proc in set(held):
+                real_wait(proc,timeout=2)
+                r._I1_BATCH_PENDING_CHILDREN.pop(proc.pid,None)
+
+    def test_single_invalid_inputs_do_not_launch(self):
+        with patch.object(r.subprocess,'Popen',side_effect=AssertionError('must not launch')):
+            for raw,single in ((b'x',True),(b'',False),(b'',1),('',True)):
+                with self.subTest(raw=raw,single=single),self.assertRaises(ValueError):
+                    r._i1_fixed_source_transport([],Path('/tmp'),{},raw,single)
+
+    def test_single_transport_receipt_tampering(self):
+        out,err,receipt=self.run_child('import sys; sys.stdin.buffer.read()')
+        for key,value in (('stdinBytes',205),('complete',1),('stdoutEOFObserved',False),('reapedNs',None),('returncode',7),('transportError',None),('pgid',-1),('deadlineNs',receipt['deadlineNs']+1)):
+            changed=copy.deepcopy(receipt);changed[key]=value
+            with self.subTest(field=key),self.assertRaises(r.GuardError):
+                r._i1_validate_source_transport(changed,out,err,0,0)
+
+    def test_batch_still_requires_205_input_and_50352_output(self):
+        out,err,receipt=self.run_child('import sys; assert len(sys.stdin.buffer.read())==205; sys.stdout.buffer.write(b"x"*50352)',single=False)
+        self.assertTrue(r.i1_validate_batch_transport(receipt,out,err))
+        with self.assertRaises(r.GuardError):
+            r._i1_validate_source_transport(receipt,out,err,50352,0)
+
+
+class I1SourceCaptureProductionBoundaryContracts(unittest.TestCase):
+    def test_production_gates_never_call_prepare_or_process(self):
+        with patch.object(r,'prepare',side_effect=AssertionError('must not prepare')),patch.object(r.subprocess,'Popen',side_effect=AssertionError('must not launch')):
+            with self.assertRaisesRegex(r.GuardError,'i1-final-runner-unbound'):
+                r.i1_require_source_execution_bound()
+            for permit in (None,{}, {'snapshotReady':True,'runtimeAdmission':False}, {'runnerCommit':'0'*40}):
+                with self.subTest(permit=permit),self.assertRaisesRegex(r.GuardError,'i1-final-runner-unbound'):
+                    r.i1_run_source_batch(permit)
+        self.assertIsNone(r._i1_source_policy()['runnerCommit'])
+        self.assertIsNone(r._i1_source_policy()['runnerTree'])
+
+    def test_ordinary_128k_cap_and_swift_source_role_unchanged(self):
+        with patch.object(r.subprocess,'Popen',side_effect=AssertionError('must not launch')):
+            with self.assertRaisesRegex(r.GuardError,'ordinary-stdout-limit'):
+                r.bounded_run(['/usr/bin/true'],Path('/tmp'),{},stdout_limit=4194304)
+            path=r.i1_source_rows()[0]['path']
+            with self.assertRaisesRegex(r.GuardError,'source-command'):
+                r.bounded_run(['/usr/bin/true'],Path('/tmp'),{},stdout_limit=4194304,source_path=path)
+
+
+class I1SourceCaptureUsageContracts(unittest.TestCase):
+ def test_empty_and_known_files(self):
+  with tempfile.TemporaryDirectory() as d:
+   root=Path(d);a=r._i1_capture_fs_usage(root,set(),{''},0);self.assertEqual(a['files'],0)
+   (root/'a').mkdir();(root/'a/x').write_bytes(b'abc');b=r._i1_capture_fs_usage(root,{'a/x'},{'','a'},3)
+   self.assertEqual((b['files'],b['directories'],b['logicalBytes']),(1,2,3));self.assertGreaterEqual(b['allocatedBytes'],3);self.assertLess(b['startedNs'],b['endedNs'])
+   with self.assertRaises(r.GuardError):r._i1_capture_fs_usage(root,{'a/x'},{'','a'},2)
+ def test_extra_missing_and_special(self):
+  for fault in ('extra','missing','symlink','hardlink','fifo'):
+   with self.subTest(fault=fault),tempfile.TemporaryDirectory() as d:
+    root=Path(d);q=root/'x'
+    if fault=='extra':q.write_bytes(b'');(root/'extra').mkdir()
+    elif fault=='symlink':q.symlink_to('/tmp')
+    elif fault=='fifo':os.mkfifo(q)
+    elif fault=='hardlink':q.write_bytes(b'');os.link(q,root/'link')
+    with self.assertRaises((r.GuardError,OSError)):r._i1_capture_fs_usage(root,{'x'},{''},10)
+ def test_bad_inventory(self):
+  with tempfile.TemporaryDirectory() as d:
+   for files,dirs,limit in [({'../x'},{''},0),({'a/x'},{''},0),(set(),{''},82837505),(set(),{''},True),(set(),{''}|{f'x{i}' for i in range(64)},0)]:
+    with self.assertRaises(r.GuardError):r._i1_capture_fs_usage(Path(d),files,dirs,limit)
+# Synthetic semantic contracts. No archived fixture or live source acquisition.
+class I1SourceCaptureOfflineSemanticContracts(unittest.TestCase):
+    def measurement_fixture(self, db=False):
+        root={'path':'/capture','dev':1,'inode':10,'type':'directory','mode':0o555,
+              'chain':[{'component':'capture','dev':1,'inode':10,'type':'directory','mode':0o555}]}
+        directory={'type':'directory','mode':0o555,'dev':1,'inode':10,'nlink':2,'size':0,'allocatedBytes':0}
+        inputs={'a':{'bytes':b'a','mode':'100644'},'b':{'bytes':b'b','mode':'100644'}}
+        files={name:{'type':'file','mode':0o444,'dev':1,'inode':20+i,'nlink':1,'size':1,'bytes':1,'sha256':r.sha(value['bytes']),'allocatedBytes':0} for i,(name,value) in enumerate(inputs.items())}
+        value={'path':root['path'],'chain':root['chain'],'directories':{'':directory},'files':files,'logicalBytes':2,'allocatedBytes':0}
+        if db:
+            inputs={name:{'raw':v['bytes'],'limit':4096} for name,v in inputs.items()}
+            value['directories']['refs']={**directory,'inode':11}
+        return value,inputs,root
+
+    def test_offline_measurement_no_filesystem_calls(self):
+        from unittest.mock import patch
+        import builtins
+        value,inputs,root=self.measurement_fixture()
+        with patch.object(builtins,'open',side_effect=AssertionError('offline open')),patch.object(r.os,'open',side_effect=AssertionError('offline os.open')),patch.object(r.subprocess,'Popen',side_effect=AssertionError('offline process')):
+            r._i1_capture_validate_root(root)
+            r._i1_capture_validate_measurement(value,inputs,root)
+
+    def test_offline_duplicate_export_and_database_inode_rejected(self):
+        for db in (False,True):
+            value,inputs,root=self.measurement_fixture(db)
+            r._i1_capture_validate_measurement(value,inputs,root,db=db)
+            value['files']['b']['inode']=value['files']['a']['inode']
+            with self.subTest(database=db),self.assertRaisesRegex(r.GuardError,'i1-capture-file-inode-unique'):
+                r._i1_capture_validate_measurement(value,inputs,root,db=db)
+
+    def test_offline_file_type_mode_links_size_and_hash_rejected(self):
+        for field,replacement in (('type','symlink'),('mode',0o644),('nlink',2),('nlink',True),('bytes',2),('size',2),('sha256','0'*64),('dev',True)):
+            value,inputs,root=self.measurement_fixture();value['files']['a'][field]=replacement
+            with self.subTest(field=field),self.assertRaises(r.GuardError):
+                r._i1_capture_validate_measurement(value,inputs,root)
+
+    def test_offline_measurement_complete_set_and_byte_totals(self):
+        for field in ('files','directories'):
+            value,inputs,root=self.measurement_fixture();value[field]['extra']=dict(next(iter(value[field].values())))
+            with self.subTest(field=field),self.assertRaisesRegex(r.GuardError,'i1-capture-measured-set'):
+                r._i1_capture_validate_measurement(value,inputs,root)
+        for field in ('logicalBytes','allocatedBytes'):
+            value,inputs,root=self.measurement_fixture();value[field]+=1
+            with self.subTest(field=field),self.assertRaisesRegex(r.GuardError,'i1-capture-measured-bytes'):
+                r._i1_capture_validate_measurement(value,inputs,root)
+
+    def test_offline_root_chain_schema_and_identity(self):
+        for mutation in ('name','missing','inode','type','bool'):
+            _,_,root=self.measurement_fixture()
+            if mutation=='name':root['chain'][0]['component']='other'
+            elif mutation=='missing':root['chain']=[]
+            elif mutation=='inode':root['chain'][0]['inode']+=1
+            elif mutation=='type':root['chain'][0]['type']='symlink'
+            else:root['chain'][0]['inode']=True
+            with self.subTest(mutation=mutation),self.assertRaises(r.GuardError):r._i1_capture_validate_root(root)
+
+    def test_offline_same_content_inode_changed_between_reads(self):
+        import copy
+        first,_,_=self.measurement_fixture();first.update(startedNs=1,endedNs=2)
+        second=copy.deepcopy(first);second.update(startedNs=3,endedNs=4)
+        self.assertTrue(r._i1_capture_fs_compare_measurements(first,second))
+        second['files']['a']['inode']+=100
+        with self.assertRaisesRegex(r.GuardError,'capture-export-identity-drift'):r._i1_capture_fs_compare_measurements(first,second)
+
+    def test_offline_copy_of_first_measurement_is_not_second_read(self):
+        import copy
+        first,_,_=self.measurement_fixture();first.update(startedNs=1,endedNs=2)
+        with self.assertRaisesRegex(r.GuardError,'capture-measurement-order'):r._i1_capture_fs_compare_measurements(first,copy.deepcopy(first))
+
+    def test_offline_export_aliases_checkout_or_database_rejected(self):
+        import copy
+        measured,_,_=self.measurement_fixture()
+        source=copy.deepcopy(measured)
+        with self.assertRaisesRegex(r.GuardError,'capture-export-shared-inode'):r._i1_capture_fs_reject_shared_files(measured,source)
+        source['files']={}
+        self.assertTrue(r._i1_capture_fs_reject_shared_files(measured,source))
+        measured['files']['b']['inode']=measured['files']['a']['inode']
+        with self.assertRaisesRegex(r.GuardError,'capture-export-shared-inode'):r._i1_capture_fs_reject_shared_files(measured,source)
+
+    def test_offline_measurement_refs_and_cross_stage(self):
+        import copy,json
+        value,_,_=self.measurement_fixture();members={};stage='a'*64
+        r._i1_capture_store_measurement(members,'postWrite',value,stage)
+        self.assertEqual(r._i1_capture_load_measurement(members,'postWrite',stage,set()),value)
+        with self.assertRaisesRegex(r.GuardError,'i1-capture-measurement'):r._i1_capture_load_measurement(members,'postWrite','b'*64,set())
+        bad=dict(members);part='provenance/capture-postWrite-files-00.json';record=json.loads(bad[part]);record['rows'][0][1]['inode']+=1;bad[part]=r._json_bytes(record)
+        with self.assertRaisesRegex(r.GuardError,'i1-capture-measurement-ref'):r._i1_capture_load_measurement(bad,'postWrite',stage,set())
+
+    def test_offline_usage_missing_and_wrong_count_rejected(self):
+        with self.assertRaises(KeyError):r._i1_capture_verify_usage({}, {},'a'*64,set())
+        members={'provenance/capture-usage.json':r._json_bytes({'stageSHA256':'a'*64,'count':418,'parts':[]})}
+        with self.assertRaisesRegex(r.GuardError,'i1-capture-usage-index'):r._i1_capture_verify_usage(members,{},'a'*64,set())
+
+    def test_offline_archive_requires_bytes_before_io(self):
+        from unittest.mock import patch
+        with patch.object(r.os,'open',side_effect=AssertionError('offline open')),patch.object(r.subprocess,'Popen',side_effect=AssertionError('offline process')):
+            for value in (None,'not bytes',bytearray()):
+                with self.subTest(type=type(value).__name__),self.assertRaisesRegex(r.GuardError,'i1-capture-archive-limit'):
+                    r._i1_verify_source_capture_archive(value,'a'*64)

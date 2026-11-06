@@ -65,3 +65,36 @@ run-binding固定本次runID、工具manifest、来源manifest和catalog哈希�
 固定19来源git cat-file仅使用实际观测bytes/SHA/Git blob的source-object收据，不将合法大源码复制进普通128KiB stdout；源提取原4MiB上限与普通命令上限不变。超限/坏路径/非regular原件只产生有界排除诊断，不截断伪raw，不删除原件；任何排除强制失败，但仍尝试可验证失败包。1MiB诊断保留额包含在总80MiB内，正常包和紧急包都核算已承诺原件、metadata及tar成本，紧急包不再次读取poison。
 
 完整本地解包合同必须带source-gates、绑定、所有child、原始资料与清单，不再从另一目录补件。合成协议合同只能证明控制流程与证据链；Swift270、真正跨语言32点及macOS隔离仍须后续授权hosted实证。
+
+### I1 局部 source capture（不授予运行准入）
+
+内部 `_i1_capture_source_stage` 只从已认证的固定 loose bare DB 运行134条逐路径
+Git读取及唯一五件batch；不接受调用者给出的产品bytes作为成功读取见证。DB准备
+不计入135条执行收据。当前DB精确2commit、36tree、133blob，固定HEAD/config与
+空refs，不支持pack、alternates、promisor、链接或额外条目。
+
+来源仍为policy冻结的productSourceBase，不是本次runner HEAD；runnerCommit保持
+null，`i1_require_source_execution_bound` 与 `i1_run_source_batch` 仍fail closed。
+本切片不实施execution descriptor、binding4/provenance4或其余120角色。
+
+每条调用前后重读DB精确全集及三根no-follow身份，单件stdin为DEVNULL，stdout
+专用4MiB；ordinary 128KiB、Swift19及batch205/50352合同不变。134条原件按139
+路径索引保留，共享OID不合并，两份零字节原件及五份batch子原件均保留。
+
+sourceExpected由认证原件构造；postWrite与postExport分别实际重新打开、枚举并
+读取全部146文件，比较内容、mode及两次dev/inode。导出0444/0555与Git mode分列。
+当前7probe 63157bytes，146输入9525260bytes，139产品9462103bytes/196chunks。
+原历史62811/9524914不是本次输入身份；变更工具后须重新验证45路径manifest。
+
+`_i1_verify_source_capture(members, trusted_manifest_sha)` 只消费显式归档成员bytes，
+固定重建原件、收据、checkout/DB/导出测量与引用闭包，不读取本机源码。
+`_i1_verify_source_capture_archive(archive_bytes, trusted_manifest_sha)` 另核完整
+规范USTAR字节、固定元数据及精确预算；可信manifest摘要必须来自已核执行身份，
+不能从未信任包自行取出后声称已认证。源raw保留仍限20MiB/8192，单成员128KiB，
+完整普通预算79MiB，诊断1MiB。419次固定阶段/写入用量采样与封包后用量记录是
+实际观察值，不是内核配额。失败保留partial原件/收据、诊断及导出，不重试或删重来。
+
+即使snapshotReady=true，runtimeAdmission仍false。离线只能复核记录与原件一致，
+不能重演历史OS退出/磁盘行为；no-follow前后测量不能排除恶意同用户在两次测量
+之间替换后复原，readonly不是sandbox。本批没有编译、真实Swift/macOS、CA、
+HTTPS、完整I1准入或产品对等结果。

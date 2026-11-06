@@ -47,8 +47,8 @@
       "path": "ports/mygo/scripts/swift-snapshot-oracle/README.md",
       "role": "tool",
       "gitBlob": "",
-      "sha256": "e5c94b3f1b4fa9c649bcf69978228c7ed124553b06fc27e2c289b00b3bbfad73",
-      "bytes": 8820
+      "sha256": "a3941dc7f3f0fe3fba25891cea89c29fefa490027f4cb35e00137e7362a84cf5",
+      "bytes": 11235
     },
     {
       "path": "ports/mygo/scripts/swift-snapshot-oracle/SnapshotOracle.swift",
@@ -173,8 +173,8 @@
       "path": "ports/mygo/scripts/swift-snapshot-oracle/runner.py",
       "role": "tool",
       "gitBlob": "",
-      "sha256": "24800a5797f1e7748093a503186462a6acac31a498099a3695a47bd868dd6c75",
-      "bytes": 140533
+      "sha256": "6725c4586d7501eb94b63010469290f95b31cd11bb991390010bb03781547c18",
+      "bytes": 191654
     },
     {
       "path": "ports/mygo/scripts/swift-snapshot-oracle/spec/ARTIFACT-SHA256.tsv",
@@ -313,8 +313,8 @@
       "path": "ports/mygo/scripts/swift-snapshot-oracle/test_swift_runner.py",
       "role": "tool",
       "gitBlob": "",
-      "sha256": "186d4b9cdedfd2a7b90e216ab5dd61b1e56548021f9e36b63dbcff4f260714a0",
-      "bytes": 70945
+      "sha256": "f91e2642bcd594ed08978c553f6cbfa848f9d65bb1824af2ac9bec478a7c38ff",
+      "bytes": 92316
     }
   ]
 }
