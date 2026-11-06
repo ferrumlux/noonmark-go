@@ -1,0 +1,104 @@
+{
+  "run_id": 42240698683,
+  "attempt": 1,
+  "head": "bff7414d71c10f31f45c679393e035aa6386b989",
+  "tree": "04482b01e72640b808d7d49c65b7acf728fadfc3",
+  "tree_file_count": 603,
+  "source_url": "https://github.com/ferrumlux/noonmark-go/actions/runs/42240698683",
+  "job_id": 127969899928,
+  "completed_at": "2026-11-06T15:33:28Z",
+  "root_seconds": 492.032,
+  "default_timeout_seconds": 600,
+  "root_margin_seconds": 107.968,
+  "artifact_id": 13515873648,
+  "artifact_bytes": 6435,
+  "artifact_sha256": "8eb73ce4212ca68ec6aaa514499e5a9e9dfef48ca3055ba877aeded25f50e1c8",
+  "artifact_digest_matches_github_and_upload_log": true,
+  "zip_crc_and_safe_members_verified": true,
+  "members": {
+    "binary-checksums.txt": {
+      "bytes": 566,
+      "sha256": "f658252beb750b1fcdfe0f299c94c6700b17fe0c5c3a8540d67a1edf659dcb59",
+      "crc32": "eac00a6a"
+    },
+    "checks.txt": {
+      "bytes": 27396,
+      "sha256": "9a2079757c7da560fd59aeb0145324380bb35860d649e4771675b516360482d7",
+      "crc32": "ac56c1d3"
+    },
+    "cross-build.txt": {
+      "bytes": 311,
+      "sha256": "7bed62843e3f9d285c48874fe77f7410fc874c913bdaf23f8eefa957e5f92877",
+      "crc32": "0643bb59"
+    },
+    "entrypoints.txt": {
+      "bytes": 188,
+      "sha256": "592a36c63945a13f6ea856e77c3485b4fcd5d68d0cedb58c5c8c261fdd7f1477",
+      "crc32": "bd547894"
+    },
+    "environment.txt": {
+      "bytes": 416,
+      "sha256": "68d8438ea8fbc4f2262fb5c8b260c9b874da5b1f7149c1cae01c35deef804948",
+      "crc32": "f91a8678"
+    },
+    "result.txt": {
+      "bytes": 79,
+      "sha256": "9bb488611c363033e09212059f40ce3decd34f7b476b403085f37498ee25ace9",
+      "crc32": "475ab082"
+    }
+  },
+  "compile_only_targets": [
+    "linux/amd64",
+    "linux/arm64",
+    "windows/amd64",
+    "windows/arm64",
+    "darwin/amd64",
+    "darwin/arm64"
+  ],
+  "limitations": [
+    "Default gate only, not full framework allocation suite/TestDiffFrameAllocs.",
+    "Six target builds are compile-only; Linux CLI/headless is not desktop or real OS IME validation.",
+    "Unicode16 gate excludes separate ICU76 differential (RUN_ICU76=0).",
+    "No new Swift oracle, signing, release, deployment, production data or complete product parity acceptance.",
+    "Package-level root tests are not verbose; individual application test outcomes are not separately logged.",
+    "Binary checksum manifest recorded, but executable bytes are not in bounded artifact and have not been independently hashed here.",
+    "One successful run below 600 seconds does not guarantee future runner performance."
+  ],
+  "schema": 1,
+  "scope_failure_ids": [
+    "GO-PERF-DAY-001",
+    "GO-MYGO-LAYOUT-001"
+  ],
+  "candidate_commit": "0b33571a1d3892201d9c457051db25c6a45eaabb",
+  "candidate_tree_equals_hosted_tree": true,
+  "identity_limit": "Hosted results belong to bff7414d71c10f31f45c679393e035aa6386b989 only; later documentation/test commits require their own verification.",
+  "conclusion": "success",
+  "full_decoded_job_log": {
+    "bytes": 77459,
+    "lines": 920,
+    "sha256": "7fd25bc464b8e3e5ddb256281b2c482f970507201210d4a61556896c0aa2acb3"
+  },
+  "counts": {
+    "modules_race_and_vet": 4,
+    "dependency_tests": 51,
+    "unicode_negative_paths": 27,
+    "normalization_rows": 19965,
+    "nfc_checks": 99825,
+    "nfd_checks": 99825,
+    "grapheme_rows": 1093,
+    "nfkc_cf_scalars": 1112064,
+    "selected_layout_top_level_tests": 2,
+    "selected_layout_role_subtests": 5,
+    "selected_state_order_tests": 2,
+    "compile_targets": 6
+  },
+  "native_ui_seconds": 60.152,
+  "host_popup_seconds": 1.04,
+  "linux_cli_render_size": [
+    2400,
+    1536
+  ],
+  "unicode_version": "16",
+  "icu76_enabled": false,
+  "audit_report_sha256": "1cfcb101de7d5ab715f5f43b17a75e98137a1c3de2dee1f59d29b95d2d8896e1"
+}

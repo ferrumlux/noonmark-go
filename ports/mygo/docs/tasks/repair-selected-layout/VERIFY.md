@@ -1,6 +1,6 @@
 # Selected 布局登记窄修验证
 
-基线 cf9a77f8015f4dcf579e23c582fa53385091a7a6；Go1.27.3；外置 selected-layout-build，独立GOCACHE。GOMAXPROCS=2、GOGC=20、GOMEMLIMIT=700MiB。无研究补丁、远端写入、生产数据或运行语义改动。下列结果是隔离候选的本地证据，整合Day批次后及hosted CI须另验。
+基线 cf9a77f8015f4dcf579e23c582fa53385091a7a6；Go1.27.3；外置 selected-layout-build，独立GOCACHE。GOMAXPROCS=2、GOGC=20、GOMEMLIMIT=700MiB。无研究补丁、远端写入、生产数据或运行语义改动。下列结果是隔离候选的本地证据；当时待验的整合及hosted CI状态见文末精确回执。
 
 ## 原红与修复机制
 
@@ -41,3 +41,13 @@
 新manifest真实复验：r3-dependency.log（51项，退出0）、r3-native.log（默认UI race/vet/host popup，退出0）、r3-root-selected.log（根registry/Selected/执行级门禁/真实症状wrapper，4.117s，退出0），2026-11-06 12:30:32Z完成。R3没有重跑完整聚合、完整UI或六目标；这些R2结果仅作为字节相同源码的既有证据，身份区分如上。
 
 完整日志在外置selected-layout-build；本目录validation-receipt.json保存每份日志的SHA256和字节数，source-identity.json保存原六patch及最终源身份。最终只追加测试补丁、测试门禁和说明，不改应用或依赖生产源码。没有原生OS实机、读屏或Swift对等声明。
+
+## 精确 hosted CI 收口（2026-11-06）
+
+[run 42240698683](https://github.com/ferrumlux/noonmark-go/actions/runs/42240698683) attempt 1 于15:33:28Z成功完成。正式head为bff7414d71c10f31f45c679393e035aa6386b989；本地候选0b33571a1d3892201d9c457051db25c6a45eaabb与它的tree均为04482b01e72640b808d7d49c65b7acf728fadfc3，但两者不是同一commit。此证据不改绑到后续文档／测试提交。
+
+原默认600s根包race在492.032s完成，余107.968s；四模块race/vet、Unicode16、51项依赖合同、默认native及host popup、六目标编译、Linux合成CLI全部通过。TestLayoutInputs、TestNoonmarkSelectedLayoutCache及其五角色子测试明确PASS，另两项Selected状态／顺序测试也PASS。根应用测试为包级非verbose输出，不声称逐项名称都单独记录。
+
+公开精简回执：docs/tasks/diagnose-root-test-timeout/HOSTED-CI-42240698683.json，记录来源、job／artifact身份、摘要和计数。6435字节artifact的SHA256为8eb73ce4212ca68ec6aaa514499e5a9e9dfef48ca3055ba877aeded25f50e1c8，与GitHub及上传日志一致；六个安全成员CRC通过，阶段文本与完整job日志对应。
+
+仅关闭GO-PERF-DAY-001的本次精确head超时缺口及GO-MYGO-LAYOUT-001的对应hosted证据待项，不改变其它案例。单次600s内成功不保证未来runner性能；完整framework allocation／TestDiffFrameAllocs、ICU76、真实桌面／IME、六平台runtime、新Swift、签名／release和完整产品对等均未获此证据验收。产品源码、fixture、默认补丁、冻结清单和许可证不变。

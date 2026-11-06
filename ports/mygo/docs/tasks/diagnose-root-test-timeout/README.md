@@ -1,6 +1,6 @@
 # diagnose-root-test-timeout
 
-状态：候选本地完整门禁绿；正式整合／新精确commit hosted CI待。Task-Id：diagnose-root-test-timeout。案例GO-PERF-DAY-001保持处理中。详见VERIFY.md。
+状态：已修复；正式bff7414精确hosted run 42240698683通过。Task-Id：diagnose-root-test-timeout。详见VERIFY.md及下方收口。
 
 ## 需求／现状
 
@@ -22,6 +22,16 @@
 
 原scripts/check完整exit0，首次完整root577.040s非cached，默认600s且新增约24s门禁全计入；taskapp277.291s。四模块race/vet、Unicode16、依赖51、native通过。原六目标cross-build与Linux development真实day/pool CLI均exit0。没有删fixture、动作、截图/hit/access或历史/disk/reopen断言。
 
-## 剩余风险与处置
+## 本地验证时的剩余风险与处置
 
 本地root仅约23s余量，不能保证任意runner性能。父任务整合、备份后须核新精确head hosted CI；非Linux目前仅编译，不称实机或IME验收。失败须保留终态重新定位，禁止调timeout或削门禁。回滚只还原本候选两文件读取传递及新增登记，不迁移／删除／访问用户production资料，不降低既有受害路径门禁。
+
+## 精确 hosted CI 收口（2026-11-06）
+
+[run 42240698683](https://github.com/ferrumlux/noonmark-go/actions/runs/42240698683) attempt 1 于15:33:28Z成功完成。正式head为bff7414d71c10f31f45c679393e035aa6386b989；本地候选0b33571a1d3892201d9c457051db25c6a45eaabb与它的tree均为04482b01e72640b808d7d49c65b7acf728fadfc3，但两者不是同一commit。此证据不改绑到后续文档／测试提交。
+
+原默认600s根包race在492.032s完成，余107.968s；四模块race/vet、Unicode16、51项依赖合同、默认native及host popup、六目标编译、Linux合成CLI全部通过。TestLayoutInputs、TestNoonmarkSelectedLayoutCache及其五角色子测试明确PASS，另两项Selected状态／顺序测试也PASS。根应用测试为包级非verbose输出，不声称逐项名称都单独记录。
+
+公开精简回执：docs/tasks/diagnose-root-test-timeout/HOSTED-CI-42240698683.json，记录来源、job／artifact身份、摘要和计数。6435字节artifact的SHA256为8eb73ce4212ca68ec6aaa514499e5a9e9dfef48ca3055ba877aeded25f50e1c8，与GitHub及上传日志一致；六个安全成员CRC通过，阶段文本与完整job日志对应。
+
+仅关闭GO-PERF-DAY-001的本次精确head超时缺口及GO-MYGO-LAYOUT-001的对应hosted证据待项，不改变其它案例。单次600s内成功不保证未来runner性能；完整framework allocation／TestDiffFrameAllocs、ICU76、真实桌面／IME、六平台runtime、新Swift、签名／release和完整产品对等均未获此证据验收。产品源码、fixture、默认补丁、冻结清单和许可证不变。
