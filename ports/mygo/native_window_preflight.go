@@ -19,7 +19,7 @@ type nativeWindowReportFile struct {
 	stage string
 }
 
-type nativeWindowReportPlan struct{ parent, base, stage string }
+type nativeWindowReportPlan struct{ parent, base, stage, businessBase string }
 
 // Compatibility wrapper for the original smoke driver; main uses the split
 // read-only plan and exclusive creation phases below.
@@ -97,7 +97,14 @@ func planNativeWindowReport(args []string) (*nativeWindowReportPlan, error) {
 	if _, err := os.Lstat(report); !errors.Is(err, os.ErrNotExist) {
 		return nil, errors.New("native window smoke report already exists or cannot be inspected")
 	}
-	return &nativeWindowReportPlan{parent: parent, base: reportBase, stage: stage}, nil
+	businessBase := ""
+	if options.present("native-business-scenario") {
+		businessBase = strings.TrimSuffix(reportBase, ".json") + "-business.json"
+		if _, err := os.Lstat(filepath.Join(parent, businessBase)); !errors.Is(err, os.ErrNotExist) {
+			return nil, errors.New("native business report already exists or cannot be inspected")
+		}
+	}
+	return &nativeWindowReportPlan{parent: parent, base: reportBase, stage: stage, businessBase: businessBase}, nil
 }
 
 func createNativeWindowReport(plan *nativeWindowReportPlan) (*nativeWindowReportFile, error) {
@@ -190,4 +197,13 @@ func (r *nativeWindowReportFile) WriteFinal(payload []byte) error {
 	r.file = nil
 	err := nativeWindowWriteReport(file, payload)
 	return errors.Join(err, r.root.Close())
+}
+
+// Both destinations have already passed the same pure planning phase. Failure
+// of this second exclusive create preserves the first file for diagnosis.
+func createNativeBusinessReport(plan *nativeWindowReportPlan) (*nativeWindowReportFile, error) {
+	if plan == nil || plan.businessBase == "" {
+		return nil, nil
+	}
+	return createNativeWindowReport(&nativeWindowReportPlan{parent: plan.parent, base: plan.businessBase, stage: plan.stage})
 }

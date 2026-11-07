@@ -6,6 +6,7 @@ can stall; an outer job timeout must treat a missing result as failure/unknown.
 Windows uses a suspended Job/handle-list adapter; actual Windows host verification remains pending.
 """
 import argparse
+import business
 import datetime
 import hashlib
 import importlib.util
@@ -439,7 +440,7 @@ class StageDiagnostics:
                 for key in ('spawn_observed', 'term_sent', 'kill_sent')}) for e in owned.children[:3]]
 
 
-def stage(exe, root, number, target, total_deadline, first_start=None):
+def stage(exe, root, number, target, total_deadline, first_start=None, business_scenario=None):
     t0 = time.monotonic() if first_start is None else first_start
     deadline = min(t0 + 60, total_deadline)
     ready_deadline = min(t0 + 45, deadline - 5)
@@ -448,6 +449,9 @@ def stage(exe, root, number, target, total_deadline, first_start=None):
     report_path = root / (label + '.json')
     record = {'stage': 'create' if number == 1 else 'open', 'passed': False,
               'marker_count': 0, 'processes': [], 'budget_kind': 'software-watchdog'}
+    if business_scenario is not None:
+        business.mode(business_scenario, target)
+        record.update(business_scenario=business_scenario, spawn_sequence=number)
     owned, app, marker = None, None, Marker()
     diagnostic = StageDiagnostics(t0, ready_deadline, completion_deadline, deadline)
     phase, current = 'setup', ready_deadline
@@ -473,6 +477,8 @@ def stage(exe, root, number, target, total_deadline, first_start=None):
             linux_infra(owned, infra, env, ready_deadline)
         argv = [str(exe), '-init-session' if number == 1 else '-session', str(root / 'session'),
                 '-screen', 'day', '-native-window-smoke', str(report_path)]
+        if business_scenario is not None:
+            argv += ['-runtime-profile', 'ordinary-development', '-native-business-scenario', business_scenario]
         app = owned.start(argv, root, env, root / (label + '.stdout.txt'), root / (label + '.stderr.txt'), marker)
         if not hasattr(owned, 'diagnostic_times'):
             owned.diagnostic_times = {app.pid: {'spawn_observed': time.monotonic()}}
@@ -493,6 +499,11 @@ def stage(exe, root, number, target, total_deadline, first_start=None):
         report = read_report(report_path, record['stage'])
         record['today'] = report['today']
         record['report_sha256'] = smoke.digest(report_path)
+        if business_scenario is not None:
+            business_path = root / (label + '-business.json')
+            business_report = business.read(business_path, record['stage'])
+            business.binding(business_report, report, app.pid)
+            record['business_report_sha256'] = smoke.digest(business_path)
         record['session_path'] = str(root / 'session')
         record['session_identity'] = smoke.IDENTITY.decode().rstrip('\n')
         phase = 'session_snapshot'
@@ -553,6 +564,9 @@ def run(args):
     require(re.fullmatch('[1-9][0-9]*', args.consumer_attempt) is not None, 'invalid consumer attempt')
     require(re.fullmatch('[1-9][0-9]*', args.artifact_id) is not None, 'invalid artifact ID')
     require(int(args.consumer_attempt) >= int(args.run_attempt), 'consumer precedes build')
+    scenario = getattr(args, 'business_scenario', None)
+    if scenario is not None:
+        business.mode(scenario, args.target)
     start = time.monotonic()
     total_deadline = start + 120
     clean_directory(args.artifact)
@@ -564,6 +578,8 @@ def run(args):
               'build_attempt': args.run_attempt, 'consumer_attempt': args.consumer_attempt,
               'artifact_id': args.artifact_id,
               'budget_kind': 'software-watchdog', 'work_root': str(root)}
+    if scenario is not None:
+        result.update(business_scenario=scenario, scope=business.SCOPE)
     try:
         require(os.name == 'nt' or stat.S_IMODE(root.stat().st_mode) == 0o700, 'private root permissions')
         exe = smoke.verify(args.artifact, args.target, args.source, args.run_id, args.run_attempt)
@@ -573,8 +589,16 @@ def run(args):
         shutil.copyfile(args.artifact / 'manifest.json', root / 'manifest.json')
         if os.name != 'nt':
             exe.chmod(0o700)
-        first = stage(exe, root, 1, args.target, total_deadline, start)
-        second = stage(exe, root, 2, args.target, total_deadline)
+        first = (stage(exe, root, 1, args.target, total_deadline, start) if scenario is None else
+                 stage(exe, root, 1, args.target, total_deadline, start, scenario))
+        if scenario is not None:
+            require(datetime.datetime.now().astimezone().date().isoformat() == first['today'], 'date-boundary-not-covered')
+        second = (stage(exe, root, 2, args.target, total_deadline) if scenario is None else
+                  stage(exe, root, 2, args.target, total_deadline, business_scenario=scenario))
+        if scenario is not None:
+            result['business_report_sha256'] = {f'stage{n}-business.json': row['business_report_sha256'] for n, row in ((1, first), (2, second))}
+            business.compare(business.read(root / 'stage1-business.json', 'create'),
+                             business.read(root / 'stage2-business.json', 'open'))
         require(first['today'] == second['today'], 'date-boundary-not-covered')
         require(first['session_path'] == second['session_path'] and first['session_files'] == second['session_files'], 'session changed across same-day reopen')
         check_deadline(total_deadline)
@@ -600,6 +624,7 @@ def parser():
     for key in ('source', 'run-id', 'run-attempt', 'consumer-attempt', 'artifact-id'):
         p.add_argument('--' + key, required=True)
     p.add_argument('--work-parent', type=absolute_argument, required=True)
+    p.add_argument('--business-scenario', choices=[business.SCENARIO], action=business.ScenarioAction)
     return p
 
 

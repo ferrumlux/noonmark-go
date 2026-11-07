@@ -49,7 +49,12 @@ func TestRuntimeExitMainHasSingleClosePerPath(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	s := string(b)
+	// Verify the narrowly scoped, terminal after-open business failure owner
+	// before reconstructing and checking the original three ownership paths.
+	s, err := runtimeExitLegacyOwnershipSource(string(b))
+	if err != nil {
+		t.Fatal(err)
+	}
 	s = s[strings.Index(s, "func main()"):]
 	if strings.Contains(s, "defer service.Close()") {
 		t.Fatal("deferred second close may hide original error")

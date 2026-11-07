@@ -59,3 +59,30 @@ Windows 适配器的管道用 `PeekNamedPipe` 检查，再读取已可用的有�
 collector 成功仅代表收集完成；独立 `--gate` 必须重新用 trusted identity 调用原 smoke.verify，核对实际 binary hash、manifest、result、每阶段 exit/marker/report/cleanup、两个会话快照与 workflow outcomes；缺失、额外、超量、错误来源或尝试号均失败。上传成功不能使运行失败变绿。校验依赖受审 workflow 和二进制，不是恶意同用户攻击下的认证。
 
 本批仅合成测试和静态契约测试。六平台真实窗口仍 not-run；先前 Linux 尝试只在 Xvfb listener 失败，dbus/app 未启动。Windows nested Job 与 macOS GUI 能力必须由后续官方 host 实证，不能自动重试、breakaway 或修改权限绕过。
+
+## 2026-11-07 后续实证记录（保留上文历史状态）
+
+上文的失败／not-run 是实现当时快照，原文保留。随后 exact
+`d8b6b1619f0dd7468b6460f0872a6dcbc7b0f24c` 的
+[官方窗口 run 42344558268](https://github.com/ferrumlux/noonmark-go/actions/runs/42344558268)
+已完成六 host、12 个 create/open lifecycle 阶段：每阶段完整事件至 finalized、一次 READY、exit 0，以及受管进程／Job 收割。该次原始二进制、archive 与报告均经外置审计。此记录仅属于该 exact commit/run，不改写之前的 Linux listener、Intel hang 或诊断 gate 失败。后续 `0e` 诊断改动没有新的窗口运行实证。
+
+该历史成功仍是 lifecycle-only，不包含本批 ordinary category Service-command、UI callback、OS 输入、像素或 IME；也不能外推为当前候选或所有后续版本的成功。
+
+## 单 Linux/amd64 普通分类业务 opt-in（候选，真实 host 尚未运行）
+
+在上述 driver 参数中另加 `--business-scenario ordinary-category-v1`。
+只有显式指定且 target 为 `linux/amd64` 才启用；默认六 host 路径、报告 scope、事件与预算保持原合同。新模式给两次产品启动增加显式 ordinary-development 和固定场景参数，不接受外部 session、seed、脚本、日期或任意 payload。
+
+证据名称固定为 **native ordinary Service-command business cold-open**。
+第一进程在真实窗口 visible 后，以同一个真实 Service 执行一次 AddToday 和一次 ChoiceNew，并确认同一窗口内存读视图已发布；第二个新 OS 进程正常 Open 后只核完整持久事实。Open 本身可能日结写入，不能称纯只读。日期／时区变化失败并保留资料，不补种、回滚或重试。
+
+collector 的收集与独立 gate 都必须由可信调用方显式加相同的
+`--business-scenario ordinary-category-v1`，不从报告猜模式。精确 allowlist
+仅额外增加 `stage1-business.json` 与 `stage2-business.json`，仍每份最多64KiB；两文件各自 hash 和 scenario 写入 stage-driver/result。调用方上传也必须明确列出这两文件，不递归上传 private root。本提交不改变或触发默认六 host workflow，也不提供新的运行记录。
+
+每份业务报告保存完整版本化 Graph/Classification 原始 JSON 字符串及其原字节 SHA256；collector 保留 Instant 的 uint64 位模式，不经 float/JavaScript Number，严格核全部字段、固定场景关系、plan/record canonical digest、receipt、日期、revision、真实进程／窗口绑定与读视图 acknowledgement，再比较两份原 payload 和整个 session 文件清单/hash。两次采样一致不是排除所有中间写回或硬断电耐久的证明。运行期 owner/authority 不跨进程传递。
+
+合成 Python tests 只证明解析、负例与 gate 行为；Go service fixture、race、完整源码 guard、组合门禁与 exact binary hosted run 均各自取证。`ui_read_view_acknowledged` 仅表示同一窗口的已确认内存状态接收事实，不证明 compositor 像素、用户操作、submitCategory callback、IME 或 Swift 全实体互通。
+
+独立 `.github/workflows/native-category-business.yml` 是本模式的一次单host执行入口：仅 `dev/ordinary-category`／`main` 的相关路径 push 或手动 dispatch，复用官方 ubuntu-24.04、原固定依赖及 action pins。构建调用正常 `scripts/build` 并经原 `smoke.pack` 封装 Linux/amd64 可执行文件，不是 test binary。build 输出可信 source/run/build_attempt/artifact ID 与 executable SHA256；runtime 和最终 gate 都独立验证下载产物与该 SHA256。两个业务报告明确加入证据上传 allowlist。旧六host workflow原字节不变；添加入口不等于已触发、已跑或验收通过。

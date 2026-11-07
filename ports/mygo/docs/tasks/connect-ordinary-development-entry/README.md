@@ -6,11 +6,13 @@
 
 使用既有 scripts/build 与显式外置 NOONMARK_MYGO_BUILD_ROOT，二进制在该外置目录 bin/noonmark-mygo。父目录须已存在且为普通目录；session 必须绝对、clean、无符号链接父路径，新建目标不能已存在。资料仅通过领域命令合成。
 
-新建：`noonmark-mygo -runtime-profile=ordinary-development -init-session /absolute/isolated/session`
+以下为 Bash 示例；先将占位路径换成实际隔离会话的绝对路径，保持参数引用。新建目标必须不存在，冷开使用同一会话路径。
 
-冷开：`noonmark-mygo -runtime-profile=ordinary-development -session /absolute/isolated/session`
+新建：`"$NOONMARK_MYGO_BUILD_ROOT/bin/noonmark-mygo" -runtime-profile=ordinary-development -init-session "/absolute/isolated/session"`
 
-窗口显示「隔离开发会话 · 普通分类」。标准错误提供真实绝对路径、profile、入口协议版本及可复用的重开命令。构建含 VCS 信息时显示修订；既有 buildvcs=false 构建明确显示 source-revision-not-embedded，不捏造提交身份。验收以固定源 SHA 与产物 SHA256 索引为准。
+冷开：`"$NOONMARK_MYGO_BUILD_ROOT/bin/noonmark-mygo" -runtime-profile=ordinary-development -session "/absolute/isolated/session"`
+
+窗口显示「隔离开发会话 · 普通分类」。标准错误提供真实绝对路径、profile、入口协议版本及重开参数示意。日志中的程序名为 `noonmark`，构建产物名则为 `noonmark-mygo`；重开时须使用实际可执行文件路径、`-runtime-profile=ordinary-development` 和指向原会话的 `-session`。日志路径使用 Go `%q` 格式，并非通用 shell 安全引用，不能直接当作所有 shell 可复制执行的命令；请按所用 shell 正确引用实际路径，尤其留意 `$`、反引号等字符。构建含 VCS 信息时显示修订；既有 buildvcs=false 构建明确显示 source-revision-not-embedded，不捏造提交身份。验收以固定源 SHA 与产物 SHA256 索引为准。
 
 ordinary 与 render-one、prototype、list、全屏导出互斥。未知／重复／空／缺值参数、位置或尾部参数，均在报告、目录或 Service 副作用前拒绝。原 prototype、legacy render-one 与 list 路径保留。native smoke 仍只是生命周期探针，不因支持显式 profile 就成为分类业务或真实输入验收。
 

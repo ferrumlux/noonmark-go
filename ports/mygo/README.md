@@ -51,10 +51,12 @@ Linux 原生窗口需要 GTK3 和可用 DISPLAY / WAYLAND_DISPLAY。无显示服
 
 ## 模块与边界
 
+默认 `legacy-development`（包括上方未指定 profile 的命令）仍只接受经过严格验证的空 catalog 分类历史子集。显式 `-runtime-profile=ordinary-development` 已接通普通单分组的完整受控 Service／UI：在隔离合成 development/e2e 会话中支持 `userDirect setCurrent` 的不分组／已有／新建选择，以及本版既有普通任务命令。新建与冷开沿用 v2，未支持的 supplement 仍整件拒绝，不迁移、过滤或降级；不开放全部分类、labels、分类管理、重复计划或生产资料。启动方式与证据限制见 [隔离普通分类开发入口](docs/tasks/connect-ordinary-development-entry/README.md)。入口接线及 Go 测试不等于真实 native 分类业务、IME 或生产验收。
+
 - domain-core：TaskChain / Definition / Trace、精确时间与历史不变量。普通任务链放弃／原位重新激活已具备纯核心API与独立回归，但尚未接Service、reader或UI；新历史事实仍拒绝落盘。
-- domain-extensions：分类、重复计划生命周期及版本历史，尚未接入运行 UI。
-- domain-extensions/classification/canonical16：固定 Unicode16 名称算法与可重现数据表，仍是独立候选；未替换分类 engine adapter，不能外推为 Swift 互通或开放非空 catalog。
-- domain-codec：候选 v7 规范编解码及安全校验，只用合成 fixture。Swift 互通尚未验证，非空分类 audit 默认拒绝。
+- domain-extensions：分类、重复计划生命周期及版本历史；普通单分组已通过上述显式实验入口接入运行 UI，其余分类与重复能力未因此开放。
+- domain-extensions/classification/canonical16：固定 Unicode16 名称算法与可重现数据表，已用于 ordinary 分类路径的名称处理与校验；这不表示通用分类 engine adapter 已替换，也不能据此外推 Swift 全状态互通或扩大上述非空 catalog 的受限准入范围。
+- domain-codec：候选 v7 规范编解码及安全校验。通用 `Codec.Decode` 的默认非空分类 audit 拒绝边界不变；显式 ordinary Service 使用独立 `OrdinaryAggregate` 编解码与额外运行时审计，接受完整的受支持普通分类状态，未支持的 supplement 整件拒绝。仅限隔离合成资料，不是 Swift 全状态导入器或生产 codec。
 - internal/inputdraft：按原版移植的纯 IME autosave gate，已用于日待办标题编辑。
 - internal/titlecoordinator：实际多窗口标题／导航／关闭协调与有序lane；每次真实退出仍重新检查原生输入。
 - internal/titlesession：草稿/实际存储确认/生命周期快照状态；拒写保留输入，不能单凭状态允许退出。

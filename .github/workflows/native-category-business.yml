@@ -1,0 +1,273 @@
+name: Native ordinary category business cold-open
+on:
+  workflow_dispatch:
+  push:
+    branches: [dev/ordinary-category, main]
+    paths:
+      - .github/workflows/native-category-business.yml
+      - ports/mygo/**/*.go
+      - ports/mygo/**/go.mod
+      - ports/mygo/**/go.sum
+      - ports/mygo/patches/**
+      - ports/mygo/scripts/native-window-smoke/**
+      - ports/mygo/scripts/native-smoke/**
+      - ports/mygo/scripts/build
+      - ports/mygo/scripts/environment
+      - ports/mygo/scripts/dependency/**
+      - ports/mygo/scripts/ci/requirements.txt
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    outputs:
+      source: ${{ steps.identity.outputs.source }}
+      build_attempt: ${{ steps.identity.outputs.build_attempt }}
+      run_id: ${{ steps.identity.outputs.run_id }}
+      binary_sha256: ${{ steps.cross.outputs.binary_sha256 }}
+      linux_amd64: ${{ steps.upload_linux_amd64.outputs.artifact-id }}
+    env:
+      PYTHONDONTWRITEBYTECODE: '1'
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version: '1.27.3'
+          cache: false
+      - name: Record trusted build identity
+        id: identity
+        shell: python {0}
+        run: |
+          import os
+          from pathlib import Path
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+              f.write('source=' + os.environ['GITHUB_SHA'] + '\n')
+              f.write('run_id=' + os.environ['GITHUB_RUN_ID'] + '\n')
+              f.write('build_attempt=' + os.environ['GITHUB_RUN_ATTEMPT'] + '\n')
+          Path(os.environ['RUNNER_TEMP'], 'native-build').mkdir()
+          Path(os.environ['RUNNER_TEMP'], 'native-artifacts').mkdir()
+          with open(os.environ['GITHUB_ENV'], 'a') as f:
+              f.write('NOONMARK_MYGO_BUILD_ROOT=' + str(Path(os.environ['RUNNER_TEMP'], 'native-build')) + '\n')
+      - name: Test native smoke contracts before build
+        id: fixtures
+        shell: python {0}
+        run: |
+          import os, subprocess, sys, venv
+          from pathlib import Path
+          root = Path(os.environ['RUNNER_TEMP'], 'native-smoke-python')
+          root.mkdir()
+          venv.EnvBuilder(with_pip=True).create(root)
+          python = root / 'bin' / 'python'
+          subprocess.run([str(python), '-m', 'pip', 'install', '--disable-pip-version-check', '--no-cache-dir', '-r', 'ports/mygo/scripts/ci/requirements.txt'], check=True)
+          for suite in ('native-smoke', 'native-window-smoke'):
+              subprocess.run([str(python), '-B', '-m', 'unittest', 'discover', '-s', 'ports/mygo/scripts/' + suite, '-p', 'test_*.py'], check=True)
+      - name: Build normal Linux product and package
+        id: cross
+        shell: python {0}
+        run: |
+          import json, os, subprocess, sys, time
+          from pathlib import Path
+          sys.path.insert(0, 'ports/mygo/scripts/native-smoke')
+          import smoke
+          root = Path(os.environ['NOONMARK_MYGO_BUILD_ROOT'])
+          status = {'stage': 'native-build', 'passed': False, 'source_sha': os.environ['GITHUB_SHA'], 'run_id': os.environ['GITHUB_RUN_ID'], 'build_attempt': os.environ['GITHUB_RUN_ATTEMPT']}
+          started = time.monotonic()
+          try:
+              with (root / 'cross.stdout.txt').open('wb') as out, (root / 'cross.stderr.txt').open('wb') as err:
+                  p = subprocess.run(['bash', 'ports/mygo/scripts/build'], stdout=out, stderr=err, timeout=3000)
+              status['exit'] = p.returncode
+              if p.returncode != 0:
+                  raise RuntimeError('normal native build failed')
+              status['stage'] = 'pack-artifacts'
+              if smoke.native_host() != 'linux/amd64':
+                  raise RuntimeError('single Linux/amd64 build host required')
+              smoke.pack(root / 'bin' / 'noonmark-mygo', Path(os.environ['RUNNER_TEMP'], 'native-artifacts', 'linux-amd64'), 'linux/amd64', os.environ['GITHUB_SHA'], os.environ['GITHUB_RUN_ID'], os.environ['GITHUB_RUN_ATTEMPT'])
+              with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+                  f.write('binary_sha256=' + smoke.digest(root / 'bin' / 'noonmark-mygo') + '\n')
+              status['stage'], status['passed'] = 'completed', True
+          except Exception as error:
+              status['failure'] = str(error)
+              raise
+          finally:
+              status['duration'] = time.monotonic() - started
+              (root / 'stage.json').write_text(json.dumps(status, indent=2) + '\n')
+      - name: Upload linux-amd64 executable and manifest
+        id: upload_linux_amd64
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: native-category-bin-linux-amd64-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/native-artifacts/linux-amd64/noonmark-mygo-linux-amd64
+            ${{ runner.temp }}/native-artifacts/linux-amd64/manifest.json
+          if-no-files-found: error
+          retention-days: 7
+      - name: Collect bounded build evidence
+        id: collect
+        if: always()
+        env:
+          STAGES: ${{ toJSON(steps) }}
+        shell: python {0}
+        run: |
+          import os, subprocess, sys
+          from pathlib import Path
+          stages = __import__('json').loads(os.environ['STAGES'])
+          outcomes = {k: v.get('outcome', 'unknown') for k, v in stages.items()}
+          subprocess.run([sys.executable, '-B', 'ports/mygo/scripts/native-smoke/collect.py', '--work', str(Path(os.environ['RUNNER_TEMP'], 'native-build')), '--output', str(Path(os.environ['RUNNER_TEMP'], 'native-build-evidence')), '--stages', __import__('json').dumps(outcomes)], check=True)
+      - name: Upload bounded build evidence
+        if: always() && steps.collect.outcome == 'success'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: native-category-build-evidence-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/native-build-evidence/collection.json
+            ${{ runner.temp }}/native-build-evidence/stage.json
+            ${{ runner.temp }}/native-build-evidence/cross.stdout.txt
+            ${{ runner.temp }}/native-build-evidence/cross.stderr.txt
+          if-no-files-found: error
+          retention-days: 7
+      - name: Gate required successful build evidence
+        if: always()
+        shell: python {0}
+        run: |
+          import os, subprocess, sys
+          from pathlib import Path
+          subprocess.run([sys.executable, '-B', 'ports/mygo/scripts/native-smoke/collect.py', '--output', str(Path(os.environ['RUNNER_TEMP'], 'native-build-evidence')), '--gate-role', 'build'], check=True)
+  runtime:
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      PYTHONDONTWRITEBYTECODE: '1'
+      LIBGL_ALWAYS_SOFTWARE: '1'
+    steps:
+      - id: checkout
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Prepare Linux native libraries and fonts
+        id: libraries
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y fontconfig fonts-noto-cjk libgtk-3-0t64 libpango-1.0-0 libpangocairo-1.0-0 libpangoft2-1.0-0 libcairo2 libepoxy0 libegl1 libgl1-mesa-dri xvfb xauth dbus
+      - name: Require exact same-run artifact identity
+        id: provenance
+        env:
+          ARTIFACT_ID: ${{ needs.build.outputs.linux_amd64 }}
+          BUILD_BINARY_SHA256: ${{ needs.build.outputs.binary_sha256 }}
+          BUILD_SOURCE: ${{ needs.build.outputs.source }}
+          BUILD_RUN_ID: ${{ needs.build.outputs.run_id }}
+          BUILD_ATTEMPT: ${{ needs.build.outputs.build_attempt }}
+        shell: python {0}
+        run: |
+          import os, re
+          for key in ('ARTIFACT_ID', 'BUILD_RUN_ID', 'BUILD_ATTEMPT'):
+              if re.fullmatch('[1-9][0-9]*', os.environ[key]) is None:
+                  raise RuntimeError('Missing or invalid ' + key)
+          if re.fullmatch('[0-9a-f]{64}', os.environ['BUILD_BINARY_SHA256']) is None:
+              raise RuntimeError('Missing or invalid build binary hash')
+          if os.environ['BUILD_SOURCE'] != os.environ['GITHUB_SHA'] or os.environ['BUILD_RUN_ID'] != os.environ['GITHUB_RUN_ID']:
+              raise RuntimeError('Build source/run does not match consumer')
+      - name: Download exact artifact ID from this build job
+        id: download
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4, official tag verified 2026-11-06
+        with:
+          artifact-ids: ${{ needs.build.outputs.linux_amd64 }}
+          path: ${{ runner.temp }}/native-artifact
+          merge-multiple: true
+      - name: Verify and execute two-stage Service-command business smoke
+        id: smoke
+        env:
+          TARGET: linux/amd64
+          BUILD_BINARY_SHA256: ${{ needs.build.outputs.binary_sha256 }}
+          BUILD_SOURCE: ${{ needs.build.outputs.source }}
+          BUILD_RUN_ID: ${{ needs.build.outputs.run_id }}
+          BUILD_ATTEMPT: ${{ needs.build.outputs.build_attempt }}
+          ARTIFACT_ID: ${{ needs.build.outputs.linux_amd64 }}
+        shell: python {0}
+        run: |
+          import os, subprocess, sys
+          from pathlib import Path
+          parent = Path(os.environ['RUNNER_TEMP'], 'native-window-parent')
+          parent.mkdir(mode=0o700)
+          # Collector accepts exactly one private child of this fresh parent.
+          # Do not parse stdout, discover user directories, or retry either stage.
+          sys.path.insert(0, 'ports/mygo/scripts/native-smoke')
+          import smoke
+          binary = smoke.verify(Path(os.environ['RUNNER_TEMP'], 'native-artifact'), os.environ['TARGET'], os.environ['BUILD_SOURCE'], os.environ['BUILD_RUN_ID'], os.environ['BUILD_ATTEMPT'])
+          smoke.require(smoke.digest(binary) == os.environ['BUILD_BINARY_SHA256'], 'trusted build binary hash mismatch')
+          subprocess.run([sys.executable, '-B', 'ports/mygo/scripts/native-window-smoke/run.py', '--business-scenario', 'ordinary-category-v1', '--artifact', str(Path(os.environ['RUNNER_TEMP'], 'native-artifact')), '--work-parent', str(parent), '--target', os.environ['TARGET'], '--source', os.environ['BUILD_SOURCE'], '--run-id', os.environ['BUILD_RUN_ID'], '--run-attempt', os.environ['BUILD_ATTEMPT'], '--consumer-attempt', os.environ['GITHUB_RUN_ATTEMPT'], '--artifact-id', os.environ['ARTIFACT_ID']], check=True)
+      - name: Collect bounded business evidence even after failure
+        id: collect
+        if: always()
+        env:
+          TARGET: linux/amd64
+          BUILD_BINARY_SHA256: ${{ needs.build.outputs.binary_sha256 }}
+          BUILD_SOURCE: ${{ needs.build.outputs.source }}
+          BUILD_RUN_ID: ${{ needs.build.outputs.run_id }}
+          BUILD_ATTEMPT: ${{ needs.build.outputs.build_attempt }}
+          ARTIFACT_ID: ${{ needs.build.outputs.linux_amd64 }}
+          STAGES: ${{ toJSON(steps) }}
+        shell: python {0}
+        run: |
+          import json, os, subprocess, sys
+          from pathlib import Path
+          outcomes = {k: v.get('outcome', 'unknown') for k, v in json.loads(os.environ['STAGES']).items()}
+          subprocess.run([sys.executable, '-B', 'ports/mygo/scripts/native-window-smoke/collect.py', '--business-scenario', 'ordinary-category-v1', '--artifact', str(Path(os.environ['RUNNER_TEMP'], 'native-artifact')), '--work-parent', str(Path(os.environ['RUNNER_TEMP'], 'native-window-parent')), '--output', str(Path(os.environ['RUNNER_TEMP'], 'native-window-evidence')), '--source', os.environ['BUILD_SOURCE'], '--run-id', os.environ['BUILD_RUN_ID'], '--build-attempt', os.environ['BUILD_ATTEMPT'], '--consumer-attempt', os.environ['GITHUB_RUN_ATTEMPT'], '--target', os.environ['TARGET'], '--artifact-id', os.environ['ARTIFACT_ID'], '--stages', json.dumps(outcomes)], check=True)
+      - name: Upload explicit business evidence allowlist
+        id: upload
+        if: always() && steps.collect.outcome == 'success'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: native-category-evidence-linux_amd64-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/native-window-evidence/collection.json
+            ${{ runner.temp }}/native-window-evidence/result.json
+            ${{ runner.temp }}/native-window-evidence/manifest.json
+            ${{ runner.temp }}/native-window-evidence/stage1.json
+            ${{ runner.temp }}/native-window-evidence/stage1-business.json
+            ${{ runner.temp }}/native-window-evidence/stage1-driver.json
+            ${{ runner.temp }}/native-window-evidence/stage1.stdout.txt
+            ${{ runner.temp }}/native-window-evidence/stage1.stderr.txt
+            ${{ runner.temp }}/native-window-evidence/infra-stage1/xvfb.stdout.txt
+            ${{ runner.temp }}/native-window-evidence/infra-stage1/xvfb.stderr.txt
+            ${{ runner.temp }}/native-window-evidence/infra-stage1/dbus.stdout.txt
+            ${{ runner.temp }}/native-window-evidence/infra-stage1/dbus.stderr.txt
+            ${{ runner.temp }}/native-window-evidence/stage2.json
+            ${{ runner.temp }}/native-window-evidence/stage2-business.json
+            ${{ runner.temp }}/native-window-evidence/stage2-driver.json
+            ${{ runner.temp }}/native-window-evidence/stage2.stdout.txt
+            ${{ runner.temp }}/native-window-evidence/stage2.stderr.txt
+            ${{ runner.temp }}/native-window-evidence/infra-stage2/xvfb.stdout.txt
+            ${{ runner.temp }}/native-window-evidence/infra-stage2/xvfb.stderr.txt
+            ${{ runner.temp }}/native-window-evidence/infra-stage2/dbus.stdout.txt
+            ${{ runner.temp }}/native-window-evidence/infra-stage2/dbus.stderr.txt
+          if-no-files-found: error
+          retention-days: 7
+      - name: Gate business results and workflow outcomes without masking failures
+        id: gate
+        if: always()
+        env:
+          TARGET: linux/amd64
+          BUILD_BINARY_SHA256: ${{ needs.build.outputs.binary_sha256 }}
+          BUILD_SOURCE: ${{ needs.build.outputs.source }}
+          BUILD_RUN_ID: ${{ needs.build.outputs.run_id }}
+          BUILD_ATTEMPT: ${{ needs.build.outputs.build_attempt }}
+          ARTIFACT_ID: ${{ needs.build.outputs.linux_amd64 }}
+          STAGES: ${{ toJSON(steps) }}
+        shell: python {0}
+        run: |
+          import json, os, subprocess, sys
+          from pathlib import Path
+          outcomes = {k: v.get('outcome', 'unknown') for k, v in json.loads(os.environ['STAGES']).items()}
+          sys.path.insert(0, 'ports/mygo/scripts/native-smoke')
+          import smoke
+          binary = smoke.verify(Path(os.environ['RUNNER_TEMP'], 'native-artifact'), os.environ['TARGET'], os.environ['BUILD_SOURCE'], os.environ['BUILD_RUN_ID'], os.environ['BUILD_ATTEMPT'])
+          smoke.require(smoke.digest(binary) == os.environ['BUILD_BINARY_SHA256'], 'trusted build binary hash mismatch')
+          subprocess.run([sys.executable, '-B', 'ports/mygo/scripts/native-window-smoke/collect.py', '--business-scenario', 'ordinary-category-v1', '--artifact', str(Path(os.environ['RUNNER_TEMP'], 'native-artifact')), '--work-parent', str(Path(os.environ['RUNNER_TEMP'], 'native-window-parent')), '--output', str(Path(os.environ['RUNNER_TEMP'], 'native-window-evidence')), '--source', os.environ['BUILD_SOURCE'], '--run-id', os.environ['BUILD_RUN_ID'], '--build-attempt', os.environ['BUILD_ATTEMPT'], '--consumer-attempt', os.environ['GITHUB_RUN_ATTEMPT'], '--target', os.environ['TARGET'], '--artifact-id', os.environ['ARTIFACT_ID'], '--stages', json.dumps(outcomes), '--gate'], check=True)

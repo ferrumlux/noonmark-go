@@ -726,6 +726,7 @@ func main() {
 	prototype := flag.Bool("prototype", false, "Run the static UI prototype without storage")
 	_ = flag.String("runtime-profile", legacyDevelopment, "Explicit isolated runtime: legacy-development or ordinary-development (experimental; no production import)")
 	_ = flag.String("native-window-smoke", "", "Internal lifecycle-only development probe report")
+	_ = flag.String("native-business-scenario", "", "Internal ordinary-category-v1 Service-command probe")
 	startup, startupErr := parseRuntimeStartup(os.Args[1:])
 	if startupErr != nil {
 		log.Fatal(startupErr)
@@ -742,6 +743,13 @@ func main() {
 	if reportErr != nil {
 		log.Fatal(reportErr)
 	}
+	businessReportFile, businessReportErr := createNativeBusinessReport(reportPlan)
+	if businessReportErr != nil {
+		if reportFile != nil {
+			_ = reportFile.WriteFinal(nil)
+		}
+		log.Fatal(businessReportErr)
+	}
 	if *list {
 		for _, spec := range screens {
 			fmt.Printf("%s %dx%d\n", spec.key, spec.width, spec.height)
@@ -756,6 +764,7 @@ func main() {
 		log.Fatal("Choose only one session action")
 	}
 	var probe *nativeWindowProbe
+	var business *nativeBusinessProbe
 	var service *taskapp.Service
 	if *initSession != "" || *session != "" {
 		if *prototype || *render != "" {
@@ -766,10 +775,28 @@ func main() {
 		if reportFile != nil {
 			probe = newNativeWindowProbe(reportFile.stage, fmt.Sprintf("%04d-%02d-%02d", today.Year, today.Month, today.Day), os.Stdout)
 		}
+		if businessReportFile != nil {
+			business = newNativeBusinessProbe(businessReportFile.stage, time.Now)
+			if err := business.sample("startup"); err != nil {
+				log.Fatal(err)
+			}
+			// Use the date sampled immediately before Create/Open, not the
+			// earlier lifecycle-report construction time.
+			today = business.today
+			probe.report.Today = business.report.ActualToday
+		}
 		var err error
 		service, err = startup.openService(today)
 		if err != nil {
 			log.Fatal(startup.startupFailure("会话启动", err))
+		}
+		if business != nil {
+			business.service = service
+			if err := business.sample("after_open"); err != nil {
+				business.fail(err)
+				closeErr := service.Close()
+				log.Fatal(startup.startupFailure("日期边界", errors.Join(err, closeErr)))
+			}
 		}
 		fmt.Fprintf(os.Stderr, "隔离开发会话: %s\nversion=%s profile=%s\n重开: noonmark -runtime-profile=%s -session %q\n", startup.path(), runtimeSourceVersion(), startup.profile, startup.profile, startup.path())
 	}
@@ -817,6 +844,10 @@ func main() {
 		var post func(func())
 		dispatcher, post = newTitleDispatch()
 		hub = newTitleHub(service, writer, post, wallTitleClock{}, time.Now, mygo.App.Quit)
+		if business != nil {
+			business.lane, business.post = writer, post
+			probe.beforeReady = business.run
+		}
 		if startup.profile == ordinaryDevelopment {
 			if err := hub.enableCategoryCandidate(); err != nil {
 				writer.StopAfterDrain()
@@ -871,6 +902,9 @@ func main() {
 				}
 			})
 		}
+		if business != nil {
+			business.bind(hub, s, win.ID())
+		}
 		if probe != nil {
 			probe.BindWindow(win)
 		}
@@ -880,9 +914,13 @@ func main() {
 	if runErr != nil && service != nil {
 		log.Print(startup.startupFailure("原生窗口启动", runErr))
 	}
+	if business != nil {
+		business.StopAdmission()
+	}
 	if probe != nil {
 		probe.RecordRunReturned(runErr)
 	}
+	var businessCleanupErr error
 	code := runtimeExitStatus(runErr, func() error {
 		// The event loop has ended. No UI callback waits here; drain accepted
 		// commands before closing storage, including an event-loop startup failure.
@@ -891,6 +929,9 @@ func main() {
 			<-writer.Done()
 			if probe != nil {
 				probe.RecordDrain(true)
+			}
+			if business != nil {
+				businessCleanupErr = business.PreClose()
 			}
 			dispatcher.StopAfterDrain()
 			<-dispatcher.Done()
@@ -903,9 +944,9 @@ func main() {
 			if probe != nil {
 				probe.RecordServiceClose(err)
 			}
-			return err
+			return errors.Join(err, businessCleanupErr)
 		}
-		return nil
+		return businessCleanupErr
 	})
 	if probe != nil {
 		payload, err := probe.Finalize()
@@ -919,6 +960,21 @@ func main() {
 				code = 1
 			}
 		} else {
+			code = 1
+		}
+	}
+	if business != nil {
+		var lifecycleErr error
+		if code != 0 {
+			lifecycleErr = errors.New("native lifecycle/close/report failed")
+		}
+		payload, err := business.Finalize(lifecycleErr)
+		if err != nil {
+			log.Print(err)
+			code = 1
+		}
+		if err := businessReportFile.WriteFinal(payload); err != nil {
+			log.Print(err)
 			code = 1
 		}
 	}

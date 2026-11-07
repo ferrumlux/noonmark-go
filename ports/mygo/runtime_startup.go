@@ -37,7 +37,7 @@ func parseRuntimeStartup(args []string) (runtimeStartup, error) {
 		name, value, equal := strings.Cut(strings.TrimPrefix(strings.TrimPrefix(arg, "-"), "-"), "=")
 		boolean := name == "list" || name == "prototype"
 		switch name {
-		case "runtime-profile", "session", "init-session", "screen", "render", "render-one", "native-window-smoke", "list", "prototype":
+		case "runtime-profile", "session", "init-session", "screen", "render", "render-one", "native-window-smoke", "native-business-scenario", "list", "prototype":
 		default:
 			return o, fmt.Errorf("unknown flag %q", name)
 		}
@@ -95,10 +95,15 @@ func parseRuntimeStartup(args []string) (runtimeStartup, error) {
 	if o.profile == ordinaryDevelopment && o.present("render-one") {
 		return o, errors.New("ordinary-development does not support render-one")
 	}
+	if o.present("native-business-scenario") {
+		if o.values["native-business-scenario"] != nativeBusinessScenario || o.profile != ordinaryDevelopment || !o.present("runtime-profile") || !o.present("native-window-smoke") {
+			return o, errors.New("native business scenario requires ordinary-category-v1, explicit ordinary-development and native-window-smoke")
+		}
+	}
 	if o.present("native-window-smoke") {
 		for name := range o.values {
 			switch name {
-			case "native-window-smoke", "init-session", "session", "screen", "runtime-profile":
+			case "native-window-smoke", "native-business-scenario", "init-session", "session", "screen", "runtime-profile":
 			default:
 				return o, fmt.Errorf("native window smoke rejects flag %q", name)
 			}

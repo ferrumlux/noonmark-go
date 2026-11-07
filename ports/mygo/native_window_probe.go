@@ -52,6 +52,7 @@ type nativeWindowProbe struct {
 	canceled, started, frozen bool
 	serviceCloseRecorded      bool
 	wake, cancel, done        chan struct{}
+	beforeReady               func() error
 	output                    io.Writer
 }
 
@@ -191,6 +192,20 @@ func (p *nativeWindowProbe) startController(id int, dispatch func(func()), inspe
 		p.mu.Unlock()
 		if !success {
 			p.fail("visibility check exhausted")
+			return
+		}
+		// The opt-in business hook runs off the UI thread, outside the probe
+		// mutex, and must acknowledge the actual window read view before READY.
+		if p.beforeReady != nil {
+			if err := p.beforeReady(); err != nil {
+				p.fail(err.Error())
+				return
+			}
+		}
+		p.mu.Lock()
+		canceled := p.canceled
+		p.mu.Unlock()
+		if canceled {
 			return
 		}
 		n, err := io.WriteString(p.output, nativeWindowReadyLine)

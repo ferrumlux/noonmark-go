@@ -6,6 +6,7 @@ separate gate can pass. No session, HOME, cookies, binaries or screen capture is
 read or exported. This checks trusted workflow evidence, not hostile-user proof.
 """
 import argparse
+import business
 import hashlib
 import json
 import math
@@ -67,12 +68,18 @@ def strict(data):
                       parse_constant=lambda _: (_ for _ in ()).throw(ValueError('nonfinite JSON')))
 
 
-def collect(work_parent, output, expected, stages, artifact):
+def collect(work_parent, output, expected, stages, artifact, business_scenario=None):
     identity(expected)
+    files = dict(FILES)
+    if business_scenario is not None:
+        business.mode(business_scenario, expected['target'])
+        files.update({'stage1-business.json': MAX_REPORT, 'stage2-business.json': MAX_REPORT})
     driver.clean_directory(output.parent)
     output.mkdir(mode=0o700)
     record = {'version': 1, 'expected': expected, 'workflow_stages': stages,
               'exported': {}, 'missing': [], 'rejected': [], 'truncated': []}
+    if business_scenario is not None:
+        record['business_scenario'] = business_scenario
     try:
         verified_binary(artifact, expected)
     except (ValueError, OSError) as error:
@@ -84,12 +91,12 @@ def collect(work_parent, output, expected, stages, artifact):
         work = driver.clean_directory(entries[0])
         record['work_root'] = str(work)
         # Inspect names at the root only; never traverse private session/HOME.
-        allowed = {Path(n).parts[0] for n in FILES} | {'session'}
+        allowed = {Path(n).parts[0] for n in files} | {'session'}
         require(all(p.name in allowed for p in work.iterdir()), 'unexpected work-root entry')
     except (ValueError, OSError) as error:
         record['source_unavailable'] = str(error)
     else:
-        for name, limit in FILES.items():
+        for name, limit in files.items():
             try:
                 path = checked_path(work, name)
                 size = path.stat().st_size
@@ -201,18 +208,26 @@ def verified_binary(artifact, expected):
     return smoke.verify(artifact, expected['target'], expected['source'], expected['run_id'], expected['build_attempt'])
 
 
-def gate(output, expected, artifact):
+def gate(output, expected, artifact, business_scenario=None):
     identity(expected)
+    files = dict(FILES)
+    if business_scenario is not None:
+        business.mode(business_scenario, expected['target'])
+        files.update({'stage1-business.json': MAX_REPORT, 'stage2-business.json': MAX_REPORT})
     binary_hash = smoke.digest(verified_binary(artifact, expected))
     driver.clean_directory(output)
     collection = strict(raw(output, 'collection.json', MAX_REPORT))
-    require(set(collection) == {'version', 'expected', 'workflow_stages', 'exported', 'missing', 'rejected', 'truncated', 'work_root'}, 'collection fields/source unavailable')
+    collection_keys = {'version', 'expected', 'workflow_stages', 'exported', 'missing', 'rejected', 'truncated', 'work_root'}
+    if business_scenario is not None:
+        collection_keys.add('business_scenario')
+        require(collection.get('business_scenario') == business_scenario, 'collection scenario')
+    require(set(collection) == collection_keys, 'collection fields/source unavailable')
     require(collection['version'] == 1 and collection['expected'] == expected, 'collection identity mismatch')
     require(not collection['rejected'] and not collection['truncated'], 'rejected/truncated evidence')
-    required = {name for name in FILES if not name.startswith('infra-') or expected['target'].startswith('linux/')}
+    required = {name for name in files if not name.startswith('infra-') or expected['target'].startswith('linux/')}
     exported = collection['exported']
     require(type(exported) is dict and set(exported) == required, 'missing/extra evidence')
-    require(set(collection['missing']) == set(FILES) - required, 'missing evidence accounting')
+    require(set(collection['missing']) == set(files) - required, 'missing evidence accounting')
     # Exact finite directory inspection, never recursive glob or traversal.
     allowed_top = {Path(n).parts[0] for n in required} | {'collection.json'}
     require({p.name for p in output.iterdir()} == allowed_top, 'extra output entry')
@@ -222,17 +237,21 @@ def gate(output, expected, artifact):
             require({p.name for p in (output / directory).iterdir()} == {Path(n).name for n in required if n.startswith(directory + '/')}, 'extra helper evidence')
     data = {}
     for name in required:
-        data[name] = raw(output, name, FILES[name])
+        data[name] = raw(output, name, files[name])
         require(hashlib.sha256(data[name]).hexdigest() == exported[name], 'evidence digest mismatch')
     stages = collection['workflow_stages']
     for key in ('provenance', 'download', 'smoke') + (('libraries',) if expected['target'].startswith('linux/') else ()):
         require(stages.get(key) == 'success', 'workflow step failed: ' + key)
     result = strict(data['result.json'])
     result_keys = {'version', 'scope', 'passed', 'display_pixels_verified', 'ime_tested', 'target', 'source', 'run_id', 'run_attempt', 'build_attempt', 'consumer_attempt', 'artifact_id', 'budget_kind', 'work_root', 'binary_sha256', 'duration_seconds'}
+    if business_scenario is not None:
+        result_keys |= {'business_scenario', 'business_report_sha256'}
+        require(type(result.get('business_report_sha256')) is dict and result['business_report_sha256'] == {f'stage{n}-business.json': hashlib.sha256(data[f'stage{n}-business.json']).hexdigest() for n in (1, 2)}, 'result business report hashes')
+        require(result.get('business_scenario') == business_scenario, 'result scenario')
     require(type(result) is dict and set(result) == result_keys, 'result fields/failure')
     require(all(result[k] == v for k, v in expected.items()), 'result identity mismatch')
     require(result['run_attempt'] == expected['build_attempt'], 'builder attempt mismatch')
-    require(result['version'] == 1 and result['scope'] == 'lifecycle-only' and result['passed'] is True and result['display_pixels_verified'] is False and result['ime_tested'] is False and result['budget_kind'] == 'software-watchdog', 'runtime not passed')
+    require(result['version'] == 1 and result['scope'] == ('lifecycle-only' if business_scenario is None else business.SCOPE) and result['passed'] is True and result['display_pixels_verified'] is False and result['ime_tested'] is False and result['budget_kind'] == 'software-watchdog', 'runtime not passed')
     finite(result['duration_seconds'], 120, 'runtime duration')
     require(result['work_root'] == collection['work_root'], 'work root mismatch')
     manifest = strict(data['manifest.json'])
@@ -242,11 +261,14 @@ def gate(output, expected, artifact):
     require(type(manifest['schema']) is int and manifest['schema'] == 1 and manifest['target'] == expected['target'] and manifest['filename'] == smoke.filename(expected['target']), 'manifest target')
     require(type(manifest['size']) is int and 0 < manifest['size'] <= smoke.MAX_BINARY, 'manifest size')
     require(type(manifest['sha256']) is str and re.fullmatch('[0-9a-f]{64}', manifest['sha256']) and result['binary_sha256'] == manifest['sha256'] == binary_hash, 'binary hash mismatch')
-    records = []
+    records, business_reports = [], []
     for n, label in ((1, 'create'), (2, 'open')):
         report = driver.validate_report(strict(data[f'stage{n}.json']), label)
         record = strict(data[f'stage{n}-driver.json'])
         keys = {'stage', 'passed', 'marker_count', 'processes', 'budget_kind', 'marker_observed_seconds', 'exit', 'today', 'report_sha256', 'session_path', 'session_identity', 'session_files', 'duration_seconds'}
+        if business_scenario is not None:
+            keys |= {'business_scenario', 'spawn_sequence', 'business_report_sha256'}
+            require(record.get('business_scenario') == business_scenario and type(record.get('spawn_sequence')) is int and record['spawn_sequence'] == n, 'spawn sequence/scenario')
         require(type(record) is dict and set(record) in (keys, keys | {'diagnostics'}), 'stage fields/failure')
         require(record['stage'] == label and record['passed'] is True and type(record['exit']) is int and record['exit'] == 0 and type(record['marker_count']) is int and record['marker_count'] == 1 and record['budget_kind'] == 'software-watchdog', 'stage failed')
         finite(record['marker_observed_seconds'], 45, 'ready duration')
@@ -277,9 +299,17 @@ def gate(output, expected, artifact):
             else:
                 require(set(process) == {'pid', 'pgid', 'reaped', 'group_empty', 'exit'} and type(process['pgid']) is int and process['pgid'] == process['pid'], 'POSIX ownership incomplete')
         require(processes[-1]['exit'] == 0, 'app exit nonzero')
+        if business_scenario is not None:
+            payload = data[f'stage{n}-business.json']
+            b = business.validate(strict(payload), label)
+            business.binding(b, report, processes[-1]['pid'])
+            require(record['business_report_sha256'] == hashlib.sha256(payload).hexdigest(), 'business report hash')
+            business_reports.append(b)
         if 'diagnostics' in record:
             validate_diagnostics(record['diagnostics'], record, expected['target'], len(data[f'stage{n}.json']))
         records.append(record)
+    if business_scenario is not None:
+        business.compare(*business_reports)
     require(sum(r['duration_seconds'] for r in records) <= result['duration_seconds'], 'stage durations exceed total')
     for key in ('session_path', 'session_identity', 'session_files', 'today'):
         require(records[0][key] == records[1][key], 'reopen mismatch: ' + key)
@@ -294,6 +324,7 @@ def parser():
     for name in sorted(IDENTITY_KEYS):
         p.add_argument('--' + name.replace('_', '-'), required=True)
     p.add_argument('--stages', default='{}')
+    p.add_argument('--business-scenario', choices=[business.SCENARIO], action=business.ScenarioAction)
     return p
 
 
@@ -303,7 +334,7 @@ if __name__ == '__main__':
     if args.gate:
         stages = strict(args.stages)
         require(all(stages.get(k) == 'success' for k in ('provenance', 'download', 'smoke', 'collect', 'upload')), 'current workflow stage failed')
-        gate(args.output, expected, args.artifact)
+        gate(args.output, expected, args.artifact, args.business_scenario)
     else:
         require(args.work_parent is not None, '--work-parent required')
-        collect(args.work_parent, args.output, expected, strict(args.stages), args.artifact)
+        collect(args.work_parent, args.output, expected, strict(args.stages), args.artifact, args.business_scenario)
