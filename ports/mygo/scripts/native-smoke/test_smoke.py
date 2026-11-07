@@ -95,6 +95,85 @@ class Fixtures(unittest.TestCase):
         with self.assertRaises(ValueError):
             smoke.command(py, ['-c', 'import time; time.sleep(5)'], self.root, 'timeout', timeout=0.05)
 
+    def test_startup_rejections_require_exact_diagnostic(self):
+        # Exercise the real subprocess validator, not a mocked return code.
+        diagnostics = (
+            'init-session requires an absent directory',
+            'use -init-session or -session for development storage; -prototype for static preview',
+        )
+        old = (
+            'Cannot open isolated development session: invalid isolated development session',
+            'Use -init-session or -session for development storage; -prototype for the static visual study',
+        )
+        for i, diagnostic in enumerate(diagnostics):
+            expected = '2026/11/07 15:31:51 ' + diagnostic + '\n'
+            cases = [('correct', 1, '', expected, True),
+                     ('old', 1, '', '2026/11/07 15:31:51 ' + old[i] + '\n', False),
+                     ('other', 1, '', '2026/11/07 15:31:51 unrelated failure\n', False),
+                     ('stdout', 1, 'unexpected\n', expected, False),
+                     ('prefix', 1, '', 'extra\n' + expected, False),
+                     ('suffix', 1, '', expected + 'extra\n', False),
+                     ('no-timestamp', 1, '', diagnostic + '\n', False),
+                     ('bad-timestamp', 1, '', '2026-11-07 15:31:51 ' + diagnostic + '\n', False),
+                     ('no-newline', 1, '', expected.rstrip('\n'), False),
+                     ('detail', 1, '', expected.rstrip('\n') + ': detail\n', False),
+                     ('zero', 0, '', expected, False),
+                     ('two', 2, '', expected, False)]
+            for name, status, out, err, accepted in cases:
+                with self.subTest(diagnostic=diagnostic, case=name):
+                    label = 'diagnostic-' + str(i) + '-' + name
+                    code = f'import sys; sys.stdout.write({out!r}); sys.stderr.write({err!r}); sys.exit({status})'
+                    args = [Path(sys.executable), ['-c', code], self.root, label]
+                    if accepted:
+                        self.assertEqual(smoke.command(*args, diagnostic=diagnostic), '')
+                    else:
+                        with self.assertRaisesRegex(ValueError, label + ': wrong rejection'):
+                            smoke.command(*args, diagnostic=diagnostic)
+                    receipt = json.loads((self.root / (label + '.json')).read_text())
+                    self.assertTrue(receipt['started'])
+                    self.assertEqual(receipt['exit'], status)
+                    self.assertEqual('failure' in receipt, not accepted)
+
+    def test_startup_orchestration_exact_rejections_and_preservation(self):
+        listing = 'day 1200x768\npool 1200x768\n' + ''.join('screen-' + chr(97+i) + ' 1x1\n' for i in range(18))
+        for fault in ('none', 'reuse-mutation', 'reuse-frames', 'implicit-mutation', 'implicit-home'):
+            with self.subTest(fault=fault):
+                root = self.root / fault
+                root.mkdir()
+                calls = []
+                def fake(exe, args, folder, label, **kwargs):
+                    calls.append(label)
+                    if label == 'list':
+                        return listing
+                    if label in ('create', 'reopen'):
+                        session = root / 'session'
+                        (session / 'rev').mkdir(parents=True, exist_ok=True)
+                        (session / 'SESSION_IDENTITY').write_bytes(smoke.IDENTITY)
+                        (session / 'rev' / 'COMMITTED').write_bytes(b'fixture')
+                        (session / 'rev' / 'state.json').write_bytes(b'{}')
+                        frames = root / label
+                        frames.mkdir()
+                        (frames / ('noonmark-' + ('day' if label == 'create' else 'pool') + '-native.png')).write_bytes(b'fixture')
+                    if label in ('reuse', 'implicit'):
+                        self.assertEqual(kwargs['diagnostic'], {
+                            'reuse': 'init-session requires an absent directory',
+                            'implicit': 'use -init-session or -session for development storage; -prototype for static preview',
+                        }[label])
+                        if fault == 'implicit-home' and label == 'implicit':
+                            (root / '.unexpected-config').mkdir()
+                        if fault == label + '-mutation':
+                            (root / 'session' / 'rev' / 'state.json').write_bytes(b'mutation')
+                        if fault == 'reuse-frames' and label == 'reuse':
+                            (root / 'reuse-frames').mkdir()
+                    return ''
+                with patch.object(smoke, 'command', fake), patch.object(smoke, 'png'):
+                    if fault == 'none':
+                        smoke.smoke(Path('not-an-executable'), root)
+                        self.assertEqual(calls, ['list', 'create', 'reopen', 'reuse', 'implicit'])
+                    else:
+                        with self.assertRaisesRegex(ValueError, 'implicit created or removed home data' if fault == 'implicit-home' else ('implicit' if fault.startswith('implicit') else 'reuse') + ' modified session'):
+                            smoke.smoke(Path('not-an-executable'), root)
+
     def test_session_snapshot_identity_and_mutation(self):
         s = self.root / 'session'
         (s / 'revision').mkdir(parents=True)

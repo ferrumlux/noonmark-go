@@ -326,10 +326,14 @@ def smoke(exe, root):
         png(frames / ('noonmark-' + screen + '-native.png'), (2400, 1536))
         snapshot(session)
     before = snapshot(session)
-    command(exe, ['-init-session', str(session), '-render-one', str(root / 'reuse-frames'), '-screen', 'day'], root, 'reuse', diagnostic='Cannot open isolated development session: invalid isolated development session')
+    command(exe, ['-init-session', str(session), '-render-one', str(root / 'reuse-frames'), '-screen', 'day'], root, 'reuse', diagnostic='init-session requires an absent directory')
     require(snapshot(session) == before and not (root / 'reuse-frames').exists(), 'reuse modified session')
-    command(exe, [], root, 'implicit', diagnostic='Use -init-session or -session for development storage; -prototype for the static visual study')
+    # HOME/config/temp all point at root. Only command evidence may be created.
+    implicit_evidence = {root / ('implicit' + suffix) for suffix in ('.json', '.stdout.txt', '.stderr.txt')}
+    entries_before = set(root.rglob('*')) - implicit_evidence
+    command(exe, [], root, 'implicit', diagnostic='use -init-session or -session for development storage; -prototype for static preview')
     require(snapshot(session) == before, 'implicit modified session')
+    require(set(root.rglob('*')) - implicit_evidence == entries_before, 'implicit created or removed home data')
 
 
 def main():
