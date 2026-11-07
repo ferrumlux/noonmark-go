@@ -1,0 +1,61 @@
+name: Ordinary category Swift reference capture
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/ordinary-category-oracle.yml'
+      - 'ports/mygo/scripts/ordinary-category-oracle/**'
+      - 'ports/mygo/scripts/ordinary-category-oracle-ci/**'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: ordinary-category-oracle-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  capture:
+    runs-on: macos-15
+    timeout-minutes: 30
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.2.app/Contents/Developer
+      PYTHONDONTWRITEBYTECODE: '1'
+      NOONMARK_MYGO_BUILD_ROOT: ${{ runner.temp }}/noonmark-ordinary-category-${{ github.run_id }}-${{ github.run_attempt }}
+      EVIDENCE_ROOT: ${{ runner.temp }}/noonmark-ordinary-category-evidence-${{ github.run_id }}-${{ github.run_attempt }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # Same fixed v6 SHA as the existing name oracle
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+      - name: Check frozen sources and Python contracts only
+        run: |
+          python3 -B ports/mygo/scripts/ordinary-category-oracle/runner.py verify --reviewed-manifest-sha256 4d81f1784ef074bba86895dda6127fcce4b293ad1f6a6ac3ed666a28519a0fe8
+          python3 -B ports/mygo/scripts/ordinary-category-oracle/test_contracts.py -v
+          python3 -B ports/mygo/scripts/ordinary-category-oracle-ci/test_ci.py -v
+      - name: Capture isolated ordinary classification reference
+        id: capture
+        run: |
+          python3 -B ports/mygo/scripts/ordinary-category-oracle/runner.py capture \
+            --reviewed-manifest-sha256 4d81f1784ef074bba86895dda6127fcce4b293ad1f6a6ac3ed666a28519a0fe8 \
+            --work-root "$NOONMARK_MYGO_BUILD_ROOT" \
+            --developer-dir "$DEVELOPER_DIR"
+      - name: Export only bounded allowlisted synthetic evidence
+        if: always()
+        env:
+          CAPTURE_OUTCOME: ${{ steps.capture.outcome }}
+        run: |
+          python3 -B ports/mygo/scripts/ordinary-category-oracle-ci/export_evidence.py \
+            --work-root "$NOONMARK_MYGO_BUILD_ROOT" \
+            --evidence-root "$EVIDENCE_ROOT" \
+            --capture-outcome "$CAPTURE_OUTCOME"
+      - name: Upload explicit evidence files only
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # Same fixed v6 SHA as the existing name oracle
+        with:
+          name: ordinary-category-oracle-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ env.EVIDENCE_ROOT }}/ordinary-category-evidence.zip
+            ${{ env.EVIDENCE_ROOT }}/export-summary.json
+          if-no-files-found: error
+          retention-days: 7
+          include-hidden-files: false
+          overwrite: false

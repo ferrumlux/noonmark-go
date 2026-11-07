@@ -1,0 +1,56 @@
+{
+  "schemaVersion": 1,
+  "scope": "ordinary-category-only-v1",
+  "files": [
+    {
+      "path": "INPUT.json",
+      "bytes": 6181,
+      "sha256": "2a3f43ffb5a78165ce9d32958089e0e3973280829fa5f3ab33f69fa44ea70aae"
+    },
+    {
+      "path": "INPUT.sha256",
+      "bytes": 77,
+      "sha256": "20ece3af29662b0c0cb16275137eb91b1f902dbb57e57ddd9b67ac7918198880"
+    },
+    {
+      "path": "OrdinaryCategoryOracle.swift",
+      "bytes": 30944,
+      "sha256": "4fc05129212c72819c8939eaa47dcca08458e902656850c3b58cf54b8dcfa579"
+    },
+    {
+      "path": "PLAN.md",
+      "bytes": 8045,
+      "sha256": "bac8605115870f7d3bf8a2858a74d465db77b5f2e1cf6512c7fbe4d2aa6c9ec8"
+    },
+    {
+      "path": "README.md",
+      "bytes": 3048,
+      "sha256": "60cb18e0069ee7fdc5119447dc41d89024006627ec0339ba17538cd55b7b329e"
+    },
+    {
+      "path": "SCHEMA.md",
+      "bytes": 10060,
+      "sha256": "e7986b683f15b62f92793e3eb5ce0f7106ba7f7c0f3a7ebadd4dfe70e64f74c3"
+    },
+    {
+      "path": "SOURCE-CLOSURE.json",
+      "bytes": 8778,
+      "sha256": "ad948c7383b6af6b7cc3a82e0d7752982a9cadd5d38101bd683ccdde6cb0e31d"
+    },
+    {
+      "path": "SOURCE-VERIFICATION.json",
+      "bytes": 4258,
+      "sha256": "69b85ebfbb615abc5aa6f9ab99e4747257142a7bd31693b7785261e741e37cc2"
+    },
+    {
+      "path": "runner.py",
+      "bytes": 39308,
+      "sha256": "3464a455677d7e45b77d622aa05feb7674d0ba65bf6382ab7e8e2a2f99bc715c"
+    },
+    {
+      "path": "test_contracts.py",
+      "bytes": 21537,
+      "sha256": "d8b3015041ce66acb7a91b8121f090c52540f4cc4de86ea7911e1479e8db12d1"
+    }
+  ]
+}

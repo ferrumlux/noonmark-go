@@ -108,6 +108,84 @@ def finite(value, limit, label):
     require(type(value) in (int, float) and math.isfinite(value) and 0 <= value < limit, label)
 
 
+def validate_diagnostics(d, record, target, report_size):
+    """Optional v1 driver observations, never an alternate success contract.
+
+    Legacy records remain valid without this extension. A supplied extension
+    must be complete and agree with the already-required raw/final evidence.
+    Failure diagnostics are exported raw; they cannot pass this success gate.
+    """
+    keys = {'version', 'deadlines_seconds', 'failure', 'failure_snapshot',
+            'after_cleanup_snapshot', 'cleanup_started_seconds', 'cleanup_ended_seconds',
+            'cleanup_error', 'process_times', 'observation_errors'}
+    require(type(d) is dict and set(d) == keys and type(d['version']) is int and d['version'] == 1, 'diagnostic fields/version')
+    require(d['failure'] is None and d['failure_snapshot'] is None and d['cleanup_error'] is None
+            and d['observation_errors'] == [], 'diagnostic failure/incomplete')
+    duration = record['duration_seconds']
+
+    def stamp(value):
+        finite(value, 60, 'diagnostic time')
+        require(value <= duration, 'diagnostic time after stage')
+
+    deadlines = d['deadlines_seconds']
+    require(type(deadlines) is dict and set(deadlines) == {'ready', 'completion_limit', 'cleanup'}, 'diagnostic deadline fields')
+    for value in deadlines.values():
+        finite(value, 61, 'diagnostic deadline')
+    require(deadlines['cleanup'] <= 60 and duration < deadlines['cleanup']
+            and deadlines['ready'] == min(45, deadlines['cleanup']-5)
+            and deadlines['completion_limit'] == min(55, deadlines['cleanup']-5), 'diagnostic deadline mismatch')
+    begin, end = d['cleanup_started_seconds'], d['cleanup_ended_seconds']
+    stamp(begin); stamp(end)
+    require(begin <= end, 'diagnostic cleanup order')
+    processes = record['processes']
+    times = d['process_times']
+    require(type(times) is list and len(times) == len(processes), 'diagnostic process times')
+    for item, process in zip(times, processes):
+        require(type(item) is dict and set(item) == {'pid', 'spawn_observed_seconds', 'term_sent_seconds', 'kill_sent_seconds'}
+                and type(item['pid']) is int and item['pid'] == process['pid'], 'diagnostic process time fields')
+        stamp(item['spawn_observed_seconds'])
+        require(item['spawn_observed_seconds'] <= begin, 'diagnostic spawn after cleanup')
+        for key in ('term_sent_seconds', 'kill_sent_seconds'):
+            value = item[key]
+            if value is not None:
+                stamp(value)
+                require(not target.startswith('windows/') and begin <= value <= end, 'diagnostic signal time')
+        if item['term_sent_seconds'] is not None and item['kill_sent_seconds'] is not None:
+            require(item['term_sent_seconds'] <= item['kill_sent_seconds'], 'diagnostic signal order')
+    snap = d['after_cleanup_snapshot']
+    require(type(snap) is dict and set(snap) == {'at_seconds', 'marker_count', 'marker_first_seconds', 'processes', 'pipes', 'report'}, 'diagnostic snapshot fields')
+    stamp(snap['at_seconds'])
+    require(end <= snap['at_seconds'] and type(snap['marker_count']) is int and snap['marker_count'] == record['marker_count']
+            and snap['marker_first_seconds'] == record['marker_observed_seconds'], 'diagnostic snapshot timing/marker')
+    stamp(snap['marker_first_seconds'])
+    require(snap['marker_first_seconds'] <= begin, 'diagnostic late marker')
+    observed = snap['processes']
+    require(type(observed) is list and len(observed) == len(processes), 'diagnostic process count')
+    for index, (item, process) in enumerate(zip(observed, processes)):
+        require(type(item) is dict and set(item) == {'pid', 'pgid', 'is_app', 'poll_source', 'poll_exit', 'poll_seconds'}, 'diagnostic process fields')
+        require(type(item['pid']) is int and item['pid'] == process['pid'] and item['pgid'] == process.get('pgid')
+                and (item['pgid'] is None if target.startswith('windows/') else type(item['pgid']) is int)
+                and item['is_app'] is (index == len(processes)-1) and item['poll_source'] == 'cached'
+                and type(item['poll_exit']) is int and item['poll_exit'] == process['exit']
+                and item['poll_seconds'] is None, 'diagnostic process mismatch')
+    pipes = snap['pipes']
+    expected = {(p['pid'], kind) for p in processes for kind in ('stdout', 'stderr')}
+    if target.startswith('linux/'):
+        expected.add((None, 'helper_ready'))
+    require(type(pipes) is list and len(pipes) == len(expected), 'diagnostic pipe count')
+    seen = set()
+    for pipe in pipes:
+        require(type(pipe) is dict and set(pipe) == {'pid', 'kind', 'bytes', 'eof'}, 'diagnostic pipe fields')
+        require((pipe['pid'] is None or type(pipe['pid']) is int) and type(pipe['kind']) is str, 'diagnostic pipe identity')
+        key = (pipe['pid'], pipe['kind'])
+        require(key in expected and key not in seen and type(pipe['bytes']) is int and 0 <= pipe['bytes'] <= MAX_LOG
+                and pipe['eof'] is True, 'diagnostic pipe state')
+        seen.add(key)
+    require(type(snap['report']) is dict and set(snap['report']) == {'state', 'bytes'}
+            and snap['report']['state'] == 'plain' and type(snap['report']['bytes']) is int
+            and snap['report']['bytes'] == report_size, 'diagnostic report mismatch')
+
+
 def verified_binary(artifact, expected):
     driver.clean_directory(artifact)
     return smoke.verify(artifact, expected['target'], expected['source'], expected['run_id'], expected['build_attempt'])
@@ -159,7 +237,7 @@ def gate(output, expected, artifact):
         report = driver.validate_report(strict(data[f'stage{n}.json']), label)
         record = strict(data[f'stage{n}-driver.json'])
         keys = {'stage', 'passed', 'marker_count', 'processes', 'budget_kind', 'marker_observed_seconds', 'exit', 'today', 'report_sha256', 'session_path', 'session_identity', 'session_files', 'duration_seconds'}
-        require(type(record) is dict and set(record) == keys, 'stage fields/failure')
+        require(type(record) is dict and set(record) in (keys, keys | {'diagnostics'}), 'stage fields/failure')
         require(record['stage'] == label and record['passed'] is True and type(record['exit']) is int and record['exit'] == 0 and type(record['marker_count']) is int and record['marker_count'] == 1 and record['budget_kind'] == 'software-watchdog', 'stage failed')
         finite(record['marker_observed_seconds'], 45, 'ready duration')
         finite(record['duration_seconds'], 60, 'stage duration')
@@ -189,6 +267,8 @@ def gate(output, expected, artifact):
             else:
                 require(set(process) == {'pid', 'pgid', 'reaped', 'group_empty', 'exit'} and type(process['pgid']) is int and process['pgid'] == process['pid'], 'POSIX ownership incomplete')
         require(processes[-1]['exit'] == 0, 'app exit nonzero')
+        if 'diagnostics' in record:
+            validate_diagnostics(record['diagnostics'], record, expected['target'], len(data[f'stage{n}.json']))
         records.append(record)
     require(sum(r['duration_seconds'] for r in records) <= result['duration_seconds'], 'stage durations exceed total')
     for key in ('session_path', 'session_identity', 'session_files', 'today'):

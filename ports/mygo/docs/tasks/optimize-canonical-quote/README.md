@@ -1,6 +1,19 @@
 # 精简 canonical JSON 无转义字符串写入
 
-状态：独立候选；定向验证及原年度实际路径通过，待独立复核和默认全量；未正式合入或取得此候选的 hosted 默认门禁。Task-Id：optimize-canonical-quote。
+状态（2026-11-07 UTC）：已合入 main，提交 `f7566df50eeb66c1bfbfc1c7e7d1d912c661a923`。此精确提交的常规 hosted 门禁与六 host CLI/headless 门禁通过；原生窗口生命周期门禁因 Intel macOS Create 超时失败，其余五 host 的十阶段通过。Task-Id：optimize-canonical-quote。
+
+## 合入后 hosted 复核
+
+- 常规：[42338467418](https://github.com/ferrumlux/noonmark-go/actions/runs/42338467418) completed/success。root race339.348s，未改默认600s，余量260.652s；taskapp93.139s。此单次host测量不是受控性能倍数或未来runner保证。
+- 六 host CLI/headless：[42338467571](https://github.com/ferrumlux/noonmark-go/actions/runs/42338467571) completed/success。list/create/reopen exit0、reuse/implicit exit1，12张2400×1536 PNG仅证明合成开发会话headless渲染。
+- 窗口：[42338467402](https://github.com/ferrumlux/noonmark-go/actions/runs/42338467402) completed/failure。[Intel job128301753997](https://github.com/ferrumlux/noonmark-go/actions/runs/42338467402/job/128301753997) Create在READY一次后software deadline exceeded，driver12.75036s，exit=-9且reaped/group_empty；stage1报告为空，Open未运行。[失败原件13560133136](https://github.com/ferrumlux/noonmark-go/actions/runs/42338467402/artifacts/13560133136)保留，不宣称十二阶段全过。
+- 三run均为精确f7566df、attempt1；保留lifecycle-only、系统像素/IME/完整产品未验。当前证据不足以把Intel在READY后的超时归因于quote改动。
+
+完整公开复核见 [f7566df hosted CI 事实摘要](HOSTED-f7566df.md)，逐项身份与到期时间见 [evidence-f7566df.json](evidence-f7566df.json)。
+
+driver 的 12.75036s 是包括启动及清理的总历时，不是 READY 后等候时长；原合同是 READY 后 10 秒完成。上述 artifacts 保留 7 天，记录的到期日为 2026-11-14 UTC；仓库只保存摘要与身份，不复制原 ZIP。
+
+以下各节保留合入前的候选实验、测量、当时待办与失败记录原文。其中“独立候选”“正式源码保持不变”“下一步需复核”等属于历史时点，不代表本节所述当前状态。
 
 ## 来源与定位
 

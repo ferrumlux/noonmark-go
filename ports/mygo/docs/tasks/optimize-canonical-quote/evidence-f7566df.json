@@ -1,0 +1,701 @@
+{
+  "schema": 1,
+  "commit": "f7566df50eeb66c1bfbfc1c7e7d1d912c661a923",
+  "commit_url": "https://github.com/ferrumlux/noonmark-go/commit/f7566df50eeb66c1bfbfc1c7e7d1d912c661a923",
+  "tree": "2b929173ce542a8a7bb8c1ce0459a7001df49e02",
+  "parent": "824e96614a3c0196f9086505d201aae23b7c6de2",
+  "audit_date_utc": "2026-11-07",
+  "overall": "not_all_green",
+  "runs": [
+    {
+      "id": 42338467418,
+      "url": "https://github.com/ferrumlux/noonmark-go/actions/runs/42338467418",
+      "workflow": ".github/workflows/mygo.yml",
+      "branch": "main",
+      "event": "push",
+      "attempt": 1,
+      "status": "completed",
+      "conclusion": "success",
+      "started_at_utc": "2026-11-07T04:26:27Z",
+      "updated_at_utc": "2026-11-07T04:42:03Z",
+      "jobs": [
+        {
+          "id": 128300629545,
+          "name": "development",
+          "html_url": "https://github.com/ferrumlux/noonmark-go/actions/runs/42338467418/job/128300629545",
+          "conclusion": "success",
+          "labels": [
+            "ubuntu-24.04"
+          ],
+          "runner_id": 1000000064,
+          "started_at": "2026-11-07T04:26:29Z",
+          "completed_at": "2026-11-07T04:42:02Z"
+        }
+      ],
+      "artifacts": [
+        {
+          "id": 13560448727,
+          "name": "mygo-development-evidence-42338467418-1",
+          "size_in_bytes": 6415,
+          "digest": "sha256:ba829cd2963a951e284efb1ab82a423144d649fe2eddfaf40bb08883de214e18",
+          "created_at": "2026-11-07T04:41:58Z",
+          "expires_at": "2026-11-14T04:41:57Z",
+          "url": "https://github.com/ferrumlux/noonmark-go/actions/runs/42338467418/artifacts/13560448727"
+        }
+      ]
+    },
+    {
+      "id": 42338467571,
+      "url": "https://github.com/ferrumlux/noonmark-go/actions/runs/42338467571",
+      "workflow": ".github/workflows/native-smoke.yml",
+      "branch": "main",
+      "event": "push",
+      "attempt": 1,
+      "status": "completed",
+      "conclusion": "success",
+      "started_at_utc": "2026-11-07T04:26:27Z",
+      "updated_at_utc": "2026-11-07T04:32:22Z",
+      "jobs": [
+        {
+          "id": 128300630203,
+          "name": "build",
+          "html_url": "https://github.com/ferrumlux/noonmark-go/actions/runs/42338467571/job/128300630203",
+          "conclusion": "success",
+          "labels": [
+            "ubuntu-24.04"
+          ],
+          "runner_id": 1000000065,
+          "started_at": "2026-11-07T04:26:29Z",
+          "completed_at": "2026-11-07T04:31:25Z"
+        },
+        {
+          "id": 128301731262,
+          "name": "runtime (darwin/amd64, macos-15-intel, darwin_amd64)",
+          "html_url": "https://github.com/ferrumlux/noonmark-go/actions/runs/42338467571/job/128301731262",
+          "conclusion": "success",
+          "labels": [
+            "macos-15-intel"
+          ],
+          "runner_id": 1000000066,
+          "started_at": "2026-11-07T04:31:28Z",
+          "completed_at": "2026-11-07T04:32:21Z"
+        },
+        {
+          "id": 128301731272,
+          "name": "runtime (darwin/arm64, macos-15, darwin_arm64)",
+          "html_url": "https://github.com/ferrumlux/noonmark-go/actions/runs/42338467571/job/128301731272",
+          "conclusion": "success",
+          "labels": [
+            "macos-15"
+          ],
+          "runner_id": 1000000068,
+          "started_at": "2026-11-07T04:31:28Z",
+          "completed_at": "2026-11-07T04:31:49Z"
+        },
+        {
+          "id": 128301731281,
+          "name": "runtime (windows/amd64, windows-2025, windows_amd64)",
+          "html_url": "https://github.com/ferrumlux/noonmark-go/actions/runs/42338467571/job/128301731281",
+          "conclusion": "success",
+          "labels": [
+            "windows-2025"
+          ],
+          "runner_id": 1000000070,
+          "started_at": "2026-11-07T04:31:27Z",
+          "completed_at": "2026-11-07T04:31:58Z"
+        },
+        {
+          "id": 128301731302,
+          "name": "runtime (windows/arm64, windows-11-arm, windows_arm64)",
+          "html_url": "https://github.com/ferrumlux/noonmark-go/actions/runs/42338467571/job/128301731302",
+          "conclusion": "success",
+          "labels": [
+            "windows-11-arm"
+          ],
+          "runner_id": 1000000069,
+          "started_at": "2026-11-07T04:31:27Z",
+          "completed_at": "2026-11-07T04:32:07Z"
+        },
+        {
+          "id": 128301731313,
+          "name": "runtime (linux/amd64, ubuntu-24.04, linux_amd64)",
+          "html_url": "https://github.com/ferrumlux/noonmark-go/actions/runs/42338467571/job/128301731313",
+          "conclusion": "success",
+          "labels": [
+            "ubuntu-24.04"
+          ],
+          "runner_id": 1000000067,
+          "started_at": "2026-11-07T04:31:27Z",
+          "completed_at": "2026-11-07T04:31:52Z"
+        },
+        {
+          "id": 128301731333,
+          "name": "runtime (linux/arm64, ubuntu-24.04-arm, linux_arm64)",
+          "html_url": "https://github.com/ferrumlux/noonmark-go/actions/runs/42338467571/job/128301731333",
+          "conclusion": "success",
+          "labels": [
+            "ubuntu-24.04-arm"
+          ],
+          "runner_id": 1000000071,
+          "started_at": "2026-11-07T04:31:30Z",
+          "completed_at": "2026-11-07T04:32:06Z"
+        }
+      ],
+      "artifacts": [
+        {
+          "id": 13560970452,
+          "name": "native-bin-windows-arm64-42338467571-1",
+          "size_in_bytes": 8942905,
+          "digest": "sha256:b5d41dd4eb995466dd6164b2cf0f867a0b3cc0fd7bdceb5082b697116a57d4d2",
+          "created_at": "2026-11-07T04:31:16Z",
+          "expires_at": "2026-11-14T04:31:14Z",
+          "url": "https://github.com/ferrumlux/noonmark-go/actions/runs/42338467571/artifacts/13560970452"
+        },
+        {
+          "id": 13560890845,
+          "name": "native-runtime-evidence-darwin_arm64-42338467571-1",
+          "size_in_bytes": 216768,
+          "digest": "sha256:3329bc04f68f8ab9e39c6562557c1cdc11ccc82b029c1775c10c90aae19d11e1",
+          "created_at": "2026-11-07T04:31:46Z",
+          "expires_at": "2026-11-14T04:31:46Z",
+          "url": "https://github.com/ferrumlux/noonmark-go/actions/runs/42338467571/artifacts/13560890845"
+        },
+        {
+          "id": 13560885765,
+          "name": "native-build-evidence-42338467571-1",
+          "size_in_bytes": 1134,
+          "digest": "sha256:bd1577411b79cdfe5fdace7e718ba90524bf0ff63add51a44cc0b42278a0afb3",
+          "created_at": "2026-11-07T04:31:21Z",
+          "expires_at": "2026-11-14T04:31:20Z",
+          "url": "https://github.com/ferrumlux/noonmark-go/actions/runs/42338467571/artifacts/13560885765"
+        },
+        {
+          "id": 13560821044,
+          "name": "native-bin-darwin-arm64-42338467571-1",
+          "size_in_bytes": 9389168,
+          "digest": "sha256:985109c3886890372eecf60978afe981231c45186f37e6e535327fada95e250b",
+          "created_at": "2026-11-07T04:31:20Z",
+          "expires_at": "2026-11-14T04:31:18Z",
+          "url": "https://github.com/ferrumlux/noonmark-go/actions/runs/42338467571/artifacts/13560821044"
+        },
+        {
+          "id": 13560726249,
+          "name": "native-bin-linux-amd64-42338467571-1",
+          "size_in_bytes": 9587949,
+          "digest": "sha256:807eaa2cb5573b2f1e80712261fca00a0eeaa86f49444cd78280161283a7cf5f",
+          "created_at": "2026-11-07T04:31:10Z",
+          "expires_at": "2026-11-14T04:31:08Z",
+          "url": "https://github.com/ferrumlux/noonmark-go/actions/runs/42338467571/artifacts/13560726249"
+        },
+        {
+          "id": 13560552684,
+          "name": "native-bin-darwin-amd64-42338467571-1",
+          "size_in_bytes": 10023962,
+          "digest": "sha256:02233d73acfa3cdaef1cf4ed1df72f7fbf2a42bdafa9de56edcf3e462f500513",
+          "created_at": "2026-11-07T04:31:18Z",
+          "expires_at": "2026-11-14T04:31:16Z",
+          "url": "https://github.com/ferrumlux/noonmark-go/actions/runs/42338467571/artifacts/13560552684"
+        },
+        {
+          "id": 13560407817,
+          "name": "native-bin-linux-arm64-42338467571-1",
+          "size_in_bytes": 8769518,
+          "digest": "sha256:9441c90c9e65367636ad50a6b592ecf702a5b2669806f4fca553efaf88303264",
+          "created_at": "2026-11-07T04:31:12Z",
+          "expires_at": "2026-11-14T04:31:10Z",
+          "url": "https://github.com/ferrumlux/noonmark-go/actions/runs/42338467571/artifacts/13560407817"
+        },
+        {
+          "id": 13560343095,
+          "name": "native-runtime-evidence-darwin_amd64-42338467571-1",
+          "size_in_bytes": 216876,
+          "digest": "sha256:8a8d1ab8dcd1b9fa80d64262b8d67af6400cdc41e72efac31fe705987f95ea99",
+          "created_at": "2026-11-07T04:32:18Z",
+          "expires_at": "2026-11-14T04:32:16Z",
+          "url": "https://github.com/ferrumlux/noonmark-go/actions/runs/42338467571/artifacts/13560343095"
+        },
+        {
+          "id": 13560284626,
+          "name": "native-runtime-evidence-windows_amd64-42338467571-1",
+          "size_in_bytes": 187246,
+          "digest": "sha256:1f8fe052682686a1ebef282de384f2ca4c5e95ea195293cc75a12eecfd492a9b",
+          "created_at": "2026-11-07T04:31:55Z",
+          "expires_at": "2026-11-14T04:31:54Z",
+          "url": "https://github.com/ferrumlux/noonmark-go/actions/runs/42338467571/artifacts/13560284626"
+        },
+        {
+          "id": 13560148153,
+          "name": "native-bin-windows-amd64-42338467571-1",
+          "size_in_bytes": 9830502,
+          "digest": "sha256:853d73858bb9cae29607244e19387660cc86e9ea54b91810965113cd9e4565ab",
+          "created_at": "2026-11-07T04:31:14Z",
+          "expires_at": "2026-11-14T04:31:12Z",
+          "url": "https://github.com/ferrumlux/noonmark-go/actions/runs/42338467571/artifacts/13560148153"
+        },
+        {
+          "id": 13560054781,
+          "name": "native-runtime-evidence-linux_arm64-42338467571-1",
+          "size_in_bytes": 206363,
+          "digest": "sha256:86a802dda3896f1a54e702725d2b3340e00c226ca89b945d241417904fe06fa3",
+          "created_at": "2026-11-07T04:32:03Z",
+          "expires_at": "2026-11-14T04:32:03Z",
+          "url": "https://github.com/ferrumlux/noonmark-go/actions/runs/42338467571/artifacts/13560054781"
+        },
+        {
+          "id": 13560038231,
+          "name": "native-runtime-evidence-windows_arm64-42338467571-1",
+          "size_in_bytes": 187463,
+          "digest": "sha256:5080d35f481a9bc2b201f9d391d5431e96a891b6d38287c45c4c210e0049ec6c",
+          "created_at": "2026-11-07T04:32:01Z",
+          "expires_at": "2026-11-14T04:32:00Z",
+          "url": "https://github.com/ferrumlux/noonmark-go/actions/runs/42338467571/artifacts/13560038231"
+        },
+        {
+          "id": 13559974927,
+          "name": "native-runtime-evidence-linux_amd64-42338467571-1",
+          "size_in_bytes": 206362,
+          "digest": "sha256:54229169a09139ba7a6b1f732c23d71103d35c2c38410dc841f9d3595fe55ade",
+          "created_at": "2026-11-07T04:31:49Z",
+          "expires_at": "2026-11-14T04:31:48Z",
+          "url": "https://github.com/ferrumlux/noonmark-go/actions/runs/42338467571/artifacts/13559974927"
+        }
+      ]
+    },
+    {
+      "id": 42338467402,
+      "url": "https://github.com/ferrumlux/noonmark-go/actions/runs/42338467402",
+      "workflow": ".github/workflows/native-window-smoke.yml",
+      "branch": "main",
+      "event": "push",
+      "attempt": 1,
+      "status": "completed",
+      "conclusion": "failure",
+      "started_at_utc": "2026-11-07T04:26:27Z",
+      "updated_at_utc": "2026-11-07T04:32:08Z",
+      "jobs": [
+        {
+          "id": 128300629448,
+          "name": "build",
+          "html_url": "https://github.com/ferrumlux/noonmark-go/actions/runs/42338467402/job/128300629448",
+          "conclusion": "success",
+          "labels": [
+            "ubuntu-24.04"
+          ],
+          "runner_id": 1000000063,
+          "started_at": "2026-11-07T04:26:29Z",
+          "completed_at": "2026-11-07T04:31:31Z"
+        },
+        {
+          "id": 128301753984,
+          "name": "runtime (darwin/arm64, macos-15, darwin_arm64)",
+          "html_url": "https://github.com/ferrumlux/noonmark-go/actions/runs/42338467402/job/128301753984",
+          "conclusion": "success",
+          "labels": [
+            "macos-15"
+          ],
+          "runner_id": 1000000072,
+          "started_at": "2026-11-07T04:31:34Z",
+          "completed_at": "2026-11-07T04:31:48Z"
+        },
+        {
+          "id": 128301753990,
+          "name": "runtime (linux/arm64, ubuntu-24.04-arm, linux_arm64)",
+          "html_url": "https://github.com/ferrumlux/noonmark-go/actions/runs/42338467402/job/128301753990",
+          "conclusion": "success",
+          "labels": [
+            "ubuntu-24.04-arm"
+          ],
+          "runner_id": 1000000075,
+          "started_at": "2026-11-07T04:31:35Z",
+          "completed_at": "2026-11-07T04:32:08Z"
+        },
+        {
+          "id": 128301753995,
+          "name": "runtime (windows/amd64, windows-2025, windows_amd64)",
+          "html_url": "https://github.com/ferrumlux/noonmark-go/actions/runs/42338467402/job/128301753995",
+          "conclusion": "success",
+          "labels": [
+            "windows-2025"
+          ],
+          "runner_id": 1000000073,
+          "started_at": "2026-11-07T04:31:33Z",
+          "completed_at": "2026-11-07T04:31:48Z"
+        },
+        {
+          "id": 128301753997,
+          "name": "runtime (darwin/amd64, macos-15-intel, darwin_amd64)",
+          "html_url": "https://github.com/ferrumlux/noonmark-go/actions/runs/42338467402/job/128301753997",
+          "conclusion": "failure",
+          "labels": [
+            "macos-15-intel"
+          ],
+          "runner_id": 1000000074,
+          "started_at": "2026-11-07T04:31:35Z",
+          "completed_at": "2026-11-07T04:32:07Z"
+        },
+        {
+          "id": 128301754027,
+          "name": "runtime (linux/amd64, ubuntu-24.04, linux_amd64)",
+          "html_url": "https://github.com/ferrumlux/noonmark-go/actions/runs/42338467402/job/128301754027",
+          "conclusion": "success",
+          "labels": [
+            "ubuntu-24.04"
+          ],
+          "runner_id": 1000000076,
+          "started_at": "2026-11-07T04:31:33Z",
+          "completed_at": "2026-11-07T04:31:52Z"
+        },
+        {
+          "id": 128301754146,
+          "name": "runtime (windows/arm64, windows-11-arm, windows_arm64)",
+          "html_url": "https://github.com/ferrumlux/noonmark-go/actions/runs/42338467402/job/128301754146",
+          "conclusion": "success",
+          "labels": [
+            "windows-11-arm"
+          ],
+          "runner_id": 1000000077,
+          "started_at": "2026-11-07T04:31:33Z",
+          "completed_at": "2026-11-07T04:32:03Z"
+        }
+      ],
+      "artifacts": [
+        {
+          "id": 13561080037,
+          "name": "native-window-evidence-windows_arm64-42338467402-1",
+          "size_in_bytes": 4745,
+          "digest": "sha256:4755cd76a7a194b082e67cc4c157eb34540e99ea1fa869ef738f5e0669832476",
+          "created_at": "2026-11-07T04:31:56Z",
+          "expires_at": "2026-11-14T04:31:56Z",
+          "url": "https://github.com/ferrumlux/noonmark-go/actions/runs/42338467402/artifacts/13561080037"
+        },
+        {
+          "id": 13561075020,
+          "name": "native-window-bin-windows-amd64-42338467402-1",
+          "size_in_bytes": 9830502,
+          "digest": "sha256:41988a87e2518ef235238b7e21582d19f422995dbddf99b5c6bb9972173bdc0b",
+          "created_at": "2026-11-07T04:31:17Z",
+          "expires_at": "2026-11-14T04:31:16Z",
+          "url": "https://github.com/ferrumlux/noonmark-go/actions/runs/42338467402/artifacts/13561075020"
+        },
+        {
+          "id": 13561055164,
+          "name": "native-window-evidence-darwin_arm64-42338467402-1",
+          "size_in_bytes": 4747,
+          "digest": "sha256:55c5e1b67841156b897d620efccebd23b0977d14e1007e5aaf12209a4748154b",
+          "created_at": "2026-11-07T04:31:45Z",
+          "expires_at": "2026-11-14T04:31:44Z",
+          "url": "https://github.com/ferrumlux/noonmark-go/actions/runs/42338467402/artifacts/13561055164"
+        },
+        {
+          "id": 13561035177,
+          "name": "native-window-bin-linux-arm64-42338467402-1",
+          "size_in_bytes": 8769519,
+          "digest": "sha256:0c6d8f5d977427f39bf4b92e9e6b22d8e51bc811ad2b353ac33bdea5db405bb3",
+          "created_at": "2026-11-07T04:31:15Z",
+          "expires_at": "2026-11-14T04:31:13Z",
+          "url": "https://github.com/ferrumlux/noonmark-go/actions/runs/42338467402/artifacts/13561035177"
+        },
+        {
+          "id": 13560836042,
+          "name": "native-window-evidence-windows_amd64-42338467402-1",
+          "size_in_bytes": 4725,
+          "digest": "sha256:c053f56e55bdeac667a5f28919a12aa9c65ab792a23de2cc602656650116ba5b",
+          "created_at": "2026-11-07T04:31:45Z",
+          "expires_at": "2026-11-14T04:31:44Z",
+          "url": "https://github.com/ferrumlux/noonmark-go/actions/runs/42338467402/artifacts/13560836042"
+        },
+        {
+          "id": 13560826816,
+          "name": "native-window-bin-darwin-amd64-42338467402-1",
+          "size_in_bytes": 10023963,
+          "digest": "sha256:ad8b94dae3314653e9f2b3ae4e9af5dfe66efc0f6310ba62588eab509b1ae65c",
+          "created_at": "2026-11-07T04:31:22Z",
+          "expires_at": "2026-11-14T04:31:20Z",
+          "url": "https://github.com/ferrumlux/noonmark-go/actions/runs/42338467402/artifacts/13560826816"
+        },
+        {
+          "id": 13560677274,
+          "name": "native-window-bin-darwin-arm64-42338467402-1",
+          "size_in_bytes": 9389168,
+          "digest": "sha256:42731da5be04b0697f81a99a578613e027556bb06a74ad147da4e16fda95fee8",
+          "created_at": "2026-11-07T04:31:24Z",
+          "expires_at": "2026-11-14T04:31:22Z",
+          "url": "https://github.com/ferrumlux/noonmark-go/actions/runs/42338467402/artifacts/13560677274"
+        },
+        {
+          "id": 13560459188,
+          "name": "native-window-bin-linux-amd64-42338467402-1",
+          "size_in_bytes": 9587950,
+          "digest": "sha256:d1b468f0cdabc49ee3f36cdd04dff3631a219e5afda76973d24b84e46538a9ab",
+          "created_at": "2026-11-07T04:31:13Z",
+          "expires_at": "2026-11-14T04:31:11Z",
+          "url": "https://github.com/ferrumlux/noonmark-go/actions/runs/42338467402/artifacts/13560459188"
+        },
+        {
+          "id": 13560359451,
+          "name": "native-window-build-evidence-42338467402-1",
+          "size_in_bytes": 1131,
+          "digest": "sha256:6da63f047338310c40df23cc31f9aaacc8443690c5e5a2aaa38105336b6ad655",
+          "created_at": "2026-11-07T04:31:25Z",
+          "expires_at": "2026-11-14T04:31:25Z",
+          "url": "https://github.com/ferrumlux/noonmark-go/actions/runs/42338467402/artifacts/13560359451"
+        },
+        {
+          "id": 13560133136,
+          "name": "native-window-evidence-darwin_amd64-42338467402-1",
+          "size_in_bytes": 2326,
+          "digest": "sha256:bdbb8ee9d58f4bdeb84545766fee9a8e143afaafee7129a9b9559b516eb12102",
+          "created_at": "2026-11-07T04:32:04Z",
+          "expires_at": "2026-11-14T04:32:02Z",
+          "url": "https://github.com/ferrumlux/noonmark-go/actions/runs/42338467402/artifacts/13560133136"
+        },
+        {
+          "id": 13560124723,
+          "name": "native-window-evidence-linux_amd64-42338467402-1",
+          "size_in_bytes": 7309,
+          "digest": "sha256:1a796e21be175e49d6a7e62f8ee93555249ef18e0447a1f1d89d347a233c3027",
+          "created_at": "2026-11-07T04:31:51Z",
+          "expires_at": "2026-11-14T04:31:50Z",
+          "url": "https://github.com/ferrumlux/noonmark-go/actions/runs/42338467402/artifacts/13560124723"
+        },
+        {
+          "id": 13560014773,
+          "name": "native-window-bin-windows-arm64-42338467402-1",
+          "size_in_bytes": 8942906,
+          "digest": "sha256:70455be1c9daef86b39ac32a27b2e6c97035e19068e434b1c086fd56e670471c",
+          "created_at": "2026-11-07T04:31:20Z",
+          "expires_at": "2026-11-14T04:31:18Z",
+          "url": "https://github.com/ferrumlux/noonmark-go/actions/runs/42338467402/artifacts/13560014773"
+        },
+        {
+          "id": 13559994932,
+          "name": "native-window-evidence-linux_arm64-42338467402-1",
+          "size_in_bytes": 7608,
+          "digest": "sha256:f8031422562ad525632cbf2dbbad177f5fac95e82d203266eea39dabd90aa3ff",
+          "created_at": "2026-11-07T04:32:06Z",
+          "expires_at": "2026-11-14T04:32:06Z",
+          "url": "https://github.com/ferrumlux/noonmark-go/actions/runs/42338467402/artifacts/13559994932"
+        }
+      ]
+    }
+  ],
+  "artifact_integrity": {
+    "count": 27,
+    "all_actual_zip_size_sha256_and_crc_verified": true,
+    "all_members_rehashed": true
+  },
+  "regular_timings": {
+    "root_race_seconds": 339.348,
+    "default_timeout_seconds": 600,
+    "margin_seconds": 260.652,
+    "taskapp_race_seconds": 93.139,
+    "aggregate_step_seconds": 904.0,
+    "interpretation": "One hosted run, not a controlled performance ratio or future-runner guarantee."
+  },
+  "native_cli": {
+    "targets_passed": 6,
+    "per_target_command_exit": {
+      "list": 0,
+      "create": 0,
+      "reopen": 0,
+      "reuse": 1,
+      "implicit": 1
+    },
+    "png_count": 12,
+    "png_dimensions": [
+      2400,
+      1536
+    ],
+    "png_scope": "synthetic-session headless Day/Pool; no native screen pixels claim",
+    "target_artifacts": [
+      {
+        "target": "darwin/amd64",
+        "binary_artifact_id": 13560552684,
+        "binary_bytes": 18072736,
+        "binary_header_target": "darwin/amd64",
+        "runtime_artifact_id": 13560343095,
+        "passed": true
+      },
+      {
+        "target": "darwin/arm64",
+        "binary_artifact_id": 13560821044,
+        "binary_bytes": 16772802,
+        "binary_header_target": "darwin/arm64",
+        "runtime_artifact_id": 13560890845,
+        "passed": true
+      },
+      {
+        "target": "linux/amd64",
+        "binary_artifact_id": 13560726249,
+        "binary_bytes": 17283061,
+        "binary_header_target": "linux/amd64",
+        "runtime_artifact_id": 13559974927,
+        "passed": true
+      },
+      {
+        "target": "linux/arm64",
+        "binary_artifact_id": 13560407817,
+        "binary_bytes": 15922825,
+        "binary_header_target": "linux/arm64",
+        "runtime_artifact_id": 13560054781,
+        "passed": true
+      },
+      {
+        "target": "windows/amd64",
+        "binary_artifact_id": 13560148153,
+        "binary_bytes": 17964544,
+        "binary_header_target": "windows/amd64",
+        "runtime_artifact_id": 13560284626,
+        "passed": true
+      },
+      {
+        "target": "windows/arm64",
+        "binary_artifact_id": 13560970452,
+        "binary_bytes": 16343552,
+        "binary_header_target": "windows/arm64",
+        "runtime_artifact_id": 13560038231,
+        "passed": true
+      }
+    ]
+  },
+  "native_window": {
+    "targets_passed": 5,
+    "targets_total": 6,
+    "completed_stages": 10,
+    "planned_stages": 12,
+    "failed_target": "darwin/amd64",
+    "failed_stage": "create",
+    "not_run_stage": "open",
+    "job_id": 128301753997,
+    "job_url": "https://github.com/ferrumlux/noonmark-go/actions/runs/42338467402/job/128301753997",
+    "failed_workflow_steps": [
+      6,
+      9
+    ],
+    "failure": "software deadline exceeded",
+    "driver_duration_seconds": 12.750359870000011,
+    "result_duration_seconds": 12.752162778000013,
+    "ready_marker_count": 1,
+    "app_report_bytes": 0,
+    "stderr_bytes": 0,
+    "process_exit": -9,
+    "reaped": true,
+    "group_empty": true,
+    "runtime_artifact_id": 13560133136,
+    "binary_artifact_id": 13560826816,
+    "causality": "Evidence cannot localize the blocked completion operation or establish that the quote change caused this failure.",
+    "failure_artifact_members": [
+      {
+        "name": "collection.json",
+        "bytes": 1496,
+        "sha256": "5067abcf3c44de0f67d4102aaa4713368576b840c68576a8b535d57c800c69e2",
+        "crc32": "f3037b4d"
+      },
+      {
+        "name": "result.json",
+        "bytes": 639,
+        "sha256": "b4773c32ab1992e9a54578d58cbd7e06b43b3f781785509c9d722594ee92589a",
+        "crc32": "b3c03e56"
+      },
+      {
+        "name": "manifest.json",
+        "bytes": 281,
+        "sha256": "60da57e134a0b961eb8a53f214e40df50df7b67d16ed3510dbd7b98c8e1c60c3",
+        "crc32": "0d7bffbc"
+      },
+      {
+        "name": "stage1.json",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "crc32": "00000000"
+      },
+      {
+        "name": "stage1-driver.json",
+        "bytes": 326,
+        "sha256": "24e226f5f6a103874048293652c61d4cfc6c1ffcd7f1bf68d3466ca95480a679",
+        "crc32": "fc39be4d"
+      },
+      {
+        "name": "stage1.stdout.txt",
+        "bytes": 32,
+        "sha256": "9b3ff3c5d30dc9af847438a1a3d9729b7e330e63834e6c7921e38f77c3f27e9d",
+        "crc32": "40f2cc39"
+      },
+      {
+        "name": "stage1.stderr.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "crc32": "00000000"
+      }
+    ],
+    "target_artifacts": [
+      {
+        "target": "darwin/amd64",
+        "binary_artifact_id": 13560826816,
+        "binary_bytes": 18072736,
+        "binary_header_target": "darwin/amd64",
+        "runtime_artifact_id": 13560133136,
+        "passed": false
+      },
+      {
+        "target": "darwin/arm64",
+        "binary_artifact_id": 13560677274,
+        "binary_bytes": 16772802,
+        "binary_header_target": "darwin/arm64",
+        "runtime_artifact_id": 13561055164,
+        "passed": true
+      },
+      {
+        "target": "linux/amd64",
+        "binary_artifact_id": 13560459188,
+        "binary_bytes": 17283061,
+        "binary_header_target": "linux/amd64",
+        "runtime_artifact_id": 13560124723,
+        "passed": true
+      },
+      {
+        "target": "linux/arm64",
+        "binary_artifact_id": 13561035177,
+        "binary_bytes": 15922825,
+        "binary_header_target": "linux/arm64",
+        "runtime_artifact_id": 13559994932,
+        "passed": true
+      },
+      {
+        "target": "windows/amd64",
+        "binary_artifact_id": 13561075020,
+        "binary_bytes": 17964544,
+        "binary_header_target": "windows/amd64",
+        "runtime_artifact_id": 13560836042,
+        "passed": true
+      },
+      {
+        "target": "windows/arm64",
+        "binary_artifact_id": 13560014773,
+        "binary_bytes": 16343552,
+        "binary_header_target": "windows/arm64",
+        "runtime_artifact_id": 13561080037,
+        "passed": true
+      }
+    ]
+  },
+  "binary_sha256_by_target": {
+    "windows/amd64": "f598666f62088e95fb8bb8fd2ce1dd131c4f9b634317c9f7d0407f0b2b2f4dab",
+    "linux/arm64": "3b7d648ccac7923a65b969ee1ed9ade6dde391f669fd72dddd8c930a3c4638ee",
+    "darwin/amd64": "1243ab8b847950cb29ff65f96c78c92299b17400a5c5955cbb1934ce3f005f90",
+    "linux/amd64": "7217b79cbd43eee69a6024dd714d0498872f8e4a5dc4ac9a9bf320cf04ed58f3",
+    "darwin/arm64": "5caf843d27a5b304e126b1109213f049a2b3f0736c42773ee9a39ac71b9ada75",
+    "windows/arm64": "5da06a0c6804c4f4bcca01cdeead8b5f3b47141b7df3dcb247890955ac434285"
+  },
+  "boundaries": {
+    "window_scope": "lifecycle-only",
+    "native_system_pixels_verified": false,
+    "ime_tested": false,
+    "complete_product_acceptance": false,
+    "production_data_tested": false,
+    "release_acceptance": false,
+    "ordinary_ci_executable_bytes_exported": false,
+    "all_attempts": 1,
+    "rerun_performed": false
+  }
+}
