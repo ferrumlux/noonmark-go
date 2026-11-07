@@ -137,6 +137,10 @@ func TestHistoryEditFrozenProduction(t *testing.T) {
 	must(t, e)
 	expected, e = runtimeAdmissionFrozenOverlay(expected, string(admissionOverlay))
 	must(t, e)
+	captureOverlay, e := os.ReadFile("../../docs/tasks/capture-close-once/FROZEN-PRODUCTION-OVERLAY-v5.tsv")
+	must(t, e)
+	expected, e = captureCloseFrozenOverlay(expected, string(captureOverlay))
+	must(t, e)
 	for _, line := range strings.Split(strings.TrimSpace(string(rows)), "\n") {
 		parts := strings.Split(line, "\t")
 		if len(parts) != 2 {

@@ -216,8 +216,8 @@ func TestCarryoverSiblingQuitAndLateExplicitAddRemainProtected(t *testing.T) {
 			openCarryoverMenu(t, f, carryoverDefer)
 			confirmCarryover(t, f)
 			if mode == "late-after-quit" {
-				if f.h.beforeQuit() || !f.h.quitting {
-					t.Fatal("initial quit did not wait for writer")
+				if f.h.beforeQuit() || f.h.quitting {
+					t.Fatal("pending quit must veto without retaining retry")
 				}
 			}
 			label := subtaskPrefix("day", string(tr.ID)) + ".new"

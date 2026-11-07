@@ -385,7 +385,7 @@ func TestRuntimeAdmissionSourceConsumers(t *testing.T) {
 			}
 		}
 	}
-	if !reflect.DeepEqual(conversions, []string{"runtimeAdmissionProductHistoricalInput", "nativeBusinessProductHistoricalInput", "entryProductV2HistoricalInput"}) {
+	if !reflect.DeepEqual(conversions, []string{"captureCloseProductHistoricalInput", "runtimeAdmissionProductHistoricalInput", "nativeBusinessProductHistoricalInput", "entryProductV2HistoricalInput"}) {
 		t.Fatal("v4 must independently pass before v3/v2/v1", conversions)
 	}
 	body := parseBody("history_edit_ast_test.go", "TestHistoryEditFrozenProduction")
@@ -399,7 +399,7 @@ func TestRuntimeAdmissionSourceConsumers(t *testing.T) {
 		}
 		return true
 	})
-	want := []string{"outcomeFrozenOverlay", "dayDetailFrozenOverlay", "daySnapshotFrozenOverlay", "dayReadFrozenOverlay", "nativeWindowFrozenOverlay", "quoteFastFrozenOverlay", "ordinaryServiceFrozenOverlay", "categoryUIFrozenOverlay", "ordinaryEntryFrozenOverlay", "ordinaryEntryCleanupFrozenOverlay", "nativeBusinessFrozenOverlay", "runtimeAdmissionFrozenOverlay"}
+	want := []string{"outcomeFrozenOverlay", "dayDetailFrozenOverlay", "daySnapshotFrozenOverlay", "dayReadFrozenOverlay", "nativeWindowFrozenOverlay", "quoteFastFrozenOverlay", "ordinaryServiceFrozenOverlay", "categoryUIFrozenOverlay", "ordinaryEntryFrozenOverlay", "ordinaryEntryCleanupFrozenOverlay", "nativeBusinessFrozenOverlay", "runtimeAdmissionFrozenOverlay", "captureCloseFrozenOverlay"}
 	if !reflect.DeepEqual(calls, want) {
 		t.Fatal("history chain changed", calls)
 	}

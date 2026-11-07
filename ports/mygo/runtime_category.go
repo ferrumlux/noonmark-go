@@ -258,13 +258,9 @@ func (s *app) submitCategory(e *runtimeCategoryEditor, choice ordinary.Choice) {
 
 				}
 				w.invalidate()
-				if confirmed && readErr == nil && w.closing && w.commands == 0 {
+				if confirmed && readErr == nil && w.closing && w.commands == 0 && h.delayedCloseAllowed(s.titleWindowID, w) {
 					w.closing = false
 					w.close()
-				}
-				if confirmed && readErr == nil && h.quitting {
-					h.quitting = false
-					h.quit()
 				}
 			})
 		}) {

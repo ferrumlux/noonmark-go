@@ -204,8 +204,10 @@ func (s *app) performCarryover(p *carryoverPresentation, intent carryoverPickerI
 			}
 		})
 	})
-	// titleTransition increments synchronously. This is the new submission fence;
-	// later navigation/close/quit invalidates it before any completion can act.
+	// titleTransition increments the submission fence synchronously; later
+	// navigation changes that fence. Completion still checks the current picker,
+	// ordinary pending Close and native owner guards. A vetoed once Quit alone
+	// does not cancel carryover.
 	p.navigation = w.navigation
 }
 

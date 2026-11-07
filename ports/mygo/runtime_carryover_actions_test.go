@@ -285,6 +285,21 @@ func TestCarryoverDayLateCompletionCannotStealPurposeNavigationOrClose(t *testin
 				if f.s.page != "pool" || f.s.runtimeSelection != "" {
 					t.Fatal("navigation stolen")
 				}
+			case "quit":
+				// A vetoed once Quit no longer suppresses an otherwise valid
+				// carryover completion. Owner/navigation/native guards remain.
+				var acknowledged core.DayTraceID
+				for _, trace := range f.svc.Snapshot().Traces {
+					if trace.Date == original.picker.selected {
+						acknowledged = trace.ID
+					}
+				}
+				if acknowledged == "" || f.s.runtimeDate != original.picker.selected || f.s.runtimeSelection != string(acknowledged) || f.quit != 0 || f.h.quitting {
+					t.Fatal("cancelled quit blocked valid carryover or retried exit")
+				}
+				if !f.h.beforeQuit() {
+					t.Fatal("fresh quit after carryover refused")
+				}
 			default:
 				if f.s.runtimeDate != liveTestDay {
 					t.Fatal("late selection")

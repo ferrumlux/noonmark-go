@@ -454,8 +454,14 @@ func TestTitleUIMultipleWindowsQuitAndSync(t *testing.T) {
 		t.Fatal("quit missed another native source")
 	}
 	f.all()
-	if f.quit != 1 || closed {
-		t.Fatal("quit did not reenter once after flush", f.quit)
+	if f.quit != 0 || closed || f.h.quitting {
+		t.Fatal("cancelled quit retried after flush", f.quit)
+	}
+	if !f.h.beforeQuit() {
+		t.Fatal("fresh explicit quit failed after actual flush")
+	}
+	if !f.h.beforeClose(other) {
+		t.Fatal("old quit blocked fresh explicit close")
 	}
 }
 func TestTitleUIVisualEvidence(t *testing.T) {

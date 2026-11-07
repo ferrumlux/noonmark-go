@@ -207,10 +207,14 @@ func newTitleHub(store titleStore, submit func(func(func(func()) bool)) bool, po
 			w.invalidate()
 		},
 		ReenterClose: func(window string) {
-			if w := h.windows[window]; w != nil {
+			if w := h.windows[window]; w != nil && h.delayedCloseAllowed(window, w) {
 				w.close()
 			}
-		}, ReenterQuit: quit,
+		}, ReenterQuit: quit, DisableQuitRetry: true,
+		CloseRetryGuard: func(window string) func() bool {
+			w := h.windows[window]
+			return func() bool { return h.delayedCloseAllowed(window, w) }
+		},
 	})
 	if err != nil {
 		panic(err)
@@ -413,6 +417,15 @@ func (s *app) liveTitle(c *ui.Context, width float32, row taskview.DayRow) {
 		})
 	}
 }
+
+// Capture dismissal is one explicit attempt; old acknowledgments cannot close
+// the binding after the user continues typing. Ordinary windows keep retrying.
+func captureWindow(s *app) bool {
+	return s.page == "quick-entry" || s.page == "flylight-quick-capture"
+}
+func (h *titleHub) delayedCloseAllowed(id string, w *titleWindow) bool {
+	return w != nil && h.windows[id] == w && w.app != nil && w.app.titleWindowID == id && !captureWindow(w.app)
+}
 func (h *titleHub) beforeClose(s *app) bool {
 	w := h.windows[s.titleWindowID]
 	if w == nil {
@@ -423,13 +436,17 @@ func (h *titleHub) beforeClose(s *app) bool {
 		return false
 	}
 	if w.commands > 0 {
-		w.closing = true
+		w.closing = !captureWindow(s)
 		return false
 	}
-	if !h.coordinator.BeforeClose(s.titleWindowID) {
+	beforeClose, releaseClosed := h.coordinator.BeforeClose, h.coordinator.ReleaseClosed
+	if captureWindow(s) {
+		beforeClose, releaseClosed = h.coordinator.BeforeCloseOnce, h.coordinator.ReleaseClosedOnce
+	}
+	if !beforeClose(s.titleWindowID) {
 		return false
 	}
-	if err := h.coordinator.ReleaseClosed(s.titleWindowID); err != nil {
+	if err := releaseClosed(s.titleWindowID); err != nil {
 		return false
 	}
 	delete(h.targets, s.titleTarget)
@@ -448,11 +465,10 @@ func (h *titleHub) beforeQuit() bool {
 	}
 	for _, w := range h.windows {
 		if w.commands > 0 {
-			h.quitting = true
 			return false
 		}
 	}
-	return h.coordinator.BeforeQuit()
+	return h.coordinator.BeforeQuitOnce()
 }
 
 // The graph is sampled by the one writer lane, then delivered in the same FIFO
@@ -668,13 +684,9 @@ func (h *titleHub) command(s *app, fn func() error, clear bool, completion func(
 			h.quitting = false
 			return
 		}
-		if w.closing && w.commands == 0 {
+		if w.closing && w.commands == 0 && h.delayedCloseAllowed(s.titleWindowID, w) {
 			w.closing = false
 			w.close()
-		}
-		if h.quitting {
-			h.quitting = false
-			h.quit()
 		}
 	}
 	if !h.tryPostProducer(func() {

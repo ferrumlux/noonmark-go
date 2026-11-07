@@ -58,6 +58,13 @@ type Config struct {
 	Navigate        func(window, target string)
 	ReenterClose    func(window string) // actual Window.Close, never Destroy
 	ReenterQuit     func()              // actual App.Quit; MUST invoke BeforeQuit again
+	// DisableQuitRetry cancels automatic quit notification, never persistence.
+	DisableQuitRetry bool
+	// CloseRetryGuard captures the original window identity at intent creation.
+	// Both the factory and returned predicate must only read state: no public
+	// API calls, external hooks, or synchronous reentry. Arbitrary hook reentry
+	// is not supported by this policy interface.
+	CloseRetryGuard func(window string) func() bool
 }
 type Registration struct {
 	coordinator *Coordinator
@@ -82,6 +89,8 @@ type entry struct {
 }
 type intent struct {
 	kind, window, target string
+	once                 bool
+	closeRetryAllowed    func() bool
 	notified             bool
 	recheckQueued        bool
 	rechecks             uint8
@@ -494,7 +503,33 @@ func (c *Coordinator) BeforeClose(window string) bool {
 		c.continueIntent()
 		return false
 	} // quit takes precedence
-	return c.before(&intent{kind: "close", window: window})
+	return c.before(c.closeIntent(window, false))
+}
+
+func (c *Coordinator) closeIntent(window string, once bool) *intent {
+	i := &intent{kind: "close", window: window, once: once}
+	if c.cfg.CloseRetryGuard != nil {
+		i.closeRetryAllowed = c.cfg.CloseRetryGuard(window)
+	}
+	return i
+}
+
+// BeforeCloseOnce flushes normally but this explicit attempt cannot later close.
+func (c *Coordinator) BeforeCloseOnce(window string) bool {
+	if c.pending != nil {
+		c.continueIntent()
+		return false
+	}
+	i := c.closeIntent(window, true)
+	defer c.removeIntent(i)
+	return c.before(i)
+}
+
+// BeforeQuitOnce cancels only its own intent, even under synchronous reentry.
+func (c *Coordinator) BeforeQuitOnce() bool {
+	i := &intent{kind: "quit", once: true}
+	defer c.removeIntent(i)
+	return c.before(i)
 }
 
 // App-scoped callback must precede any window destruction. Never cache true.
@@ -578,6 +613,19 @@ func (c *Coordinator) continueOne(i *intent) {
 		return
 	}
 
+	// Once is set before registration: even synchronous finalize hooks cannot
+	// turn this attempt into a delayed close. Never cancel saves or newer intents.
+	if i.once || i.kind == "quit" && c.cfg.DisableQuitRetry {
+		c.removeIntent(i)
+		return
+	}
+	if i.kind == "close" && i.closeRetryAllowed != nil && !i.closeRetryAllowed() {
+		c.removeIntent(i)
+		return
+	}
+	if !c.validProof(i, p) {
+		return
+	}
 	if i.notified {
 		return
 	}
@@ -628,13 +676,24 @@ func (c *Coordinator) dispose(e *entry) bool {
 // Call BEFORE native disposal, in the same serial close callback; freshly
 // finalizes again. Never call after hidden/removed or use an old clean flag.
 func (c *Coordinator) ReleaseClosed(window string) error {
+	return c.releaseClosed(window, false)
+}
+
+// ReleaseClosedOnce independently proves and disposes, or cancels this attempt.
+func (c *Coordinator) ReleaseClosedOnce(window string) error {
+	return c.releaseClosed(window, true)
+}
+func (c *Coordinator) releaseClosed(window string, once bool) error {
 	if c.pending != nil {
 		c.continueIntent()
 		return ErrRegistry
 	}
 	// A new final proof is also an explicit continuing close intent, so newly
 	// discovered zero-delay work cannot be left dormant after refusal.
-	i := &intent{kind: "close", window: window}
+	i := c.closeIntent(window, once)
+	if once {
+		defer c.removeIntent(i)
+	}
 	c.intents[window] = i
 	p, ok := c.finalizeAll(i)
 	if !ok {
