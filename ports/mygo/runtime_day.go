@@ -380,6 +380,25 @@ func (s *app) liveDayDetail(c *ui.Context, w, h float32, day taskview.DayPage, g
 	if s.titleEditor != nil {
 		selected = &s.titleEditor.row
 	}
+	// A successful command may remove a trace from the visible day list while
+	// native category input arrives. Keep that exact draft owner reachable;
+	// this projection does not grant title/subtask editing rights.
+	if selected == nil && s.titles != nil && s.titles.category != nil {
+		if window := s.titles.windows[s.titleWindowID]; window != nil && window.category != nil {
+			editor := window.category
+			if editor.creating || editor.pending || editor.failure != nil {
+				for _, trace := range graph.Traces {
+					if string(trace.ID) == s.runtimeSelection && trace.ChainID == editor.chain && trace.Date == day.Selected {
+						selected = &taskview.DayRow{CalendarRow: taskview.CalendarRow{
+							TraceID: trace.ID, ChainID: trace.ChainID, DefinitionID: trace.DefinitionID,
+							Title: currentTitle(graph, trace.ChainID, trace.DefinitionID), Status: trace.Status,
+						}}
+						break
+					}
+				}
+			}
+		}
+	}
 	if selected != nil {
 		txt(c, 14, 18, detailHeaderSize, "任务详情", sourceVisual.text3, 600).LetterSpacing(.8)
 		s.detailCloseButton(c, w-74, 14)
@@ -388,12 +407,15 @@ func (s *app) liveDayDetail(c *ui.Context, w, h float32, day taskview.DayPage, g
 			ui.Box(c).Height(14)
 			liveDetailMetadata(c, w-28, *selected, day.Selected)
 			ui.Box(c).Height(14)
+			if s.liveCategorySection(c, w-28, selected.ChainID) {
+				ui.Box(c).Height(14)
+			}
 			s.liveDetailProgress(c, w-28, selected.TraceID)
 			ui.Box(c).Height(14)
 			parent := runtimeSubtaskTarget{chain: selected.ChainID, trace: selected.TraceID}
 			s.liveSubtaskSectionFromGraph(c, w-28, "day", parent, s.canAddSubtaskFromGraph(graph, day.Today, parent), graph, day.Today)
 			ui.Box(c).Height(24)
-			ui.Text(c, "分类、完整 Markdown、撤销恢复与手动调整进度尚未接通。").FontSize(10.5).TextColor(muted).Width(w - 28)
+			ui.Text(c, s.categoryScopeCopy("完整 Markdown、撤销恢复与手动调整进度尚未接通。")).FontSize(10.5).TextColor(muted).Width(w - 28)
 		})
 		return
 	}

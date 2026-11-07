@@ -1,0 +1,373 @@
+[
+  {
+    "file": "ordinary_service.go",
+    "function": "persistOrdinaryLocked",
+    "signature_sha256": "19a398c5a74f4c4033cc10188148502fd7df677b6bb2aaa38b063453e47f2dff",
+    "statements": [
+      {
+        "label": "00 if err := s.gateLocked(); err != nil {",
+        "sha256": "1921881b68df51a8d79d4f0e5ad7274f4df419857c87432e4a9fc1fa831e38ba"
+      },
+      {
+        "label": "01 if (c.task == nil) == (c.category == nil) {",
+        "sha256": "28df065f9826e7a50330f339f547856d999c2d96c374df703e51acdb19af678a"
+      },
+      {
+        "label": "02 if c.before == nil || c.before != s.aggregate || c.owner == nil || c.owner != s.lineage || c.head != s.disk.hash || c.revision != s.disk.revision {",
+        "sha256": "451670e9efb79613304328169617677ddebbee61098dda4bf135b5da83dfbcd2"
+      },
+      {
+        "label": "03 g, _, err := c.after.document.Facts()",
+        "sha256": "b7b43ff752c5edd97695ca23b4ad32f6219dc021dee17a02dd30bcaf1b05a438"
+      },
+      {
+        "label": "04 if err != nil {",
+        "sha256": "64403c17f25cb1cb4113d13b0d222cd6e1e62388f77cbbd18525ec3dc4e69438"
+      },
+      {
+        "label": "05 wire, err := c.after.document.Snapshot()",
+        "sha256": "c1babad7dbf38733f6aabb434c4436621f2a4b69eceb710524c86bb8b976e79e"
+      },
+      {
+        "label": "06 if err != nil {",
+        "sha256": "64403c17f25cb1cb4113d13b0d222cd6e1e62388f77cbbd18525ec3dc4e69438"
+      },
+      {
+        "label": "07 o := s.disk.commitOrdinaryObserved(c)",
+        "sha256": "17abbb6abd99cbf92efd8f640c9d4462a3dea7cdb876befbda9c30357a046d2a"
+      },
+      {
+        "label": "08 setAttempt(a, o.extent, o.stage)",
+        "sha256": "5f90c994ce2b218279b2f3e6815130c9eb4263c1183d5fb9ee7cef0995bb60ed"
+      },
+      {
+        "label": "09 if o.invalidates {",
+        "sha256": "52862f3c7190c4d071cea467def03bf8f0db1257483c2ffe9bb4a216ddb670a0"
+      },
+      {
+        "label": "10 if o.err != nil {",
+        "sha256": "a7528b702c614d4f3407aad38d3cbc55a6b6769d6406e5abee5f3ca349b6deee"
+      },
+      {
+        "label": "11 s.aggregate = s.disk.ordinaryHead",
+        "sha256": "1fab7a2f60d0e1cbf0b569ddd5b390deae3e4063cc56b8f56a511731577f556c"
+      },
+      {
+        "label": "12 s.graph = g",
+        "sha256": "dd4a05fc6959ea8545483021eaea7733f13a0da655bb259f369c983bfc8d0557"
+      },
+      {
+        "label": "13 s.snapshot = wire",
+        "sha256": "06b199ba14e650d2f39f4517fcdba82b8790011b427f2c377d07f2a0ad43e547"
+      },
+      {
+        "label": "14 return nil",
+        "sha256": "c17d04693eef891b5270ff7a89fa81d46bb51756343766a37b411157131e2e7a"
+      }
+    ]
+  },
+  {
+    "file": "ordinary_service.go",
+    "function": "verifyOrdinaryCandidateLocked",
+    "signature_sha256": "5508091d4362ff55b29c357325db41f8ed3653249fb824e738e90ad09575767f",
+    "statements": [
+      {
+        "label": "00 if (c.task == nil) == (c.category == nil) {",
+        "sha256": "28df065f9826e7a50330f339f547856d999c2d96c374df703e51acdb19af678a"
+      },
+      {
+        "label": "01 graph, state, err := c.before.document.Facts()",
+        "sha256": "523e649b5baf37fc70d4e31d59c58d5110bb7bba05013d12bf651bb613360a09"
+      },
+      {
+        "label": "02 if err != nil {",
+        "sha256": "64403c17f25cb1cb4113d13b0d222cd6e1e62388f77cbbd18525ec3dc4e69438"
+      },
+      {
+        "label": "03 if c.task != nil {",
+        "sha256": "a1c4ccad572a137acaf52e0363139f415a5a73e1a36c77e971c5b6b5d648200f"
+      },
+      {
+        "label": "04 doc, err := v7.WithOrdinaryFacts(c.before.document, graph, state)",
+        "sha256": "6bfb433f858acc69c4581aa407e87fd095b29f688ebe4b3d75724bb4f6ad7e07"
+      },
+      {
+        "label": "05 if err != nil {",
+        "sha256": "64403c17f25cb1cb4113d13b0d222cd6e1e62388f77cbbd18525ec3dc4e69438"
+      },
+      {
+        "label": "06 expected, err := v7.EncodeOrdinaryAggregate(doc)",
+        "sha256": "29c7fe1a04628b980efc53e4f4a8bb0f1bfed41c61b97b835970541f3e2dd502"
+      },
+      {
+        "label": "07 if err != nil {",
+        "sha256": "64403c17f25cb1cb4113d13b0d222cd6e1e62388f77cbbd18525ec3dc4e69438"
+      },
+      {
+        "label": "08 if !bytes.Equal(expected, c.bytes) {",
+        "sha256": "f08c629121fe0622eb566337222684e79dd76face2c8bbb93e7940437f883809"
+      },
+      {
+        "label": "09 return nil",
+        "sha256": "c17d04693eef891b5270ff7a89fa81d46bb51756343766a37b411157131e2e7a"
+      }
+    ]
+  },
+  {
+    "file": "store.go",
+    "function": "commitOrdinaryObserved",
+    "signature_sha256": "e363988d4473ae433fc9ba4cb6a988367695b60f81158b5b6816c2009fd12897",
+    "statements": [
+      {
+        "label": "00 return d.commitStoreInputObserved(storeWriteInput{ordinary: \u0026c})",
+        "sha256": "a6d81cd5a1ef20f6ad5e4cd98f334926b9abd2cc6c765e5f6077f5d7421aaf30"
+      }
+    ]
+  },
+  {
+    "file": "store.go",
+    "function": "validateOrdinaryWriteInput",
+    "signature_sha256": "d826ddf021c5dcff28d51ca45a8711f10f237c991dc008fc98bf19e8f474bb61",
+    "statements": [
+      {
+        "label": "00 s := d.ordinaryService",
+        "sha256": "d050fa597c52fc58dd25b55b966cd9fcb17bb28a4838edd40a8616ea9c94c3af"
+      },
+      {
+        "label": "01 if s == nil || s.disk != d || d.ordinaryHead == nil {",
+        "sha256": "884b430e1bbc518ae3fb499b746eb037c4a701e0b3c3c79402418f78b401d553"
+      },
+      {
+        "label": "02 if err := s.gateLocked(); err != nil {",
+        "sha256": "7557ba699cc73bc3be7e87a58caa7b61b74325277827ed4c5e0b02706b6e9d90"
+      },
+      {
+        "label": "03 if (c.task == nil) == (c.category == nil) {",
+        "sha256": "dc66b841d358479e6ec0239e6a84a5ba2f335d5bfde7045371f688b1016ca6f7"
+      },
+      {
+        "label": "04 if c.owner == nil || c.owner != s.lineage || c.before == nil || c.before != s.aggregate || c.before != d.ordinaryHead || c.head != d.hash || c.revision != d.revision {",
+        "sha256": "476a91d5a51afd608859a2039f795252824979d3e214b4271c4797be26378e20"
+      },
+      {
+        "label": "05 if err := s.verifyOrdinaryCandidateLocked(c); err != nil {",
+        "sha256": "012856eeb1b8f1420c4598836663f7d8c81bfa27646acfa1e92e6f90c39a6d69"
+      },
+      {
+        "label": "06 checked, err := v7.EncodeOrdinaryAggregate(c.after.document)",
+        "sha256": "2103b72b28a5b36a2b6963438ac5e3d29bc9b4f3f45aa1dcabe5466c97e97d58"
+      },
+      {
+        "label": "07 if err != nil {",
+        "sha256": "293635acc716cea123da8b6257b66371330968be73460376b7116f4a4e1fe5d4"
+      },
+      {
+        "label": "08 if !bytes.Equal(checked, c.bytes) {",
+        "sha256": "7229330d29008e100d6f4a8ec7aa4201abd863871edd611c184db1671091c5f1"
+      },
+      {
+        "label": "09 return checked, nil",
+        "sha256": "a7ebe4e7ccdd10d1333c59778206852cc7a93f86160dcd3efb86af2106716f9c"
+      }
+    ]
+  },
+  {
+    "file": "store.go",
+    "function": "commitStoreInputObserved",
+    "signature_sha256": "e6d40d2059b87c5a055afc75ec2295da2014794032163aafa5b072424591e223",
+    "statements": [
+      {
+        "label": "00 extent, stage := WriteNone, StageSessionGate",
+        "sha256": "146fa86d2289b2505fd4eeffd32ec049019db6a18cee4b3c00202d793823cf49"
+      },
+      {
+        "label": "01 invalidates, reason := false, HealthOK",
+        "sha256": "baa8c40712368000803b0c476935cfc73bfef7d9f7f4e5e674dc13d4d49bdedf"
+      },
+      {
+        "label": "02 result := func(err error) commitObservation {",
+        "sha256": "33b8aec0c0d7805d14e555dbaa2abcca68458e825e056368b2e3b143b6ff531e"
+      },
+      {
+        "label": "03 if d.blocked {",
+        "sha256": "10a5bc611ea646d77587d874c71fb5979cbbbbfc87442abdafb9f121f3fb4cf1"
+      },
+      {
+        "label": "04 if d.revision \u003e= maxRevisions {",
+        "sha256": "2d8663da78d439bc5b0094e5f8fde5a45ad4f38a440809e7189b23f958958d7e"
+      },
+      {
+        "label": "05 stage = StageCandidate",
+        "sha256": "d4752e9f3fe495cb7c707d7e13a6208ae2c32e7efa4b544155e8164be0907284"
+      },
+      {
+        "label": "06 if (input.legacy == nil) == (input.ordinary == nil) {",
+        "sha256": "2e9d7c498b253b4ba7e710fcabaee953ca7efc28869f407a370fd03afaa49f80"
+      },
+      {
+        "label": "07 var payload []byte",
+        "sha256": "d98056e8a67a30e075d9315cf32bb61c32c0c486ca71a5c13838232511d5cbb8"
+      },
+      {
+        "label": "08 var e error",
+        "sha256": "8108a03ea3507d1c7b388778aa6a4656d32cbc39baab0b4d672914851b2e0394"
+      },
+      {
+        "label": "09 if input.ordinary != nil {",
+        "sha256": "9dffcfa259029d0a2efe6d1cd73777e8a78e30fef7ab6d443502487401d30d6d"
+      },
+      {
+        "label": "10 if e != nil {",
+        "sha256": "9b1d71ff35b91fdce95eb10a66bc92e0bfcf11cc448a236c34def4a1ac75c2a6"
+      },
+      {
+        "label": "11 stage = StageCapacity",
+        "sha256": "fd93f0c6ef3570441cfbc34db8de2f70163ffe1076b1db6c7c2cddf2a2e9876b"
+      },
+      {
+        "label": "12 b, e := json.Marshal(record{Format: \"noonmark-mygo-development-v2\", Revision: d.revision + 1, ParentSHA256: d.hash, Payload: payload})",
+        "sha256": "bc0028338a9635b99e9efc549530e85d3ab06e245767f5ebd08515ced846d05a"
+      },
+      {
+        "label": "13 if e != nil || len(b) \u003e maxRecordBytes {",
+        "sha256": "8790757b2c7b01af47760951ac4300024745fcb9481ff1f3f4f4f7fbf4f4954b"
+      },
+      {
+        "label": "14 stage = StagePrefix",
+        "sha256": "6caaf317278ee0c6180148d02252205973e6953c1fef198142074c531bb2001e"
+      },
+      {
+        "label": "15 verified := d.verifyPrefixObserved(d.revision, d.hash, false)",
+        "sha256": "69a454bd77c715c214386878abb38af1a77063b50b4abebc8481fd4da700200d"
+      },
+      {
+        "label": "16 total, e := verified.bytes, verified.err",
+        "sha256": "345a9443257610bdf35cd3e43a686a031c3440f6fdbce69b0c27852200f869ac"
+      },
+      {
+        "label": "17 if e != nil {",
+        "sha256": "001b5f027c0d4eed2aeb7f725dd3dfc37aa15b9bff331bc4fa39fdba9ba490e4"
+      },
+      {
+        "label": "18 stage = StageCapacity",
+        "sha256": "fd93f0c6ef3570441cfbc34db8de2f70163ffe1076b1db6c7c2cddf2a2e9876b"
+      },
+      {
+        "label": "19 if total \u003e maxSessionBytes-len(b) {",
+        "sha256": "7cce94f243c2176966f2547e0407122ab890258aba2dc6825541cfa9decba12e"
+      },
+      {
+        "label": "20 stage = StageReserve",
+        "sha256": "f71670c1200ab6128775617e8c34ecff0fd2e882e1fe770f310256ccac77553c"
+      },
+      {
+        "label": "21 if d.fault != nil {",
+        "sha256": "f6e86077b9035fab31ed5c429e0882cbf9323b0bfa368802b0096c52aca41a05"
+      },
+      {
+        "label": "22 name := fmt.Sprintf(\"rev-%010d\", d.revision+1)",
+        "sha256": "b7baa2fea53f25e4a1bdfbb27299113f505a5dac267836669b627899bc158425"
+      },
+      {
+        "label": "23 extent, invalidates, reason = WriteReservationPossible, true, HealthWriteUncertain",
+        "sha256": "bcbadc3a3e4b7874dc7bbf3a522665e7cc85ce5a034825db9858f17df32bdfaa"
+      },
+      {
+        "label": "24 if e = d.root.Mkdir(name, 0700); e != nil {",
+        "sha256": "03ced9a6e82f60651ff242d4f6e0b0be8a83c66ddee099ea99429e0eb7b20ac2"
+      },
+      {
+        "label": "25 extent = WriteReservedOrPartial",
+        "sha256": "f86c84f353f53ec6e67243edde5783de5166108fa9d00e48675ceb3bbd6581f1"
+      },
+      {
+        "label": "26 d.blocked = true",
+        "sha256": "2c49d7caf01e03edb7e25ac45774758888b740db0bffc29af9459a7cff45b383"
+      },
+      {
+        "label": "27 if d.fault != nil {",
+        "sha256": "ccb4e3fc894cbbf2dcfc51e9e11c0f8974ebc51d751e74861cde57a1a2592cac"
+      },
+      {
+        "label": "28 stage = StagePayload",
+        "sha256": "b458955de565dc0fbc9ad8004f0f062785cfce0247da4f4ba45464185b99df15"
+      },
+      {
+        "label": "29 if e = d.writeExclusive(name+\"/state.json\", b); e != nil {",
+        "sha256": "f43e087a78e8f15f27d209dc180b218a1764c95b71df42f7d31174c44bae556a"
+      },
+      {
+        "label": "30 stage = StageMarker",
+        "sha256": "131ca4f8ee788dd64ec6c5fb9dfd36edaf4e64b660e51e9a27bd96556edfb8e7"
+      },
+      {
+        "label": "31 if d.fault != nil {",
+        "sha256": "1d94ecbb97a9b8095961815e474f31aff93f28dbe0238eb86e2c4068f89594df"
+      },
+      {
+        "label": "32 digest := sha256.Sum256(b)",
+        "sha256": "845a582a7752e4918e4819fc159d7cea2e51b6fc783f1126e85e9fed4bb8da60"
+      },
+      {
+        "label": "33 hash := hex.EncodeToString(digest[:])",
+        "sha256": "53d9b941584791b4d2b09db0702b043e80f637df5ee043084765c0104b03ffc0"
+      },
+      {
+        "label": "34 if e = d.writeExclusive(name+\"/COMMITTED\", []byte(hash+\"\\n\")); e != nil {",
+        "sha256": "1d28631bbefaa07d38914dd8e7146d21bf9c9ef8349aeeb8b8f3fff419cf0ab3"
+      },
+      {
+        "label": "35 stage = StageSync",
+        "sha256": "cd6accc619a4a7b4e8065118d744eb4e18a64dcf4a7783d3bb3ce44dfebad7d3"
+      },
+      {
+        "label": "36 if e = d.syncDirectory(name); e != nil {",
+        "sha256": "1461d98ce09e0913ce59561543043d735dd665e05bd507e39c480f9cd23468b0"
+      },
+      {
+        "label": "37 if e = d.syncDirectory(\".\"); e != nil {",
+        "sha256": "aca62a414c9b439a94c949610ef1d435c6c2120e3533bf7bd25f841f07c717cc"
+      },
+      {
+        "label": "38 extent, stage = WriteWrittenUnacknowledged, StagePostPersist",
+        "sha256": "16c2f1f672a58522c7ca9c239426d0ea54611cd3958a30e93f621c453f0943ea"
+      },
+      {
+        "label": "39 if d.fault != nil {",
+        "sha256": "34cfde12723526b0a8abc474b62feb256f43af3a8934e1e6b1d4d1a860dd2044"
+      },
+      {
+        "label": "40 stage = StageReadback",
+        "sha256": "df3f37b321e12114b1d3c71025a7334c75f4850fe34b637147e39e088ecac487"
+      },
+      {
+        "label": "41 if verified = d.verifyPrefixObserved(d.revision+1, hash, true); verified.err != nil {",
+        "sha256": "ad26507402cd208c0d2addbb695e1f4b8a0fe13fa7b292b38f56213f37a59857"
+      },
+      {
+        "label": "42 d.revision++",
+        "sha256": "e2db970c98f22c9c0d9fe2e49ca1c8579188b7566619c6e951eabd14667aed3a"
+      },
+      {
+        "label": "43 d.hash = hash",
+        "sha256": "14f5415dec68b9153d4bb5e00e90e00eea75a13cb371aebcc152fd4b712577b9"
+      },
+      {
+        "label": "44 if input.ordinary != nil {",
+        "sha256": "4c6eaf55302b650986674856d6f19561ae6df8184fdfb1a57206b4eec7ceba54"
+      },
+      {
+        "label": "45 d.blocked = false",
+        "sha256": "c7e953ad53eecb291b1cbfbbb087a3a65b00bcda7bc9c29b7c5679b699000902"
+      },
+      {
+        "label": "46 extent, stage, invalidates, reason = WriteCommittedConfirmed, StageNone, false, HealthOK",
+        "sha256": "decb36cad4aecb7f68626215a020e07e7014baf6e74f2ec089568855356b5fb8"
+      },
+      {
+        "label": "47 return result(nil)",
+        "sha256": "241e57cca42a9fe356bc27c5f4dd49e619f34d86f90446ebe30cb83c21bc375d"
+      }
+    ]
+  }
+]

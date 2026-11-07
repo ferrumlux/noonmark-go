@@ -423,6 +423,9 @@ func (s *app) automaticOwnerExitAllowed() bool {
 	if s.titles == nil {
 		return true
 	}
+	if !s.titles.categoryCanNavigate(s) {
+		return false
+	}
 	for _, c := range s.subtaskComposers {
 		source := carryoverSourceKey{c.target.chain, c.target.trace}
 		if (s.titles.carryoverInFlight[source] > 0 || c.carryoverRecovery != carryoverRecoveryNone) && !c.finalizedValid {

@@ -37,10 +37,16 @@ func (s *Service) SetManualProgressOutcome(chain core.TaskChainID, trace core.Da
 	return o
 }
 func (s *Service) setManualProgressLocked(chain core.TaskChainID, trace core.DayTraceID, percent int, a *attempt) (int, error) {
+	if s.aggregate != nil {
+		if err := s.reconcileDayLocked(s.today, a); err != nil {
+			return 0, err
+		}
+	}
 	if err := s.gateLocked(); err != nil {
 		a.stage = StageSessionGate
 		return 0, err
 	}
+	a.stage = StageDomain
 	k, err := core.NewTaskKernel(s.graph)
 	if err != nil {
 		return 0, err
@@ -85,6 +91,18 @@ func (s *Service) setManualProgressLocked(chain core.TaskChainID, trace core.Day
 		candidate = k.Snapshot()
 	}
 	a.stage = StageCandidate
+	if s.aggregate != nil {
+		err = s.commitOrdinaryTaskLocked(ordinaryTransition{kind: ordinaryProgress, progress: manualProgressHistoryInput(command)}, a)
+		if err != nil {
+			return 0, err
+		}
+		for _, tr := range s.graph.Traces {
+			if tr.ID == trace && tr.ChainID == chain && tr.ManualProgressPercent != nil {
+				return *tr.ManualProgressPercent, nil
+			}
+		}
+		return 0, core.ErrNotFound
+	}
 	captured, err := captureManualProgressHistory(s.snapshot, s.graph, candidate, command)
 	if err != nil {
 		return 0, err

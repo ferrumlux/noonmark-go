@@ -106,6 +106,7 @@ type runtimeTitleEditor struct {
 	failure            error
 }
 type titleWindow struct {
+	category          *runtimeCategoryEditor
 	app               *app
 	invalidate, close func()
 	commands          int
@@ -114,6 +115,8 @@ type titleWindow struct {
 	closing           bool
 }
 type titleHub struct {
+	categoryClock                      coordinator.Clock
+	category                           *runtimeCategoryHub
 	carryoverInFlight                  map[carryoverSourceKey]int
 	actionPending                      map[string]bool
 	graph                              core.TaskGraph
@@ -152,6 +155,7 @@ func (a titleServiceAdapter) SaveTraceTitleInputAcknowledged(trace, title string
 }
 func newTitleHub(store titleStore, lane coordinator.Lane, post func(func()), clock coordinator.Clock, now func() time.Time, quit func()) *titleHub {
 	h := &titleHub{today: store.Today(), store: store, lane: lane, post: post, now: now, quit: quit, windows: map[string]*titleWindow{}, targets: map[string]func(){}, observedDay: store.Today()}
+	h.categoryClock = clock
 	h.progress = newRuntimeProgressCache(store.Snapshot())
 	h.graph = h.progress.graph
 	c, err := coordinator.New(coordinator.Config{
@@ -176,6 +180,15 @@ func newTitleHub(store titleStore, lane coordinator.Lane, post func(func()), clo
 			}
 			w.app.titleEditor = nil
 			w.app.subtaskEditors = nil
+			// The coordinator has disposed confirmed title registrations. Category
+			// native input may have arrived while their save was in flight.
+			if !h.categoryCanNavigate(w.app) {
+				if w.app.titleTarget == target {
+					w.app.titleTarget = ""
+				}
+				w.invalidate()
+				return
+			}
 			if w.app.titleTarget == target {
 				w.app.titleTarget = ""
 			} else {
@@ -315,6 +328,9 @@ func (s *app) titleTransition(fn func()) {
 		return
 	}
 	h := s.titles
+	if !h.categoryCanNavigate(s) {
+		return
+	}
 	if w := h.windows[s.titleWindowID]; w != nil {
 		w.navigation++
 	}
@@ -329,8 +345,11 @@ func (s *app) titleTransition(fn func()) {
 			delete(h.targets, target)
 			return
 		}
-		if !h.register(s) || !s.finalizeSubtaskComposers() {
+		if !h.categoryCanNavigate(s) || !h.register(s) || !s.finalizeSubtaskComposers() {
 			delete(h.targets, target)
+			if s.titleTarget == target {
+				s.titleTarget = ""
+			}
 			return
 		}
 		h.coordinator.RequestNavigation(s.titleWindowID, target)
@@ -382,7 +401,7 @@ func (h *titleHub) beforeClose(s *app) bool {
 	if w == nil {
 		return true
 	}
-	if !h.register(s) || !s.finalizeSubtaskComposers() || !s.subtaskComposersCanClose() || !h.carryoverInputsCanClose(s) {
+	if !h.register(s) || !s.finalizeSubtaskComposers() || !s.subtaskComposersCanClose() || !h.carryoverInputsCanClose(s) || !h.categoryCanClose(s) {
 		w.invalidate()
 		return false
 	}
@@ -405,7 +424,7 @@ func (h *titleHub) beforeClose(s *app) bool {
 }
 func (h *titleHub) beforeQuit() bool {
 	for _, w := range h.windows {
-		if !h.register(w.app) || !w.app.finalizeSubtaskComposers() || !w.app.subtaskComposersCanClose() || !h.carryoverInputsCanClose(w.app) {
+		if !h.register(w.app) || !w.app.finalizeSubtaskComposers() || !w.app.subtaskComposersCanClose() || !h.carryoverInputsCanClose(w.app) || !h.categoryCanClose(w.app) {
 			w.invalidate()
 			return false
 		}
@@ -422,6 +441,21 @@ func (h *titleHub) beforeQuit() bool {
 // The graph is sampled by the one writer lane, then delivered in the same FIFO
 // as title completions. No delayed unordered readback becomes acknowledged text.
 func (h *titleHub) publishFromLane() {
+	if h.category != nil {
+		view, err := h.category.store.ReadView()
+		h.post(func() {
+			if err != nil {
+				for _, w := range h.windows {
+					w.app.runtimeError = categoryFailureMessage
+					w.invalidate()
+				}
+				return
+			}
+			h.category.view = view
+			h.publish(view.Graph, view.Today)
+		})
+		return
+	}
 	graph, today := h.store.Snapshot(), h.store.Today()
 	h.post(func() { h.publish(graph, today) })
 }

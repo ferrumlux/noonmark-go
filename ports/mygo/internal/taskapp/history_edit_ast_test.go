@@ -113,6 +113,14 @@ func TestHistoryEditFrozenProduction(t *testing.T) {
 	must(t, e)
 	expected, e = quoteFastFrozenOverlay(expected, string(quoteOverlay))
 	must(t, e)
+	ordinaryOverlay, e := os.ReadFile("../../docs/tasks/integrate-ordinary-service/FROZEN-PRODUCTION-OVERLAY-v1.tsv")
+	must(t, e)
+	expected, e = ordinaryServiceFrozenOverlay(expected, string(ordinaryOverlay))
+	must(t, e)
+	categoryUIOverlay, e := os.ReadFile("../../docs/tasks/integrate-category-ui/FROZEN-PRODUCTION-OVERLAY-v1.tsv")
+	must(t, e)
+	expected, e = categoryUIFrozenOverlay(expected, string(categoryUIOverlay))
+	must(t, e)
 	for _, line := range strings.Split(strings.TrimSpace(string(rows)), "\n") {
 		parts := strings.Split(line, "\t")
 		if len(parts) != 2 {

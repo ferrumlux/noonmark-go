@@ -12,6 +12,11 @@ import (
 func (s *Service) ReturnToPool(chain core.TaskChainID, trace core.DayTraceID) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	if s.aggregate != nil {
+		if err := s.reconcileDayLocked(s.today); err != nil {
+			return err
+		}
+	}
 	if err := s.gateLocked(); err != nil {
 		return err
 	}
@@ -39,6 +44,9 @@ func (s *Service) ReturnToPool(chain core.TaskChainID, trace core.DayTraceID) er
 	}
 	if err = k.ReturnToPool(in); err != nil {
 		return err
+	}
+	if s.aggregate != nil {
+		return s.commitOrdinaryTaskLocked(ordinaryTransition{kind: ordinaryReturn, returning: in})
 	}
 	captured, err := captureReturnHistory(s.snapshot, s.graph, k.Snapshot(), in)
 	if err != nil {

@@ -80,6 +80,11 @@ func (s *Service) SaveTraceTitleInputAcknowledged(trace core.DayTraceID, title s
 
 // Caller owns s.mu for both any route validation and the complete transaction.
 func (s *Service) editTitleLocked(chain core.TaskChainID, title string, mode titleMode) (string, error) {
+	if s.aggregate != nil {
+		if err := s.reconcileDayLocked(s.today); err != nil {
+			return "", err
+		}
+	}
 	if err := s.gateLocked(); err != nil {
 		return "", err
 	}
@@ -98,6 +103,22 @@ func (s *Service) editTitleLocked(chain core.TaskChainID, title string, mode tit
 	command := titleCommand{mode, core.EditTaskTitleInput{ChainID: chain, Title: title, Today: s.today, Now: now, NewDefinitionID: core.TaskDefinitionID(ids[0])}}
 	if err = command.apply(k); err != nil {
 		return "", err
+	}
+	if s.aggregate != nil {
+		action := titleHistoryRename
+		if mode == titleInput {
+			action = titleHistorySaveInput
+		}
+		err = s.commitOrdinaryTaskLocked(ordinaryTransition{kind: ordinaryTitle, title: titleHistoryInput{Action: action, Route: titleHistoryChain, ChainID: chain, Title: title, Today: s.today, Now: now, NewDefinitionID: command.input.NewDefinitionID}})
+		if err != nil {
+			return "", err
+		}
+		for _, d := range s.graph.Definitions {
+			if d.ChainID == chain && d.SupersededAt == nil {
+				return d.Title, nil
+			}
+		}
+		return "", core.ErrNotFound
 	}
 	captured, err := captureTitleHistory(s.snapshot, s.graph, k.Snapshot(), command)
 	if err != nil {

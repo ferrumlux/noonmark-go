@@ -181,7 +181,7 @@ func TestOutcomeRawDiskOwnership(t *testing.T) {
 			})
 		}
 	}
-	want := map[string]int{"outcome.go:commitLocked:s.disk.commitObserved": 1, "outcome.go:verifyPrefixLocked:s.disk.verifyPrefixObserved": 1}
+	want := map[string]int{"outcome.go:commitLocked:s.disk.commitObserved": 1, "outcome.go:verifyPrefixLocked:s.disk.verifyPrefixObserved": 1, "ordinary_service.go:persistOrdinaryLocked:s.disk.commitOrdinaryObserved": 1}
 	if !reflect.DeepEqual(found, want) {
 		t.Fatalf("live Service disk escape: %v", found)
 	}

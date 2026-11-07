@@ -729,6 +729,21 @@ func (s *app) livePoolSubtaskDetail(c *ui.Context, w, h float32, g core.TaskGrap
 			}
 		}
 	}
+	// A task moved by another window must not hide its retained category draft.
+	if target.chain == "" && s.titles != nil && s.titles.category != nil {
+		if owner := s.titles.windows[s.titleWindowID]; owner != nil && owner.category != nil {
+			e := owner.category
+			if string(e.chain) == s.runtimeSelection && (e.creating || e.pending || e.failure != nil) {
+				for _, d := range g.Definitions {
+					if d.ChainID == e.chain && d.SupersededAt == nil {
+						target = runtimeSubtaskTarget{chain: e.chain, definition: d.ID}
+						title = d.Title
+						break
+					}
+				}
+			}
+		}
+	}
 	if target.chain == "" {
 		return false
 	}
@@ -740,9 +755,12 @@ func (s *app) livePoolSubtaskDetail(c *ui.Context, w, h float32, g core.TaskGrap
 		ui.Box(c).Height(14)
 		ui.Text(c, "任务池不形成 Day Todo 轨迹。").FontSize(11).TextColor(sourceVisual.text3).Width(w - 28)
 		ui.Box(c).Height(14)
+		if s.liveCategorySection(c, w-28, target.chain) {
+			ui.Box(c).Height(14)
+		}
 		s.liveSubtaskSection(c, w-28, "pool", target, s.canAddSubtask(target))
 		ui.Box(c).Height(24)
-		ui.Text(c, "分类、完整 Markdown 与撤销恢复尚未接通。").FontSize(10.5).TextColor(muted).Width(w - 28)
+		ui.Text(c, s.categoryScopeCopy("完整 Markdown 与撤销恢复尚未接通。")).FontSize(10.5).TextColor(muted).Width(w - 28)
 	})
 	return true
 }

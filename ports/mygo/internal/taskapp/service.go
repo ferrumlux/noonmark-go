@@ -10,14 +10,16 @@ import (
 )
 
 type Service struct {
-	mu       sync.RWMutex
-	disk     *diskStore
-	graph    core.TaskGraph
-	snapshot canonical.Value
-	today    core.LocalDate
-	clock    func() time.Time
-	closed   bool
-	health   SessionHealth
+	mu        sync.RWMutex
+	disk      *diskStore
+	graph     core.TaskGraph
+	snapshot  canonical.Value
+	today     core.LocalDate
+	clock     func() time.Time
+	closed    bool
+	health    SessionHealth
+	aggregate *admittedAggregate
+	lineage   *serviceLineage
 }
 
 func Create(path string, today core.LocalDate) (*Service, error) {
@@ -95,6 +97,9 @@ func (s *Service) AdvanceToOutcome(today core.LocalDate) AdvanceOutcome {
 	return o
 }
 func (s *Service) reconcileDayLocked(today core.LocalDate, a ...*attempt) error {
+	if s.aggregate != nil {
+		return s.reconcileOrdinaryDayLocked(today, a...)
+	}
 	if err := s.gateLocked(); err != nil {
 		setAttempt(a, WriteNone, StageSessionGate)
 		return err
@@ -157,6 +162,7 @@ func (s *Service) Close() error {
 		return nil
 	}
 	s.closed = true
+	s.lineage = nil
 	s.health.Session = SessionClosed
 	return s.disk.close()
 }
@@ -204,13 +210,20 @@ func (s *Service) nextInstant() (core.Instant, error) {
 	if e != nil {
 		return 0, e
 	}
-	return core.NextMutationInstant(ref, s.persistedClocks()...)
+	clocks, err := s.allPersistedClocks()
+	if err != nil {
+		return 0, err
+	}
+	return core.NextMutationInstant(ref, clocks...)
 }
 
 // persistedFrontier does not advance time or sample the wall clock. Zero is a
 // valid probe for an empty graph, where settlement cannot create facts.
 func (s *Service) persistedFrontier() (core.Instant, error) {
-	clocks := s.persistedClocks()
+	clocks, err := s.allPersistedClocks()
+	if err != nil {
+		return 0, err
+	}
 	var frontier core.Instant
 	for i, clock := range clocks {
 		if !clock.Finite() {
@@ -253,6 +266,7 @@ func (s *Service) persistedClocks() []core.Instant {
 	for _, c := range s.graph.Subtasks {
 		clocks = append(clocks, c.CreatedAt, c.UpdatedAt)
 	}
+
 	return clocks
 }
 func newIDs(n int) ([]string, error) {
@@ -275,6 +289,9 @@ func (s *Service) AddOnDate(title string, date core.LocalDate) error {
 	return s.add(title, true, &date)
 }
 func (s *Service) add(title string, schedule bool, date *core.LocalDate) error {
+	if s.ordinaryEnabled() {
+		return s.addOrdinary(title, schedule, date)
+	}
 	return s.transact(func(k *core.TaskKernel, now core.Instant) error {
 		ids, e := newIDs(4)
 		if e != nil {
@@ -296,6 +313,9 @@ func (s *Service) add(title string, schedule bool, date *core.LocalDate) error {
 	})
 }
 func (s *Service) Schedule(chain core.TaskChainID, date core.LocalDate) error {
+	if s.ordinaryEnabled() {
+		return s.scheduleOrdinary(chain, date)
+	}
 	return s.transact(func(k *core.TaskKernel, now core.Instant) error {
 		ids, e := newIDs(2)
 		if e != nil {
@@ -317,6 +337,9 @@ func (s *Service) Schedule(chain core.TaskChainID, date core.LocalDate) error {
 	})
 }
 func (s *Service) SetCompleted(trace core.DayTraceID, completed bool) error {
+	if s.ordinaryEnabled() {
+		return s.completeOrdinary(trace, completed)
+	}
 	return s.transact(func(k *core.TaskKernel, now core.Instant) error {
 		if completed {
 			return k.MarkCompleted(trace, s.today, now)

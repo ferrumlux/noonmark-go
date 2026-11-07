@@ -17,6 +17,7 @@ import (
 
 	"github.com/ferrumlux/noonmark/ports/mygo/domain-codec/canonical"
 	"github.com/ferrumlux/noonmark/ports/mygo/domain-codec/v7"
+	"github.com/ferrumlux/noonmark/ports/mygo/domain-extensions/classification/ordinary"
 	"github.com/ferrumlux/noonmark/ports/mygo/domain-extensions/recurrence"
 	"github.com/ferrumlux/noonmark/ports/mygo/domain/core"
 )
@@ -43,12 +44,14 @@ type record struct {
 	Payload      []byte `json:"payload"`
 }
 type diskStore struct {
-	root     *os.Root
-	path     string
-	revision int
-	hash     string
-	blocked  bool
-	fault    func(string) error
+	ordinaryService *Service
+	ordinaryHead    *admittedAggregate
+	root            *os.Root
+	path            string
+	revision        int
+	hash            string
+	blocked         bool
+	fault           func(string) error
 	// Optional private I/O substitutes used by isolated tests. Nil keeps the
 	// original operation, flags, ordering, and error mapping unchanged.
 	openWrite func(string) (storeWriteFile, error)
@@ -154,6 +157,75 @@ func openStore(path string) (*diskStore, canonical.Value, error) {
 			return fail(ErrCorrupt)
 		}
 		snapshot, e = decodeSnapshot(rec.Payload)
+		if e != nil {
+			return fail(ErrCorrupt)
+		}
+		d.revision = rec.Revision
+		d.hash = hash
+	}
+	return d, snapshot, nil
+}
+func openOrdinaryStore(path string) (*diskStore, canonical.Value, error) {
+	if e := pathGuard(path); e != nil {
+		return nil, canonical.Value{}, e
+	}
+	r, e := os.OpenRoot(path)
+	if e != nil {
+		return nil, canonical.Value{}, ErrSession
+	}
+	d := &diskStore{root: r, path: path}
+	fail := func(err error) (*diskStore, canonical.Value, error) { r.Close(); return nil, canonical.Value{}, err }
+	b, e := d.readRegular(markerName, 128)
+	if e == nil && string(b) == "noonmark-mygo-development-session-v1\n" {
+		return fail(ErrLegacySession)
+	}
+	if e != nil || string(b) != marker {
+		return fail(ErrSession)
+	}
+	names, e := d.revisions()
+	if e != nil {
+		return fail(e)
+	}
+	if len(names) == 0 {
+		return fail(ErrIncomplete)
+	}
+	var snapshot canonical.Value
+	total := 0
+	for _, n := range names {
+		b, e := d.readRegular(n+"/state.json", maxRecordBytes)
+		if e != nil {
+			return fail(ErrIncomplete)
+		}
+		total += len(b)
+		if total > maxSessionBytes {
+			return fail(ErrLimit)
+		}
+		digest := sha256.Sum256(b)
+		hash := hex.EncodeToString(digest[:])
+		ready, e := d.readRegular(n+"/COMMITTED", 65)
+		if e != nil || string(ready) != hash+"\n" {
+			return fail(ErrIncomplete)
+		}
+		var rec record
+		if _, e = canonical.Parse(b, canonical.Limits{MaxBytes: maxRecordBytes, MaxDepth: 8, MaxNodes: 32}); e != nil {
+			return fail(ErrCorrupt)
+		}
+		dec := json.NewDecoder(bytes.NewReader(b))
+		dec.DisallowUnknownFields()
+		if e = dec.Decode(&rec); e != nil {
+			return fail(ErrCorrupt)
+		}
+		if rec.Format != "noonmark-mygo-development-v2" || rec.Revision != d.revision+1 || rec.ParentSHA256 != d.hash {
+			return fail(ErrCorrupt)
+		}
+		admitted, admissionErr := admitOrdinaryAggregate(rec.Payload, canonical.DefaultLimits())
+		e = admissionErr
+		if errors.Is(e, ordinary.ErrUnsupported) {
+			return fail(e)
+		}
+		if e == nil {
+			snapshot, e = admitted.document.Snapshot()
+		}
 		if e != nil {
 			return fail(ErrCorrupt)
 		}
@@ -273,19 +345,49 @@ func (d *diskStore) commit(snapshot canonical.Value) error {
 	return d.commitObserved(snapshot).err
 }
 func (d *diskStore) commitObserved(snapshot canonical.Value) commitObservation {
+	return d.commitStoreInputObserved(storeWriteInput{legacy: &snapshot})
+}
+
+// The shared transaction accepts a closed input, never raw bytes or a caller
+// validator. It validates the actual bound handle before acquiring payload bytes.
+type storeWriteInput struct {
+	legacy   *canonical.Value
+	ordinary *persistableOrdinaryCandidate
+}
+
+// With an ordinary binding, the caller holds ordinaryService.mu through the
+// confirmed disk head and Service publication. This is not a concurrent API.
+func (d *diskStore) commitStoreInputObserved(input storeWriteInput) commitObservation {
 	extent, stage := WriteNone, StageSessionGate
 	invalidates, reason := false, HealthOK
-	result := func(err error) commitObservation { return commitObservation{extent, stage, invalidates, reason, err} }
+	result := func(err error) commitObservation {
+		if invalidates && d.ordinaryService != nil {
+			d.ordinaryService.invalidateLocked(reason, stage)
+		}
+		return commitObservation{extent, stage, invalidates, reason, err}
+	}
 	if d.blocked {
 		invalidates, reason = true, HealthBlocked
 		return result(ErrIncomplete)
 	}
-	stage = StageCapacity
 	if d.revision >= maxRevisions {
+		stage = StageCapacity
 		return result(ErrLimit)
 	}
 	stage = StageCandidate
-	payload, e := encodeSnapshot(snapshot)
+	if (input.legacy == nil) == (input.ordinary == nil) {
+		return result(ErrConflict)
+	}
+	var payload []byte
+	var e error
+	if input.ordinary != nil {
+		payload, e = d.validateOrdinaryWriteInput(*input.ordinary)
+	} else {
+		if d.ordinaryService != nil || d.ordinaryHead != nil {
+			return result(ErrConflict)
+		}
+		payload, e = encodeSnapshot(*input.legacy)
+	}
 	if e != nil {
 		return result(e)
 	}
@@ -360,6 +462,9 @@ func (d *diskStore) commitObserved(snapshot canonical.Value) commitObservation {
 	}
 	d.revision++
 	d.hash = hash
+	if input.ordinary != nil {
+		d.ordinaryHead = &input.ordinary.after
+	}
 	d.blocked = false
 	extent, stage, invalidates, reason = WriteCommittedConfirmed, StageNone, false, HealthOK
 	return result(nil)
@@ -506,4 +611,36 @@ func (d *diskStore) verifyPrefix(expectedRevision int, expectedHash string, allo
 		return 0, ErrConflict
 	}
 	return total, nil
+}
+
+func (d *diskStore) commitOrdinaryObserved(c persistableOrdinaryCandidate) commitObservation {
+	return d.commitStoreInputObserved(storeWriteInput{ordinary: &c})
+}
+
+// Caller holds the bound Service mutex. Never lock it recursively here.
+func (d *diskStore) validateOrdinaryWriteInput(c persistableOrdinaryCandidate) ([]byte, error) {
+	s := d.ordinaryService
+	if s == nil || s.disk != d || d.ordinaryHead == nil {
+		return nil, ErrConflict
+	}
+	if err := s.gateLocked(); err != nil {
+		return nil, err
+	}
+	if (c.task == nil) == (c.category == nil) {
+		return nil, ErrConflict
+	}
+	if c.owner == nil || c.owner != s.lineage || c.before == nil || c.before != s.aggregate || c.before != d.ordinaryHead || c.head != d.hash || c.revision != d.revision {
+		return nil, ErrConflict
+	}
+	if err := s.verifyOrdinaryCandidateLocked(c); err != nil {
+		return nil, err
+	}
+	checked, err := v7.EncodeOrdinaryAggregate(c.after.document)
+	if err != nil {
+		return nil, err
+	}
+	if !bytes.Equal(checked, c.bytes) {
+		return nil, ErrCorrupt
+	}
+	return checked, nil
 }

@@ -79,6 +79,11 @@ func (s *Service) AbandonSubtask(chain core.TaskChainID, trace core.DayTraceID, 
 func (s *Service) editSubtask(c subtaskEditCommand) (subtaskEditAck, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	if s.aggregate != nil {
+		if err := s.reconcileDayLocked(s.today); err != nil {
+			return subtaskEditAck{}, err
+		}
+	}
 	fail := func(e error) (subtaskEditAck, error) { return subtaskEditAck{}, e }
 	if err := s.gateLocked(); err != nil {
 		return fail(err)
@@ -124,6 +129,9 @@ func (s *Service) editSubtask(c subtaskEditCommand) (subtaskEditAck, error) {
 	}
 	if e = c.apply(k); e != nil {
 		return fail(e)
+	}
+	if s.aggregate != nil {
+		return s.ordinarySubtaskAckLocked(c)
 	}
 	captured, e := captureSubtaskEditHistory(s.snapshot, s.graph, k.Snapshot(), c)
 	if e != nil {

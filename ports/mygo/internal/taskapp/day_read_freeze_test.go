@@ -167,7 +167,7 @@ func TestDayReadFrozenConsumerChain(t *testing.T) {
 			return true
 		})
 	}
-	want := []string{"outcomeFrozenOverlay", "dayDetailFrozenOverlay", "daySnapshotFrozenOverlay", "dayReadFrozenOverlay", "nativeWindowFrozenOverlay", "quoteFastFrozenOverlay"}
+	want := []string{"outcomeFrozenOverlay", "dayDetailFrozenOverlay", "daySnapshotFrozenOverlay", "dayReadFrozenOverlay", "nativeWindowFrozenOverlay", "quoteFastFrozenOverlay", "ordinaryServiceFrozenOverlay", "categoryUIFrozenOverlay"}
 	if !reflect.DeepEqual(calls, want) {
 		t.Fatalf("consumer overlay chain = %v", calls)
 	}
