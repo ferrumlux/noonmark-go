@@ -55,7 +55,7 @@ func (s *app) disposeTitleEditors() {
 		}
 		return true
 	}
-	h.post(func() {
+	if !h.tryPostProducer(func() {
 		defer func() {
 			if s.titleDisposal == r {
 				s.titleDisposal = nil
@@ -77,7 +77,11 @@ func (s *app) disposeTitleEditors() {
 		}
 		s.reconcileTitleRetirement(r)
 		w.invalidate()
-	})
+	}) {
+		if s.titleDisposal == r {
+			s.titleDisposal = nil
+		}
+	}
 }
 
 // Reconcile the completed exact side effect without acting on an old UI intent.

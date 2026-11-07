@@ -104,7 +104,7 @@ func newYearUI(t *testing.T, service *taskapp.Service) *yearUI {
 	f := &yearUI{t: t, store: &yearCountingStore{Service: service}, posts: make(chan func(), 128)}
 	f.clock.now = time.Date(liveTestDay.Year, time.Month(liveTestDay.Month), liveTestDay.Day, 12, 0, 0, 0, time.UTC)
 	f.writer.lane = coordinator.NewSerialLane()
-	f.h = newTitleHub(f.store, &f.writer, func(fn func()) { f.posts <- fn }, &f.clock, f.clock.Now, func() {})
+	f.h = newTestTitleHub(f.store, &f.writer, func(fn func()) { f.posts <- fn }, &f.clock, f.clock.Now, func() {})
 	f.s = newRuntimeApp(f.h.readView())
 	f.h.attach(f.s, func() { f.invalid = true }, func() {
 		if f.h.beforeClose(f.s) {

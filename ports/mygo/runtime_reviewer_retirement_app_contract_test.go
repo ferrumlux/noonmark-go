@@ -17,7 +17,7 @@ func TestReviewerRetirementAppFenceMustNotAbandonCommittedOwnerRemoval(t *testin
 	}
 	armed := false
 	c, err := coordinator.New(coordinator.Config{
-		Service: titleServiceAdapter{f.h}, Lane: &f.io, Post: f.posts.Enqueue, Clock: &f.clock,
+		Service: titleServiceAdapter{f.h}, TrySubmit: f.h.trySubmit, TryPostProducer: f.h.tryPostProducer, Clock: &f.clock,
 		Today: func() coordinator.Date {
 			return coordinator.Date{Year: liveTestDay.Year, Month: liveTestDay.Month, Day: liveTestDay.Day}
 		},

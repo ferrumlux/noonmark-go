@@ -14,8 +14,14 @@ func (carryoverImmediateLane) Enqueue(fn func()) { fn() }
 func TestCarryoverAdmissionPrecedesEvenSynchronousCompletion(t *testing.T) {
 	f := newTitleFixture(t, true)
 	f.all()
-	f.h.post = func(fn func()) { fn() }
-	f.h.lane = carryoverImmediateLane{}
+	f.h.tryPostProducer = func(fn func()) bool { fn(); return true }
+	f.h.trySubmit = func(work func(func(func()) bool)) bool {
+		post := func(fn func()) bool { fn(); return true }
+		f.h.completionSink = post
+		defer func() { f.h.completionSink = nil }()
+		work(post)
+		return true
+	}
 	count := 0
 	completed := false
 	accepted := f.h.commandOnceAdmitted(f.s, "synchronous-admission", func() { count++ }, func() error {

@@ -1,0 +1,214 @@
+{
+  "head": "c441d3b331dd3b3358d171f3c2d7e420bb9c2099",
+  "tree": "c3658b612621a45705faf12c3f611e070186ddee",
+  "scope": "M1/M2 implementation predecessor; all eight source hashes match the design baseline byte for byte",
+  "sources": [
+    {
+      "path": "ports/mygo/main.go",
+      "sha256": "a69e32cc56991f14a3e082f5e6cc6ee000cd7eeca2bdb9ee414a4cba0f693077",
+      "url": "https://github.com/ferrumlux/noonmark-go/blob/c441d3b331dd3b3358d171f3c2d7e420bb9c2099/ports/mygo/main.go"
+    },
+    {
+      "path": "ports/mygo/runtime_title.go",
+      "sha256": "c0b945694a946b08725ac0cf75b24317c1c5548e49ad2446fd5bf7f277200565",
+      "url": "https://github.com/ferrumlux/noonmark-go/blob/c441d3b331dd3b3358d171f3c2d7e420bb9c2099/ports/mygo/runtime_title.go"
+    },
+    {
+      "path": "ports/mygo/runtime_category.go",
+      "sha256": "b6bc3fae51a38f6cb84c53355727d36488e7b22e564ab13a5dfc433be8d965a7",
+      "url": "https://github.com/ferrumlux/noonmark-go/blob/c441d3b331dd3b3358d171f3c2d7e420bb9c2099/ports/mygo/runtime_category.go"
+    },
+    {
+      "path": "ports/mygo/runtime_subtask.go",
+      "sha256": "6361bd443bf4fc568a74580a8077293127ebb3e6b1fc2f81fa21d997c1d9a27b",
+      "url": "https://github.com/ferrumlux/noonmark-go/blob/c441d3b331dd3b3358d171f3c2d7e420bb9c2099/ports/mygo/runtime_subtask.go"
+    },
+    {
+      "path": "ports/mygo/runtime_title_disposal.go",
+      "sha256": "464b3894b3bba341f30460d15f37e92ce7526c0ed0e730bfeacc9290a3db4155",
+      "url": "https://github.com/ferrumlux/noonmark-go/blob/c441d3b331dd3b3358d171f3c2d7e420bb9c2099/ports/mygo/runtime_title_disposal.go"
+    },
+    {
+      "path": "ports/mygo/native_business_probe.go",
+      "sha256": "c5ea59afc503637bef9b12383c318951d1c18bc0610ee6459083dc7eb8f3aab6",
+      "url": "https://github.com/ferrumlux/noonmark-go/blob/c441d3b331dd3b3358d171f3c2d7e420bb9c2099/ports/mygo/native_business_probe.go"
+    },
+    {
+      "path": "ports/mygo/internal/titlecoordinator/coordinator.go",
+      "sha256": "32758ca3d4ef31b7352a96235b03395c082b17494d0e8398ade8c902b488f055",
+      "url": "https://github.com/ferrumlux/noonmark-go/blob/c441d3b331dd3b3358d171f3c2d7e420bb9c2099/ports/mygo/internal/titlecoordinator/coordinator.go"
+    },
+    {
+      "path": "ports/mygo/internal/titlecoordinator/lane.go",
+      "sha256": "d456939dec42e332d58d42c3247ac3c17e4888a5b540901ed820ede7970a3450",
+      "url": "https://github.com/ferrumlux/noonmark-go/blob/c441d3b331dd3b3358d171f3c2d7e420bb9c2099/ports/mygo/internal/titlecoordinator/lane.go"
+    }
+  ],
+  "explicit_post_enqueue_sites": [
+    {
+      "file": "runtime_title.go",
+      "line": 343,
+      "text": "h.post(func() {"
+    },
+    {
+      "file": "runtime_title.go",
+      "line": 378,
+      "text": "h.post(func() {"
+    },
+    {
+      "file": "runtime_title.go",
+      "line": 387,
+      "text": "h.post(func() { _ = h.coordinator.Observe(reg, id) })"
+    },
+    {
+      "file": "runtime_title.go",
+      "line": 392,
+      "text": "h.post(func() {"
+    },
+    {
+      "file": "runtime_title.go",
+      "line": 446,
+      "text": "h.post(func() {"
+    },
+    {
+      "file": "runtime_title.go",
+      "line": 460,
+      "text": "h.post(func() { h.publish(graph, today) })"
+    },
+    {
+      "file": "runtime_title.go",
+      "line": 530,
+      "text": "h.post(func() {"
+    },
+    {
+      "file": "runtime_title.go",
+      "line": 546,
+      "text": "h.lane.Enqueue(func() {"
+    },
+    {
+      "file": "runtime_title.go",
+      "line": 556,
+      "text": "h.post(func() {"
+    },
+    {
+      "file": "runtime_title.go",
+      "line": 629,
+      "text": "h.post(func() {"
+    },
+    {
+      "file": "runtime_title.go",
+      "line": 630,
+      "text": "h.lane.Enqueue(func() {"
+    },
+    {
+      "file": "runtime_title.go",
+      "line": 644,
+      "text": "h.post(func() {"
+    },
+    {
+      "file": "runtime_title.go",
+      "line": 676,
+      "text": "return lane, func(fn func()) { lane.Enqueue(func() { mygo.RunOnMain(fn) }) }"
+    },
+    {
+      "file": "runtime_category.go",
+      "line": 177,
+      "text": "h.post(func() {"
+    },
+    {
+      "file": "runtime_category.go",
+      "line": 178,
+      "text": "h.lane.Enqueue(func() {"
+    },
+    {
+      "file": "runtime_category.go",
+      "line": 188,
+      "text": "h.post(func() {"
+    },
+    {
+      "file": "runtime_category.go",
+      "line": 227,
+      "text": "h.post(func() {"
+    },
+    {
+      "file": "runtime_category.go",
+      "line": 339,
+      "text": "input := ui.TextInputBase(c.Key(e), &e.native.draft).Bind(&e.native.handle).Absolute().Left(60).Size(inputWidth, 28).Padding(0, 8).FontSize(11.5).FontWeight(500).Background(sourceVisual.controlFill).Border(1, line).Radius(6).Label(\"新分组名称\").Placeholder(\"分组名称\").OnSubmit(func() { h.post(func() { s.submitCategory(e, ordinary.Choice{Kind: ordinary.ChoiceNew}) }) })"
+    },
+    {
+      "file": "runtime_category.go",
+      "line": 347,
+      "text": "h.post(func() {"
+    },
+    {
+      "file": "runtime_category.go",
+      "line": 365,
+      "text": "h.post(func() { s.submitCategory(e, ordinary.Choice{Kind: ordinary.ChoiceNew}) })"
+    },
+    {
+      "file": "runtime_subtask.go",
+      "line": 454,
+      "text": "h.post(func() {"
+    },
+    {
+      "file": "runtime_subtask.go",
+      "line": 465,
+      "text": "h.post(func() {"
+    },
+    {
+      "file": "runtime_subtask.go",
+      "line": 474,
+      "text": "h.post(func() { _ = h.coordinator.Observe(reg, id) })"
+    },
+    {
+      "file": "runtime_subtask.go",
+      "line": 479,
+      "text": "h.post(func() {"
+    },
+    {
+      "file": "runtime_subtask.go",
+      "line": 529,
+      "text": "s.titles.post(func() { composer.clearQueued = false; s.clearAcknowledgedComposer(composer) })"
+    },
+    {
+      "file": "runtime_subtask.go",
+      "line": 535,
+      "text": "s.titles.post(func() { s.submitSubtaskComposer(composer) })"
+    },
+    {
+      "file": "runtime_title_disposal.go",
+      "line": 58,
+      "text": "h.post(func() {"
+    },
+    {
+      "file": "native_business_probe.go",
+      "line": 175,
+      "text": "b.lane.Enqueue(func() { b.execute() })"
+    },
+    {
+      "file": "native_business_probe.go",
+      "line": 306,
+      "text": "b.post(func() {"
+    },
+    {
+      "file": "internal/titlecoordinator/coordinator.go",
+      "line": 214,
+      "text": "c.cfg.Post(func() {"
+    },
+    {
+      "file": "internal/titlecoordinator/coordinator.go",
+      "line": 296,
+      "text": "c.cfg.Lane.Enqueue(func() {"
+    },
+    {
+      "file": "internal/titlecoordinator/coordinator.go",
+      "line": 313,
+      "text": "c.cfg.Post(func() { c.complete(e, request, result) })"
+    },
+    {
+      "file": "internal/titlecoordinator/coordinator.go",
+      "line": 394,
+      "text": "c.cfg.Post(func() {"
+    }
+  ]
+}

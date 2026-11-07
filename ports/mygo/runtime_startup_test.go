@@ -202,7 +202,7 @@ func TestRuntimeStartupHubBeforeTwoWindows(t *testing.T) {
 	}
 	var lane, posts titleTestQueue
 	var clock titleTestClock
-	h := newTitleHub(s, &lane, posts.Enqueue, &clock, clock.Now, func() {})
+	h := newTestTitleHub(s, &lane, posts.Enqueue, &clock, clock.Now, func() {})
 	if err = h.enableCategoryCandidate(); err != nil {
 		t.Fatal(err)
 	}

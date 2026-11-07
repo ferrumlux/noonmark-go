@@ -198,12 +198,12 @@ func (s *app) sidebar(c *ui.Context, h, sw float32) {
 	}
 }
 func (s *app) dismissUtility(fallback string, clearDraft bool) {
-	if clearDraft {
-		s.draft = ""
-	}
 	if s.closeWindow != nil {
 		s.closeWindow()
 		return
+	}
+	if clearDraft {
+		s.draft = ""
 	}
 	s.page = fallback
 }
@@ -839,21 +839,24 @@ func main() {
 	}
 	var hub *titleHub
 	var writer, dispatcher *coordinator.SerialLane
+	var admission *runtimeAdmission
 	if service != nil {
 		writer = coordinator.NewSerialLane()
-		var post func(func())
-		dispatcher, post = newTitleDispatch()
-		hub = newTitleHub(service, writer, post, wallTitleClock{}, time.Now, mygo.App.Quit)
+		dispatcher = coordinator.NewSerialLane()
+		admission = newRuntimeAdmission(writer, dispatcher, mygo.RunOnMain)
+		hub = newTitleHub(service, admission.TrySubmitWriter, admission.TryPostProducer, wallTitleClock{}, time.Now, mygo.App.Quit)
 		if business != nil {
-			business.lane, business.post = writer, post
+			business.trySubmit = admission.TrySubmitWriter
 			probe.beforeReady = business.run
 		}
 		if startup.profile == ordinaryDevelopment {
 			if err := hub.enableCategoryCandidate(); err != nil {
-				writer.StopAfterDrain()
+				admission.EndRun()
+				admission.WaitActiveUI()
 				<-writer.Done()
-				dispatcher.StopAfterDrain()
+				admission.FinishWriterDrain()
 				<-dispatcher.Done()
+				admission.FinishDispatchDrain()
 				closeErr := service.Close()
 				log.Fatal(startup.startupFailure("窗口初始化", errors.Join(err, closeErr)))
 			}
@@ -911,6 +914,9 @@ func main() {
 	}
 	mygo.App.WhenReady(func() { open(*page) })
 	runErr := mygo.App.Run()
+	if admission != nil {
+		admission.EndRun()
+	}
 	if runErr != nil && service != nil {
 		log.Print(startup.startupFailure("原生窗口启动", runErr))
 	}
@@ -925,7 +931,7 @@ func main() {
 		// The event loop has ended. No UI callback waits here; drain accepted
 		// commands before closing storage, including an event-loop startup failure.
 		if writer != nil {
-			writer.StopAfterDrain()
+			admission.WaitActiveUI()
 			<-writer.Done()
 			if probe != nil {
 				probe.RecordDrain(true)
@@ -933,8 +939,13 @@ func main() {
 			if business != nil {
 				businessCleanupErr = business.PreClose()
 			}
-			dispatcher.StopAfterDrain()
+			admission.FinishWriterDrain()
 			<-dispatcher.Done()
+			lifecycle := admission.FinishDispatchDrain()
+			if lifecycle.ProtocolErrors != 0 || lifecycle.CompletionRejected != 0 {
+				businessCleanupErr = errors.Join(businessCleanupErr, fmt.Errorf("runtime admission protocol errors: %d; rejected completions: %d", lifecycle.ProtocolErrors, lifecycle.CompletionRejected))
+			}
+			log.Printf("runtime admission: %+v", lifecycle)
 			if probe != nil {
 				probe.RecordDrain(false)
 			}

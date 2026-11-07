@@ -90,8 +90,7 @@ type nativeBusinessProbe struct {
 	now                              func() time.Time
 	today                            core.LocalDate
 	service                          *taskapp.Service
-	lane                             coordinator.Lane
-	post                             func(func())
+	trySubmit                        func(func(func(func()) bool)) bool
 	publish                          func(taskapp.OrdinaryReadView) error // main-thread only
 	acknowledged                     taskapp.OrdinaryReadView
 }
@@ -172,8 +171,11 @@ func (b *nativeBusinessProbe) run() error {
 		return b.fail(errors.New("business duplicate or canceled admission"))
 	}
 	b.started = true
-	b.lane.Enqueue(func() { b.execute() })
+	accepted := b.trySubmit(func(post func(func()) bool) { b.execute(post) })
 	b.mu.Unlock()
+	if !accepted {
+		b.finish(coordinator.ErrNotAdmitted)
+	}
 	select {
 	case <-b.cancel:
 		return b.fail(errors.New("business canceled before completion"))
@@ -200,7 +202,7 @@ func (b *nativeBusinessProbe) beforeCommand(phase string) error {
 	_, err := b.read()
 	return err
 }
-func (b *nativeBusinessProbe) execute() {
+func (b *nativeBusinessProbe) execute(post func(func()) bool) {
 	if b.canceled() {
 		b.finish(errors.New("business canceled"))
 		return
@@ -303,7 +305,7 @@ func (b *nativeBusinessProbe) execute() {
 	}
 	// This is the sole completion post, from the accepted writer task. Cleanup
 	// cannot close dispatcher admission until this writer has fully drained.
-	b.post(func() {
+	if !post(func() {
 		if b.canceled() {
 			return
 		}
@@ -328,7 +330,9 @@ func (b *nativeBusinessProbe) execute() {
 		b.report.ClassificationRevision = uint64(v.Classification.Revision)
 		b.mu.Unlock()
 		b.finish(nil)
-	})
+	}) {
+		b.finish(errors.New("business completion delivery rejected"))
+	}
 }
 
 // Called on the real UI thread, after attach, never by the writer/cleanup.

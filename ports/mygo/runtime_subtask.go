@@ -451,7 +451,7 @@ func (s *app) liveSubtaskTitle(c *ui.Context, width, height float32, surface str
 			return false
 		}
 		reg, id := e.reg, e.identity
-		h.post(func() {
+		h.tryPostProducer(func() {
 			if s.subtaskEditors[owner] == e && e.registered {
 				if current, ok := h.coordinator.Identity(reg); ok && current == id {
 					_ = h.coordinator.EndEditing(reg)
@@ -462,21 +462,26 @@ func (s *app) liveSubtaskTitle(c *ui.Context, width, height float32, surface str
 	})
 	if !e.registered && !e.queued {
 		e.queued = true
-		h.post(func() {
+		if !h.tryPostProducer(func() {
 			if s.subtaskEditors[owner] == e {
 				h.registerEditor(s, e)
 			}
-		})
+		}) {
+			e.queued = false
+		}
 	}
 	text, compose := e.native.draft, control.Composing()
 	if e.registered && (text != e.seenText || compose != e.seenCompose) {
 		reg, id := e.reg, e.identity
-		h.post(func() { _ = h.coordinator.Observe(reg, id) })
+		if h.tryPostProducer(func() { _ = h.coordinator.Observe(reg, id) }) {
+			e.seenText, e.seenCompose = text, compose
+		}
+	} else if !e.registered {
+		e.seenText, e.seenCompose = text, compose
 	}
-	e.seenText, e.seenCompose = text, compose
 	if e.registered && control.FocusLeft() {
 		reg, id := e.reg, e.identity
-		h.post(func() {
+		h.tryPostProducer(func() {
 			if current, ok := h.coordinator.Identity(reg); ok && current == id {
 				_ = h.coordinator.EndEditing(reg)
 			}
@@ -526,13 +531,15 @@ func (s *app) liveSubtaskComposer(c *ui.Context, width float32, surface string, 
 	composer.finalizedValid = false
 	if composer.hasAcknowledged && !composer.clearQueued {
 		composer.clearQueued = true
-		s.titles.post(func() { composer.clearQueued = false; s.clearAcknowledgedComposer(composer) })
+		if !s.titles.tryPostProducer(func() { composer.clearQueued = false; s.clearAcknowledgedComposer(composer) }) {
+			composer.clearQueued = false
+		}
 	}
 	ui.TextAreaBase(c.Key(key), &composer.native.draft).Bind(&composer.native.handle).Width(width).Height(32).FontSize(subtaskNativeSize).FontWeight(500).Padding(8.5, 10).FixedLineHeight(15).Background(sourceVisual.panel2).Border(0, ui.Transparent).Radius(subtaskComposerRadius).Label(subtaskPrefix(surface, id) + ".new").Placeholder("添加子任务").OnTextKey(func(k ui.TextKey) bool {
 		if k.Key != ui.KeyEnter || k.Mods != 0 {
 			return false
 		}
-		s.titles.post(func() { s.submitSubtaskComposer(composer) })
+		s.titles.tryPostProducer(func() { s.submitSubtaskComposer(composer) })
 		return true
 	})
 }

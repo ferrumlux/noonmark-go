@@ -7,7 +7,6 @@ import (
 	"sort"
 	"time"
 
-	"github.com/egoist/mygo"
 	"github.com/egoist/mygo/ui"
 	"github.com/ferrumlux/noonmark/ports/mygo/domain/core"
 	"github.com/ferrumlux/noonmark/ports/mygo/internal/taskapp"
@@ -124,8 +123,9 @@ type titleHub struct {
 	today                              core.LocalDate
 	store                              titleStore
 	coordinator                        *coordinator.Coordinator
-	lane                               coordinator.Lane
-	post                               func(func())
+	trySubmit                          func(func(func(func()) bool)) bool
+	tryPostProducer                    func(func()) bool
+	completionSink                     func(func()) bool // writer-only, scoped to accepted work
 	now                                func() time.Time
 	windows                            map[string]*titleWindow
 	nextWindow, nextEditor, nextTarget uint64
@@ -153,13 +153,20 @@ func (a titleServiceAdapter) SaveTraceTitleInputAcknowledged(trace, title string
 	a.hub.publishFromLane()
 	return text, err
 }
-func newTitleHub(store titleStore, lane coordinator.Lane, post func(func()), clock coordinator.Clock, now func() time.Time, quit func()) *titleHub {
-	h := &titleHub{today: store.Today(), store: store, lane: lane, post: post, now: now, quit: quit, windows: map[string]*titleWindow{}, targets: map[string]func(){}, observedDay: store.Today()}
+func newTitleHub(store titleStore, submit func(func(func(func()) bool)) bool, post func(func()) bool, clock coordinator.Clock, now func() time.Time, quit func()) *titleHub {
+	h := &titleHub{today: store.Today(), store: store, tryPostProducer: post, now: now, quit: quit, windows: map[string]*titleWindow{}, targets: map[string]func(){}, observedDay: store.Today()}
+	h.trySubmit = func(work func(func(func()) bool)) bool {
+		return submit(func(post func(func()) bool) {
+			h.completionSink = post
+			defer func() { h.completionSink = nil }()
+			work(post)
+		})
+	}
 	h.categoryClock = clock
 	h.progress = newRuntimeProgressCache(store.Snapshot())
 	h.graph = h.progress.graph
 	c, err := coordinator.New(coordinator.Config{
-		Service: titleServiceAdapter{h}, Lane: lane, Post: post, Clock: clock,
+		Service: titleServiceAdapter{h}, TrySubmit: h.trySubmit, TryPostProducer: post, Clock: clock,
 		Today: func() coordinator.Date {
 			d := localTitleDate(now())
 			return coordinator.Date{Year: d.Year, Month: d.Month, Day: d.Day}
@@ -340,7 +347,7 @@ func (s *app) titleTransition(fn func()) {
 	delete(h.targets, s.titleTarget)
 	s.titleTarget = target
 	h.targets[target] = fn
-	h.post(func() {
+	if !h.tryPostProducer(func() {
 		if h.windows[s.titleWindowID] == nil || s.titleTarget != target {
 			delete(h.targets, target)
 			return
@@ -353,7 +360,12 @@ func (s *app) titleTransition(fn func()) {
 			return
 		}
 		h.coordinator.RequestNavigation(s.titleWindowID, target)
-	})
+	}) {
+		delete(h.targets, target)
+		if s.titleTarget == target {
+			s.titleTarget = ""
+		}
+	}
 }
 func (s *app) liveTitle(c *ui.Context, width float32, row taskview.DayRow) {
 	h := s.titles
@@ -375,21 +387,26 @@ func (s *app) liveTitle(c *ui.Context, width float32, row taskview.DayRow) {
 	control := ui.TextAreaBase(c.Key(e.key), &e.native.draft).Bind(&e.native.handle).Width(width).FontSize(14).FontWeight(600).TextColor(ink).Padding(3, 0).Lines(1, 1000).MinHeight(22).MaxHeight(72).Background(ui.Transparent).Border(0, ui.Transparent).Label("日任务详情标题").Placeholder("任务标题")
 	if !e.registered && !e.queued {
 		e.queued = true
-		h.post(func() {
+		if !h.tryPostProducer(func() {
 			if s.titleEditor == e {
 				h.register(s)
 			}
-		})
+		}) {
+			e.queued = false
+		}
 	}
 	text, compose := e.native.draft, control.Composing()
 	if e.registered && (text != e.seenText || compose != e.seenCompose) {
 		reg, id := e.reg, e.identity
-		h.post(func() { _ = h.coordinator.Observe(reg, id) })
+		if h.tryPostProducer(func() { _ = h.coordinator.Observe(reg, id) }) {
+			e.seenText, e.seenCompose = text, compose
+		}
+	} else if !e.registered {
+		e.seenText, e.seenCompose = text, compose
 	}
-	e.seenText, e.seenCompose = text, compose
 	if e.registered && control.FocusLeft() {
 		reg, id := e.reg, e.identity
-		h.post(func() {
+		h.tryPostProducer(func() {
 			if current, ok := h.coordinator.Identity(reg); ok && current == id {
 				_ = h.coordinator.EndEditing(reg)
 			}
@@ -443,7 +460,7 @@ func (h *titleHub) beforeQuit() bool {
 func (h *titleHub) publishFromLane() {
 	if h.category != nil {
 		view, err := h.category.store.ReadView()
-		h.post(func() {
+		h.completionSink(func() {
 			if err != nil {
 				for _, w := range h.windows {
 					w.app.runtimeError = categoryFailureMessage
@@ -457,7 +474,7 @@ func (h *titleHub) publishFromLane() {
 		return
 	}
 	graph, today := h.store.Snapshot(), h.store.Today()
-	h.post(func() { h.publish(graph, today) })
+	h.completionSink(func() { h.publish(graph, today) })
 }
 func (h *titleHub) publish(graph core.TaskGraph, today core.LocalDate) {
 	previous, previousToday := h.graph, h.today
@@ -527,7 +544,7 @@ func (h *titleHub) observeDay() {
 	}
 	h.dayQueued = true
 	h.observedDay = today // A failed boundary is not retried by its own error redraw.
-	h.post(func() {
+	if !h.tryPostProducer(func() {
 		// Finalize existing input before advancing the domain. A dirty old trace is
 		// NOT backfilled after midnight; the service will reject and retain it.
 		for _, w := range h.windows {
@@ -543,7 +560,7 @@ func (h *titleHub) observeDay() {
 				_ = h.coordinator.Observe(e.reg, e.identity)
 			}
 		}
-		h.lane.Enqueue(func() {
+		if !h.trySubmit(func(post func(func()) bool) {
 			d := localTitleDate(h.now())
 			var err error
 			if h.stopped {
@@ -553,7 +570,7 @@ func (h *titleHub) observeDay() {
 			}
 			h.stopOnError(err)
 			h.publishFromLane()
-			h.post(func() {
+			post(func() {
 				h.dayQueued = false
 				if err == nil {
 					h.observedDay = d
@@ -564,8 +581,12 @@ func (h *titleHub) observeDay() {
 					}
 				}
 			})
-		})
-	})
+		}) {
+			h.dayQueued = false
+		}
+	}) {
+		h.dayQueued = false
+	}
 }
 func (h *titleHub) stopOnError(err error) {
 	if errors.Is(err, taskapp.ErrConflict) || errors.Is(err, taskapp.ErrIncomplete) || errors.Is(err, taskapp.ErrSession) {
@@ -626,8 +647,38 @@ func (h *titleHub) command(s *app, fn func() error, clear bool, completion func(
 		w.inputPending[rawDraft] = true
 	}
 	w.commands++
-	h.post(func() {
-		h.lane.Enqueue(func() {
+	settled := false
+	finish := func(err error) {
+		if settled {
+			return
+		}
+		settled = true
+
+		w.commands--
+		if clear {
+			delete(w.inputPending, rawDraft)
+		}
+		s.commandResult(err, err == nil && clear && s.draft == rawDraft)
+		if completion != nil {
+			completion(err)
+		}
+		w.invalidate()
+		if err != nil {
+			w.closing = false
+			h.quitting = false
+			return
+		}
+		if w.closing && w.commands == 0 {
+			w.closing = false
+			w.close()
+		}
+		if h.quitting {
+			h.quitting = false
+			h.quit()
+		}
+	}
+	if !h.tryPostProducer(func() {
+		if !h.trySubmit(func(post func(func()) bool) {
 			var err error
 			if h.stopped {
 				err = taskapp.ErrSession
@@ -641,37 +692,11 @@ func (h *titleHub) command(s *app, fn func() error, clear bool, completion func(
 				h.stopped = true
 			}
 			h.publishFromLane()
-			h.post(func() {
-				w.commands--
-				if clear {
-					delete(w.inputPending, rawDraft)
-				}
-				s.commandResult(err, clear && s.draft == rawDraft)
-				if completion != nil {
-					completion(err)
-				}
-				w.invalidate()
-				if err != nil {
-					w.closing = false
-					h.quitting = false
-					return
-				}
-				if w.closing && w.commands == 0 {
-					w.closing = false
-					w.close()
-				}
-				if h.quitting {
-					h.quitting = false
-					h.quit()
-				}
-			})
-		})
-	})
-}
-
-// A worker is the only caller of RunOnMain: it queues behind the current frame.
-// Neither builds nor UI callbacks wait on this lane. RunOnMain does not redraw.
-func newTitleDispatch() (*coordinator.SerialLane, func(func())) {
-	lane := coordinator.NewSerialLane()
-	return lane, func(fn func()) { lane.Enqueue(func() { mygo.RunOnMain(fn) }) }
+			post(func() { finish(err) })
+		}) {
+			finish(coordinator.ErrNotAdmitted)
+		}
+	}) {
+		finish(coordinator.ErrNotAdmitted)
+	}
 }

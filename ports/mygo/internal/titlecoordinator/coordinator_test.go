@@ -101,26 +101,51 @@ func (s *service) SaveTraceTitleInputAcknowledged(trace, title string) (string, 
 var permanent = errors.New("synthetic permanent")
 
 type fixture struct {
-	c           *Coordinator
-	k           *clock
-	l           *lane
-	s           *service
-	post        []func()
-	day         Date
-	nav         []string
-	close, quit int
-	errs        []error
+	c                                              *Coordinator
+	k                                              *clock
+	l                                              *lane
+	s                                              *service
+	post                                           []func()
+	day                                            Date
+	nav                                            []string
+	close, quit                                    int
+	errs                                           []error
+	rejectSubmit, rejectProducer, rejectCompletion bool
+	completionRejected                             int
 }
 
 func setup(t *testing.T) *fixture {
 	t.Helper()
 	f := &fixture{k: &clock{now: time.Unix(0, 0)}, l: &lane{}, s: &service{}, day: Date{2026, 11, 5}}
 	var err error
-	f.c, err = New(Config{TraceLocked: func(e error) bool { return errors.Is(e, ErrLocked) }, Service: f.s, Lane: f.l, Clock: f.k, Post: func(fn func()) { f.post = append(f.post, fn) }, Today: func() Date { return f.day }, Permanent: func(e error) bool { return errors.Is(e, permanent) }, Failed: func(_ Registration, e error) { f.errs = append(f.errs, e) }, Navigate: func(w, target string) { f.nav = append(f.nav, w+":"+target) }, ReenterClose: func(string) { f.close++ }, ReenterQuit: func() { f.quit++ }})
+	f.c, err = New(Config{TraceLocked: func(e error) bool { return errors.Is(e, ErrLocked) }, Service: f.s, TrySubmit: f.trySubmit, Clock: f.k, TryPostProducer: f.tryPostProducer, Today: func() Date { return f.day }, Permanent: func(e error) bool { return errors.Is(e, permanent) }, Failed: func(_ Registration, e error) { f.errs = append(f.errs, e) }, Navigate: func(w, target string) { f.nav = append(f.nav, w+":"+target) }, ReenterClose: func(string) { f.close++ }, ReenterQuit: func() { f.quit++ }})
 	if err != nil {
 		t.Fatal(err)
 	}
 	return f
+}
+func (f *fixture) trySubmit(work func(func(func()) bool)) bool {
+	if f.rejectSubmit {
+		return false
+	}
+	f.l.Enqueue(func() {
+		work(func(fn func()) bool {
+			if f.rejectCompletion {
+				f.completionRejected++
+				return false
+			}
+			f.post = append(f.post, fn)
+			return true
+		})
+	})
+	return true
+}
+func (f *fixture) tryPostProducer(fn func()) bool {
+	if f.rejectProducer {
+		return false
+	}
+	f.post = append(f.post, fn)
+	return true
 }
 func (f *fixture) ui() {
 	for len(f.post) > 0 {
@@ -701,7 +726,10 @@ func TestActualWorkerDoesNotWaitForUIAndCapturesImmutableRequest(t *testing.T) {
 	s := &barrierService{started: make(chan struct{}), release: make(chan struct{})}
 	post := make(chan func(), 4)
 	k := &clock{now: time.Unix(0, 0)}
-	c, err := New(Config{Service: s, Lane: l, Clock: k, Post: func(f func()) { post <- f }, Today: func() Date { return Date{2026, 11, 5} }, Permanent: func(error) bool { return false }, TraceLocked: func(error) bool { return false }, Navigate: func(string, string) {}, ReenterClose: func(string) {}, ReenterQuit: func() {}})
+	postCompletion := func(f func()) bool { post <- f; return true }
+	c, err := New(Config{Service: s, TrySubmit: func(work func(func(func()) bool)) bool {
+		return l.TryEnqueue(func() { work(postCompletion) })
+	}, Clock: k, TryPostProducer: postCompletion, Today: func() Date { return Date{2026, 11, 5} }, Permanent: func(error) bool { return false }, TraceLocked: func(error) bool { return false }, Navigate: func(string, string) {}, ReenterClose: func(string) {}, ReenterQuit: func() {}})
 	if err != nil {
 		t.Fatal(err)
 	}

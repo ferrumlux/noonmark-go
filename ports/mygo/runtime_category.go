@@ -11,6 +11,7 @@ import (
 	"github.com/ferrumlux/noonmark/ports/mygo/domain-extensions/classification/ordinary"
 	"github.com/ferrumlux/noonmark/ports/mygo/domain/core"
 	"github.com/ferrumlux/noonmark/ports/mygo/internal/taskapp"
+	coordinator "github.com/ferrumlux/noonmark/ports/mygo/internal/titlecoordinator"
 )
 
 // Candidate only: no production startup calls enableCategoryCandidate.
@@ -174,8 +175,29 @@ func (s *app) submitCategory(e *runtimeCategoryEditor, choice ordinary.Choice) {
 	generation := e.generation
 	e.pending, e.failure, e.savedUntil = true, nil, time.Time{}
 	w.commands++
-	h.post(func() {
-		h.lane.Enqueue(func() {
+	settled := false
+	settle := func() bool {
+		if settled {
+			return false
+		}
+		settled = true
+		w.commands--
+		e.pending = false
+		return true
+	}
+	notAdmitted := func() {
+		if !settle() {
+			return
+		}
+		if h.windows[s.titleWindowID] == w && w.category == e && e.generation == generation {
+			e.failure = coordinator.ErrNotAdmitted
+			w.closing = false
+			h.quitting = false
+			w.invalidate()
+		}
+	}
+	if !h.tryPostProducer(func() {
+		if !h.trySubmit(func(post func(func()) bool) {
 			var out taskapp.CategoryOutcome
 			if h.stopped {
 				out.Err = taskapp.ErrSession
@@ -185,8 +207,10 @@ func (s *app) submitCategory(e *runtimeCategoryEditor, choice ordinary.Choice) {
 			h.stopOnError(out.Err)
 			// Read once on the same lane; retry receipts never restore old chip values.
 			view, readErr := h.category.store.ReadView()
-			h.post(func() {
-				w.commands--
+			post(func() {
+				if !settle() {
+					return
+				}
 				if readErr == nil {
 					h.category.view = view
 					h.publish(view.Graph, view.Today)
@@ -224,7 +248,7 @@ func (s *app) submitCategory(e *runtimeCategoryEditor, choice ordinary.Choice) {
 						e.savedUntil = h.now().Add(900 * time.Millisecond)
 						savedGeneration := e.generation
 						h.categoryClock.After(900*time.Millisecond, func() {
-							h.post(func() {
+							h.tryPostProducer(func() {
 								if h.windows[s.titleWindowID] == w && w.category == e && e.generation == savedGeneration {
 									w.invalidate()
 								}
@@ -243,8 +267,12 @@ func (s *app) submitCategory(e *runtimeCategoryEditor, choice ordinary.Choice) {
 					h.quit()
 				}
 			})
-		})
-	})
+		}) {
+			notAdmitted()
+		}
+	}) {
+		notAdmitted()
+	}
 }
 
 // Source TaskClassificationEditor.swift:95–149,188–264,434–449.
@@ -336,7 +364,7 @@ func (s *app) liveCategorySection(c *ui.Context, width float32, chain core.TaskC
 		ui.Box(c).Size(width, 28).Children(func() {
 			box(c, 44, 10, 8, 8, ui.Hex(categoryNewColor), 4)
 			e.native.context = c
-			input := ui.TextInputBase(c.Key(e), &e.native.draft).Bind(&e.native.handle).Absolute().Left(60).Size(inputWidth, 28).Padding(0, 8).FontSize(11.5).FontWeight(500).Background(sourceVisual.controlFill).Border(1, line).Radius(6).Label("新分组名称").Placeholder("分组名称").OnSubmit(func() { h.post(func() { s.submitCategory(e, ordinary.Choice{Kind: ordinary.ChoiceNew}) }) })
+			input := ui.TextInputBase(c.Key(e), &e.native.draft).Bind(&e.native.handle).Absolute().Left(60).Size(inputWidth, 28).Padding(0, 8).FontSize(11.5).FontWeight(500).Background(sourceVisual.controlFill).Border(1, line).Radius(6).Label("新分组名称").Placeholder("分组名称").OnSubmit(func() { h.tryPostProducer(func() { s.submitCategory(e, ordinary.Choice{Kind: ordinary.ChoiceNew}) }) })
 			_ = input
 			cancel := ui.ButtonBase(c.Key(struct {
 				E      *runtimeCategoryEditor
@@ -344,7 +372,7 @@ func (s *app) liveCategorySection(c *ui.Context, width float32, chain core.TaskC
 			}{e, "cancel"})).Absolute().Left(cancelX).Size(cancelWidth, 28).Label("取消新建分组").Disabled(e.pending)
 			cancel.Children(func() { txt(c, 0, 6, 11, "取消", sourceVisual.text3, 400).SingleLine() })
 			if cancel.Clicked() && !e.pending {
-				h.post(func() {
+				h.tryPostProducer(func() {
 					if h.windows[s.titleWindowID] != w || w.category != e || e.pending {
 						return
 					}
@@ -362,7 +390,7 @@ func (s *app) liveCategorySection(c *ui.Context, width float32, chain core.TaskC
 			}{e, "create"})).Absolute().Left(createX).Size(createWidth, 28).Label("创建并加入").Disabled(e.pending)
 			create.Children(func() { txt(c, 0, 6, 11, "创建并加入", blue, 500).SingleLine() })
 			if create.Clicked() {
-				h.post(func() { s.submitCategory(e, ordinary.Choice{Kind: ordinary.ChoiceNew}) })
+				h.tryPostProducer(func() { s.submitCategory(e, ordinary.Choice{Kind: ordinary.ChoiceNew}) })
 			}
 		})
 	}

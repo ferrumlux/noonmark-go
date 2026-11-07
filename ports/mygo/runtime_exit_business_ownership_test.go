@@ -301,7 +301,10 @@ func TestRuntimeExitBusinessOwnershipRejectsPathMutations(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	source := string(raw)
+	source, err := runtimeAdmissionLegacyMainSource(string(raw))
+	if err != nil {
+		t.Fatal(err)
+	}
 	legacy, err := runtimeExitLegacyOwnershipSource(source)
 	if err != nil {
 		t.Fatal(err)
@@ -491,7 +494,10 @@ func TestRuntimeExitBusinessWholeMainSourceContract(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	source := string(raw)
+	source, err := runtimeAdmissionLegacyMainSource(string(raw))
+	if err != nil {
+		t.Fatal(err)
+	}
 	if _, err = runtimeExitLegacyOwnershipSource(source); err != nil {
 		t.Fatal(err)
 	}

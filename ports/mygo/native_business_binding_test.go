@@ -9,7 +9,7 @@ func TestNativeBusinessActualHubReadViewAcknowledgement(t *testing.T) {
 	for _, kind := range []string{"success", "wrong-app", "wrong-service-view", "runtime-error", "publish-rejected"} {
 		t.Run(kind, func(t *testing.T) {
 			b, l := nativeBusinessTestProbe(t)
-			h := newTitleHub(b.service, l, func(f func()) { f() }, wallTitleClock{}, b.now, func() {})
+			h := newTestTitleHub(b.service, l, func(f func()) { f() }, wallTitleClock{}, b.now, func() {})
 			if err := h.enableCategoryCandidate(); err != nil {
 				t.Fatal(err)
 			}

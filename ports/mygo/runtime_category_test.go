@@ -34,7 +34,7 @@ func newCategoryFixture(t *testing.T, pool bool) *titleFixture {
 	if err != nil {
 		t.Fatal(err)
 	}
-	f.h = newTitleHub(f.svc, &f.io, f.posts.Enqueue, &f.clock, f.clock.Now, func() {
+	f.h = newTestTitleHub(f.svc, &f.io, f.posts.Enqueue, &f.clock, f.clock.Now, func() {
 		if f.h.beforeQuit() {
 			f.quit++
 		}
@@ -96,7 +96,9 @@ func TestCategoryCandidateCancelAndDurableSelection(t *testing.T) {
 	if err = f.svc.AddPool("任务 B"); err != nil {
 		t.Fatal(err)
 	}
-	f.h.publishFromLane()
+	if !f.h.trySubmit(func(func(func()) bool) { f.h.publishFromLane() }) {
+		t.Fatal("test publication refused")
+	}
 	f.all()
 	var other core.TaskChainID
 	for _, c := range f.svc.Snapshot().Chains {
@@ -179,7 +181,9 @@ func TestCategoryCandidateHistoryChangesCurrentOnly(t *testing.T) {
 		t.Fatal(err)
 	}
 	before, _ := f.svc.ReadView()
-	f.h.publishFromLane()
+	if !f.h.trySubmit(func(func(func()) bool) { f.h.publishFromLane() }) {
+		t.Fatal("test publication refused")
+	}
 	f.all()
 	// Selected old detail date is not the actual natural day passed to Service.
 	f.s.runtimeDate = liveTestDay
@@ -322,7 +326,9 @@ func TestCategoryCandidateMidnightRetainsUnsavedHistoricalDraft(t *testing.T) {
 	if err := f.svc.AdvanceTo(tomorrow); err != nil {
 		t.Fatal(err)
 	}
-	f.h.publishFromLane()
+	if !f.h.trySubmit(func(func(func()) bool) { f.h.publishFromLane() }) {
+		t.Fatal("test publication refused")
+	}
 	f.all()
 	if f.s.runtimeDate != liveTestDay || f.s.runtimeSelection == "" || e.native.draft != "跨日草稿" {
 		t.Fatal("midnight hid category draft")

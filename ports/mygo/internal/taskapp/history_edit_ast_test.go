@@ -133,6 +133,10 @@ func TestHistoryEditFrozenProduction(t *testing.T) {
 	must(t, e)
 	expected, e = nativeBusinessFrozenOverlay(expected, string(businessOverlay))
 	must(t, e)
+	admissionOverlay, e := os.ReadFile("../../docs/tasks/runtime-admission-lifecycle/FROZEN-PRODUCTION-OVERLAY-v4.tsv")
+	must(t, e)
+	expected, e = runtimeAdmissionFrozenOverlay(expected, string(admissionOverlay))
+	must(t, e)
 	for _, line := range strings.Split(strings.TrimSpace(string(rows)), "\n") {
 		parts := strings.Split(line, "\t")
 		if len(parts) != 2 {

@@ -14,6 +14,7 @@ import (
 	"github.com/egoist/mygo/ui"
 	"github.com/ferrumlux/noonmark/ports/mygo/domain/core"
 	"github.com/ferrumlux/noonmark/ports/mygo/internal/taskapp"
+	coordinator "github.com/ferrumlux/noonmark/ports/mygo/internal/titlecoordinator"
 )
 
 type titleTestQueue struct{ q []func() }
@@ -78,7 +79,7 @@ func newTitleFixture(t *testing.T, seed bool) *titleFixture {
 			t.Fatal(err)
 		}
 	}
-	f.h = newTitleHub(f.svc, &f.io, f.posts.Enqueue, &f.clock, f.clock.Now, func() {
+	f.h = newTestTitleHub(f.svc, &f.io, f.posts.Enqueue, &f.clock, f.clock.Now, func() {
 		if f.h.beforeQuit() {
 			f.quit++
 		}
@@ -773,4 +774,13 @@ func TestTitleUIReadsStayResponsiveWhileServiceCommitHoldsLock(t *testing.T) {
 	if currentTitle(g, g.Traces[0].ChainID, g.Traces[0].DefinitionID) != "后台落盘" {
 		t.Fatal("verified publication not applied")
 	}
+}
+
+// Existing deterministic fixtures keep their explicit queues. New admission tests
+// inject rejection into the classified hooks rather than pretending every try works.
+func newTestTitleHub(store titleStore, lane interface{ Enqueue(func()) }, post func(func()), clock coordinator.Clock, now func() time.Time, quit func()) *titleHub {
+	return newTitleHub(store, func(work func(func(func()) bool)) bool {
+		lane.Enqueue(func() { work(func(fn func()) bool { post(fn); return true }) })
+		return true
+	}, func(fn func()) bool { post(fn); return true }, clock, now, quit)
 }

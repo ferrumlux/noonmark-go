@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Package titlecoordinator coordinates title drafts without owning a MyGo binding.
-// Methods and hooks except Service, Today, Permanent and Lane run serially on
+// Methods and hooks except Service, Today, Permanent and TrySubmit run serially on
 // the UI thread BETWEEN build frames, without nested event loops. Never copy it.
 package titlecoordinator
 
@@ -12,12 +12,13 @@ import (
 )
 
 var (
-	ErrRegistry = errors.New("title coordinator: registration changed during finalization; retry transition")
-	ErrNative   = errors.New("title coordinator: native snapshot/finalization unavailable")
-	ErrLocked   = errors.New("title coordinator: trace no longer editable; draft retained")
-	ErrStopped  = errors.New("title coordinator: service requires inspection or reopen")
-	ErrOwner    = errors.New("title coordinator: owner registered with another trace")
-	ErrStale    = errors.New("title coordinator: stale registration or identity")
+	ErrNotAdmitted = errors.New("title coordinator: request not admitted; draft retained")
+	ErrRegistry    = errors.New("title coordinator: registration changed during finalization; retry transition")
+	ErrNative      = errors.New("title coordinator: native snapshot/finalization unavailable")
+	ErrLocked      = errors.New("title coordinator: trace no longer editable; draft retained")
+	ErrStopped     = errors.New("title coordinator: service requires inspection or reopen")
+	ErrOwner       = errors.New("title coordinator: owner registered with another trace")
+	ErrStale       = errors.New("title coordinator: stale registration or identity")
 )
 
 type Date struct{ Year, Month, Day int }
@@ -37,9 +38,6 @@ type Native interface {
 	Replace(string) bool
 }
 
-// Enqueue never waits for IO. All writers sharing Service must use ONE lane.
-type Lane interface{ Enqueue(func()) }
-
 // Cancellation functions must not reenter coordinator APIs or invoke user hooks.
 type Clock interface {
 	Now() time.Time
@@ -47,18 +45,19 @@ type Clock interface {
 }
 type Config struct {
 	// TraceLocked maps core.ErrImmutableHistory/ErrInvalidTransition/ErrNotFound.
-	TraceLocked  func(error) bool
-	Service      Service
-	Lane         Lane
-	Clock        Clock
-	Post         func(func())     // always queue onto UI safe stage, never inline
-	Today        func() Date      // worker-safe; sample at execution, not debounce creation
-	Permanent    func(error) bool // errors.Is ErrConflict/ErrIncomplete/ErrSession
-	Changed      func(Registration, titlesession.State)
-	Failed       func(Registration, error)
-	Navigate     func(window, target string)
-	ReenterClose func(window string) // actual Window.Close, never Destroy
-	ReenterQuit  func()              // actual App.Quit; MUST invoke BeforeQuit again
+	TraceLocked func(error) bool
+	Service     Service
+	// TrySubmit never runs inline. Accepted work receives its own completion sink.
+	TrySubmit       func(func(post func(func()) bool)) bool
+	Clock           Clock
+	TryPostProducer func(func()) bool // always queue onto UI safe stage, never inline
+	Today           func() Date       // worker-safe; sample at execution, not debounce creation
+	Permanent       func(error) bool  // errors.Is ErrConflict/ErrIncomplete/ErrSession
+	Changed         func(Registration, titlesession.State)
+	Failed          func(Registration, error)
+	Navigate        func(window, target string)
+	ReenterClose    func(window string) // actual Window.Close, never Destroy
+	ReenterQuit     func()              // actual App.Quit; MUST invoke BeforeQuit again
 }
 type Registration struct {
 	coordinator *Coordinator
@@ -98,7 +97,7 @@ type Coordinator struct {
 }
 
 func New(cfg Config) (*Coordinator, error) {
-	if cfg.Service == nil || cfg.Lane == nil || cfg.Clock == nil || cfg.Post == nil || cfg.Today == nil || cfg.Permanent == nil || cfg.TraceLocked == nil || cfg.Navigate == nil || cfg.ReenterClose == nil || cfg.ReenterQuit == nil {
+	if cfg.Service == nil || cfg.TrySubmit == nil || cfg.Clock == nil || cfg.TryPostProducer == nil || cfg.Today == nil || cfg.Permanent == nil || cfg.TraceLocked == nil || cfg.Navigate == nil || cfg.ReenterClose == nil || cfg.ReenterQuit == nil {
 		return nil, errors.New("title coordinator: missing dependency")
 	}
 	return &Coordinator{cfg: cfg, intents: make(map[string]*intent)}, nil
@@ -211,8 +210,8 @@ func (c *Coordinator) syncJob(e *entry, j *titlesession.Job) {
 	} // pump now, no After(0)/frame wait
 	token := e.timer
 	e.cancel = c.cfg.Clock.After(time.Duration(j.DelayMilliseconds())*time.Millisecond, func() {
-		c.cfg.Post(func() {
-			if c.find(e.reg) != e || e.timer != token {
+		c.cfg.TryPostProducer(func() {
+			if c.find(e.reg) != e || e.timer != token || c.stopped.Load() {
 				return
 			}
 			if !c.read(e, false) {
@@ -293,7 +292,7 @@ func (c *Coordinator) pump(e *entry) {
 	}
 	request := *b.Request // immutable captured trace/text/token; no UI access in worker
 	e.flight = &request
-	c.cfg.Lane.Enqueue(func() {
+	if !c.cfg.TrySubmit(func(post func(func()) bool) {
 		result := titlesession.PersistenceResult{}
 		if c.stopped.Load() {
 			result.Err = ErrStopped
@@ -310,8 +309,14 @@ func (c *Coordinator) pump(e *entry) {
 				c.stopped.Store(true)
 			}
 		}
-		c.cfg.Post(func() { c.complete(e, request, result) })
-	})
+		// Admission records a rejected/undelivered completion. Never run UI
+		// completion on the worker as a fallback.
+		post(func() { c.complete(e, request, result) })
+	}) {
+		// Still on the original UI-safe call stack; settle the exact flight
+		// through the session, without inventing an acknowledgment.
+		c.complete(e, request, titlesession.PersistenceResult{Err: ErrNotAdmitted})
+	}
 }
 func (c *Coordinator) complete(e *entry, r titlesession.SaveRequest, result titlesession.PersistenceResult) {
 	if c.find(e.reg) != e || e.flight == nil || *e.flight != r {
@@ -391,12 +396,22 @@ func (c *Coordinator) registryChanged(i *intent) {
 	}
 	i.rechecks++
 	i.recheckQueued = true
-	c.cfg.Post(func() {
+	if !c.cfg.TryPostProducer(func() {
 		i.recheckQueued = false
 		if c.currentIntent(i) {
 			c.continueOne(i)
 		}
-	})
+	}) {
+		i.recheckQueued = false
+		c.removeIntent(i)
+		if c.cfg.Failed != nil {
+			var r Registration
+			if es := c.affected(i); len(es) > 0 {
+				r = es[0].reg
+			}
+			c.cfg.Failed(r, ErrNotAdmitted)
+		}
+	}
 }
 
 // Finalize the entire captured set before starting persistence. Any hook that

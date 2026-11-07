@@ -35,8 +35,7 @@ func nativeBusinessTestProbe(t *testing.T) (*nativeBusinessProbe, *nativeBusines
 	t.Cleanup(func() { b.StopAdmission(); _ = s.Close() })
 	b.service = s
 	l := &nativeBusinessQueuedLane{make(chan func(), 1)}
-	b.lane = l
-	b.post = func(f func()) { f() }
+	b.trySubmit = nativeBusinessTestSubmit(l, func(f func()) { f() })
 	b.publish = func(taskapp.OrdinaryReadView) error { return nil }
 	return b, l
 }
@@ -113,13 +112,13 @@ func TestNativeBusinessControllerCancelBeforeExecute(t *testing.T) {
 func TestNativeBusinessControllerDiscardedAndLateCallbacks(t *testing.T) {
 	b, l := nativeBusinessTestProbe(t)
 	posted := make(chan func(), 1)
-	b.post = func(f func()) {
+	b.trySubmit = nativeBusinessTestSubmit(l, func(f func()) {
 		select {
 		case posted <- f:
 		default:
 			panic("duplicate publish callback")
 		}
-	}
+	})
 	done := make(chan error, 1)
 	go func() { done <- b.run() }()
 	nativeBusinessTakeCallback(t, l.q, done, "writer admission")()
@@ -201,7 +200,9 @@ func TestNativeBusinessControllerAdmissionTerminalRace(t *testing.T) {
 	for i := 0; i < 128; i++ {
 		b := newNativeBusinessProbe("open", time.Now)
 		lane := coordinator.NewSerialLane()
-		b.lane = lane
+		b.trySubmit = func(work func(func(func()) bool)) bool {
+			return lane.TryEnqueue(func() { work(func(fn func()) bool { fn(); return true }) })
+		}
 		// If admitted, canceled execute returns before needing service/publish.
 		barrier := make(chan struct{})
 		lane.Enqueue(func() {
@@ -238,5 +239,12 @@ func TestNativeBusinessDateOffsetBoundary(t *testing.T) {
 	b.now = func() time.Time { return time.Date(2026, 6, 12, 12, 0, 0, 0, time.FixedZone("changed", 3600)) }
 	if err := b.sample("after_open"); err == nil {
 		t.Fatal("offset boundary accepted")
+	}
+}
+
+func nativeBusinessTestSubmit(lane interface{ Enqueue(func()) }, post func(func())) func(func(func(func()) bool)) bool {
+	return func(work func(func(func()) bool)) bool {
+		lane.Enqueue(func() { work(func(fn func()) bool { post(fn); return true }) })
+		return true
 	}
 }

@@ -21,13 +21,22 @@ func NewSerialLane() *SerialLane {
 	return l
 }
 func (l *SerialLane) Enqueue(f func()) {
+	if !l.TryEnqueue(f) {
+		panic("enqueue after terminal lane stop")
+	}
+}
+
+// TryEnqueue transfers ownership only when accepted under the same lock as
+// StopAfterDrain. A rejected closure is neither retained nor executed.
+func (l *SerialLane) TryEnqueue(f func()) bool {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	if l.stopped {
-		panic("enqueue after terminal lane stop")
+		return false
 	}
 	l.queue = append(l.queue, f)
 	l.cond.Signal()
+	return true
 }
 func (l *SerialLane) run() {
 	defer close(l.done)

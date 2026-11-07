@@ -62,7 +62,7 @@ func TestIndependentOldNativeMenuCannotCrossReattachedSession(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	f.h = newTitleHub(f.svc, &f.io, f.posts.Enqueue, &f.clock, f.clock.Now, func() {})
+	f.h = newTestTitleHub(f.svc, &f.io, f.posts.Enqueue, &f.clock, f.clock.Now, func() {})
 	f.h.attach(f.s, func() { f.invalid = true }, func() {})
 	f.tt.Frame()
 	f.all()

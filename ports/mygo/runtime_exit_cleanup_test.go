@@ -51,7 +51,11 @@ func TestRuntimeExitMainHasSingleClosePerPath(t *testing.T) {
 	}
 	// Verify the narrowly scoped, terminal after-open business failure owner
 	// before reconstructing and checking the original three ownership paths.
-	s, err := runtimeExitLegacyOwnershipSource(string(b))
+	prior, err := runtimeAdmissionLegacyMainSource(string(b))
+	if err != nil {
+		t.Fatal(err)
+	}
+	s, err := runtimeExitLegacyOwnershipSource(prior)
 	if err != nil {
 		t.Fatal(err)
 	}

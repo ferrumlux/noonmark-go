@@ -96,6 +96,7 @@ func TestOrdinaryEntryProductSourceContract(t *testing.T) {
 		return nil
 	})
 	must(t, err)
+	actual = runtimeAdmissionProductHistoricalInput(t, actual)
 	actual = nativeBusinessProductHistoricalInput(t, actual)
 	actual = entryProductV2HistoricalInput(t, actual)
 	must(t, entryProductSourceContract(string(manifest), string(changes), actual))

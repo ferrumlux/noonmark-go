@@ -1,0 +1,22 @@
+# 最小有限验证矩阵（验收范围）
+
+使用可控barrier/channel及手动clock/post，不靠sleep猜顺序。测试不得recover enqueue-after-stop panic并称成功。
+
+L1 lane锁：并发TryEnqueue与StopAfterDrain，在append前/后可控卡点；接受N次精确执行N次，false任务0次；Stop重复无panic、Done仅接受任务完毕后关闭。直接旧Enqueue终止后仍可保留断言，生产没有该调用。
+L2 admission线性化：TrySubmit在持admission锁完成writer.TryEnqueue；EndRun竞争时只出现“接受且执行”或“拒绝且0调用”。不得check-unlock-enqueue。验证admission→lane单向锁序，不持锁执行闭包/Service/cancel/RunOnMain。
+L3 producer dispatcher锁：coordinator debounce与category900ms timer同时跨EndRun/dispatcher stop；producer拒绝不panic、不进native。接受但UI尚未运行的wrapper在terminal变Undelivered。另测已在Running消费的timer按原token运行。
+L4 completion专用通道：worker在EndRun之后、writer.Done之前尝试发两个C（图/最终结果），两次仍可dispatcher接受；main不能提前Stop dispatcher。之后writerDone，FinishWriterDrain关闭C，新C拒绝并协议错误；禁止持有sink逃逸到goroutine。
+L5 两跳拒绝：command/category/observeDay分别首P拒绝、P被消费而W拒绝。live UI每项pending/commands/actionPending/carryover计数精确结算，拒绝分支无清draft/无Service。observeDay首P拒绝准备0调用；第二跳W拒绝分别计此前准备保存与未接受自然日worker，允许原准备真实Finish/排保存/lifecycle结果，拒绝分支不新增操作、不回滚；不得断言整回合零写或binding必不变。terminal P未消费只报告未消费，不后台修改UI。
+L6 coordinator flight：BeginPersistence后W拒绝，真实PersistenceDidComplete收到原request+ErrNotAdmitted，不设VerifiedText，flight结算一次，draft保留；重复回调不双终结。已接受W在fault后产生C而非走not-admitted分支。
+L7 结果不改写：Advance成功后保存失败/未执行、category双Outcome、非sentinel存储失败，生命周期停止只增加delivery状态，不改receipt/error/extent；不以UiUndelivered推导事务未写。
+L8 UI丢弃：mock RunOnMain直接丢closure、接受后延迟到EndRun后调用、重复调用三种；分别Undelivered、Undelivered、一次Consumed。dispatcher.Done不等于Consumed。live dispatcher异常拒绝C标DeliveryRejected，验收失败，不能吞flight。
+L9 activeUI边界：wrapper先获UI许可，EndRun后拒绝任何新许可；已开始回合结束才允许cleanup越过activeUI等待。callback可调用TrySubmit而不死锁；拒绝能在该UI回合结算。未开始callback不被等待，避免loop已停永久等待。真实MyGo此边界另以线程/顺序instrument验证，不冒充任意框架保证。
+L10 producer细账：注册e.queued、Observe seen标记、registryChanged.recheckQueued、composer.clearQueued、titleTarget、retirement指针逐项UI拒绝后可再次正常触发；原native binding/draft不改。纯redraw timer拒绝没有fake保存结果。
+L11 native business：run在b.mu下TrySubmit与EndRun→StopAdmission竞态无锁反转；拒绝解除ack等待；accepted worker完成但UI未消费由cancel退出、报告false，PreClose失败仍drain/Close。复用公开基线的实际 cleanup tests，新增强制delivery拒绝，不改其原断言。
+L12 shutdown所有权：成功Run、Run报错、startup category enable失败三条路线EndRun→writer.Done→PreClose→dispatcher.Done→Service.Close；Close恰好一次，任何中段失败不跳过后段。headless独立Close未被二次接管。零任务/无producer可结束。
+U1 Writable+pending：utility draft非空、相同native binding，dismissUtility(clear=true)调用真实close callback，被commands>0 veto；draft字节不变，不调用Finish/Replace来修复。关闭重入仍不预清。
+U2 健康时序：dismiss入口预检查（若有）后worker改变停止状态，beforeClose拒绝；通过可控gate替身实现，不必先实现Health。原draft与随后新输入都保留，不能恢复旧字符串覆盖新输入。
+U3 成功关闭及fallback：Close获准也没有预/后清空回调；closeWindow=nil时按原clearDraft真假改变s.draft与page。此fallback不被测试命名为native Close成功。
+U4 生命周期交互：utility Close请求的post遭producer拒绝，不清draft、不伪造窗口已关闭；异常Run返回不声称草稿已导出/恢复。
+
+冻结门禁：静态所有显式Enqueue/Post/After路线核对为PRODUCERS清单；新增tests和原coordinator/title/category/carryover/cleanup/native-business回归；同源实现审查后 scripts/check、六编译、Linux native生命周期/utility验证及同hash CI。本矩阵定义验收要求，不代表这些阶段已全部执行或通过。M1/M2通过只解基础缺口，不等同Health或R5完成。
