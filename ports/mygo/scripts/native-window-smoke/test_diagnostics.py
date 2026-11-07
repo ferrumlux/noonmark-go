@@ -349,6 +349,108 @@ class DiagnosticCollectorTests(unittest.TestCase):
                       + [dict(pid=None, kind='helper_ready', bytes=5, eof=True)]))
             self.fixture.write(f'stage{n}-driver.json', r)
 
+    def check_deadlines(self, values, accepted=True):
+        record = self.fixture.read('stage1-driver.json')
+        record['diagnostics']['deadlines_seconds'] = values
+        call = lambda: c.validate_diagnostics(record['diagnostics'], record, 'linux/amd64',
+            (self.fixture.root/'stage1.json').stat().st_size)
+        if accepted:
+            call()
+        else:
+            with self.assertRaises(ValueError):
+                call()
+
+    def test_hosted_deadline_raw_values_preserved(self):
+        # Exact JSON numbers from run 42342933714, not rounded measurements.
+        for values in ((44.99999999999997, 54.99999999999997, 59.99999999999997),
+                       (45.000000000000014, 55.000000000000014, 60.000000000000014)):
+            deadlines = dict(zip(('ready', 'completion_limit', 'cleanup'), values))
+            self.check_deadlines(deadlines)
+            self.assertEqual(tuple(deadlines.values()), values)
+
+    def test_driver_deadlines_large_origins_and_truncated_budget(self):
+        for start in (0., .123456789, 12345678.123456789, 2**31-.123456789, 2**32-65.123456):
+            for remaining in (60., 59.1234567, 50., 45.1234567, 12.1234567, 5.75):
+                with self.subTest(start=start, remaining=remaining):
+                    cleanup = min(start+60, start+remaining)
+                    diagnostic = m.StageDiagnostics(start, min(start+45, cleanup-5),
+                                                    min(start+55, cleanup-5), cleanup)
+                    self.check_deadlines(diagnostic.data['deadlines_seconds'])
+
+    def test_deadline_absolute_tolerance_boundary(self):
+        import math
+        # Find adjacent representable numbers on either side of the fixed bound.
+        for key, nominal in (('ready', 45.), ('completion_limit', 55.), ('cleanup', 60.)):
+            for direction in (-1, 1):
+                if key == 'cleanup' and direction == -1:
+                    continue  # A shorter cleanup budget is legal, not a mismatch.
+                inside = nominal + direction*c.DEADLINE_METADATA_ABS_TOL
+                while abs(inside-nominal) > c.DEADLINE_METADATA_ABS_TOL:
+                    inside = math.nextafter(inside, nominal)
+                outside = math.nextafter(inside, math.inf if direction > 0 else -math.inf)
+                values = dict(ready=45., completion_limit=55., cleanup=60.)
+                values[key] = inside
+                self.check_deadlines(values)
+                values[key] = outside
+                self.check_deadlines(values, False)
+
+    def test_deadline_nonfinite_negative_types_and_expansion_rejected(self):
+        for key in ('ready', 'completion_limit', 'cleanup'):
+            for bad in (float('nan'), float('inf'), -float('inf'), -.00000001, True, '45', None, 61, 1e12):
+                with self.subTest(key=key, bad=bad):
+                    values = dict(ready=45., completion_limit=55., cleanup=60.)
+                    values[key] = bad
+                    self.check_deadlines(values, False)
+        for values in (dict(ready=45, completion_limit=55, cleanup=50),
+                       dict(ready=45.001, completion_limit=55.001, cleanup=60.001),
+                       dict(ready=0, completion_limit=0, cleanup=.5)):
+            self.check_deadlines(values, False)
+
+    def test_metadata_tolerance_does_not_relax_original_hard_limits(self):
+        for index, (name, key, value) in enumerate((
+                ('stage1-driver.json', 'duration_seconds', 60),
+                ('stage1-driver.json', 'marker_observed_seconds', 45),
+                ('result.json', 'duration_seconds', 120))):
+            original = self.fixture.read(name)
+            self.fixture.change(name, **{key: value})
+            self.fixture.output = self.fixture.base / f'hard-limit-{index}'
+            self.fixture.reject()
+            self.fixture.write(name, original)
+
+    def test_tolerance_does_not_relax_cleanup_order_or_failure_lock(self):
+        original = self.fixture.read('stage1-driver.json')
+        for index, (key, value) in enumerate((('cleanup_started_seconds', .40000000001),
+                ('failure', {'code': 'ready_watchdog'}), ('failure_snapshot', {}))):
+            record = copy.deepcopy(original)
+            record['diagnostics'][key] = value
+            record['diagnostics']['deadlines_seconds']['cleanup'] = 60.000000000000014
+            self.fixture.write('stage1-driver.json', record)
+            self.fixture.output = self.fixture.base / f'locked-{index}'
+            self.fixture.reject()
+
+    def test_excessive_origin_error_still_fails_closed(self):
+        start = 2**45 - .01
+        cleanup = start+60
+        diagnostic = m.StageDiagnostics(start, start+45, start+55, cleanup)
+        self.assertGreater(abs(diagnostic.data['deadlines_seconds']['ready']-45),
+                           c.DEADLINE_METADATA_ABS_TOL)
+        self.check_deadlines(diagnostic.data['deadlines_seconds'], False)
+
+    def test_full_gate_rejects_outside_tolerance_and_truncated_overrun(self):
+        original = self.fixture.read('stage1-driver.json')
+        for index, values in enumerate((dict(ready=45.00000101, completion_limit=55, cleanup=60),
+                dict(ready=45, completion_limit=55.00000101, cleanup=60),
+                dict(ready=45, completion_limit=55, cleanup=60.00000101),
+                dict(ready=.5, completion_limit=.5, cleanup=5.5))):
+            record = copy.deepcopy(original)
+            record['diagnostics']['deadlines_seconds'] = values
+            if index == 3:
+                record['duration_seconds'] = 5.5  # Equal to shortened deadline is still late.
+                self.fixture.change('result.json', duration_seconds=6)
+            self.fixture.write('stage1-driver.json', record)
+            self.fixture.output = self.fixture.base / f'full-deadline-reject-{index}'
+            self.fixture.reject()
+
     def test_extension_passes_only_with_original_gate(self):
         self.fixture.collect()
         c.gate(self.fixture.output, self.fixture.expected, self.fixture.artifact)

@@ -25,6 +25,12 @@ for n in (1, 2):
         FILES[f'stage{n}.{stream}.txt'] = MAX_LOG
         for helper in ('xvfb', 'dbus'):
             FILES[f'infra-stage{n}/{helper}.{stream}.txt'] = MAX_LOG
+# Only deadline metadata uses this absolute representation allowance. For binary64
+# monotonic origins below 2**32 seconds (136 years), deadline arithmetic has
+# sub-microsecond rounding error. Do not scale tolerance with untrusted values
+# or apply it to measured durations, READY, ordering, or watchdog execution.
+DEADLINE_METADATA_ABS_TOL = 1e-6
+
 IDENTITY_KEYS = {'source', 'run_id', 'build_attempt', 'consumer_attempt', 'target', 'artifact_id'}
 
 
@@ -131,9 +137,13 @@ def validate_diagnostics(d, record, target, report_size):
     require(type(deadlines) is dict and set(deadlines) == {'ready', 'completion_limit', 'cleanup'}, 'diagnostic deadline fields')
     for value in deadlines.values():
         finite(value, 61, 'diagnostic deadline')
-    require(deadlines['cleanup'] <= 60 and duration < deadlines['cleanup']
-            and deadlines['ready'] == min(45, deadlines['cleanup']-5)
-            and deadlines['completion_limit'] == min(55, deadlines['cleanup']-5), 'diagnostic deadline mismatch')
+    def same_deadline(actual, expected):
+        return math.isclose(actual, expected, rel_tol=0, abs_tol=DEADLINE_METADATA_ABS_TOL)
+
+    require((deadlines['cleanup'] <= 60 or same_deadline(deadlines['cleanup'], 60))
+            and duration < deadlines['cleanup']
+            and same_deadline(deadlines['ready'], min(45, deadlines['cleanup']-5))
+            and same_deadline(deadlines['completion_limit'], min(55, deadlines['cleanup']-5)), 'diagnostic deadline mismatch')
     begin, end = d['cleanup_started_seconds'], d['cleanup_ended_seconds']
     stamp(begin); stamp(end)
     require(begin <= end, 'diagnostic cleanup order')
