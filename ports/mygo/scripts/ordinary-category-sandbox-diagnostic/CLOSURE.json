@@ -1,0 +1,15 @@
+{
+  "schema": "ordinary-sandbox-diagnostic-lock-v1",
+  "files": {
+    "driver.py": "9c367ac67f8ce7fa2de6a3a5bc145f29c6af5193e9536ae91b5e4192b970a6fb",
+    "test_diagnostic.py": "d78b9b7ff239abebc37dd96b797a0cd66ae7395c944578309601295f15a06680",
+    "CONTRACT.md": "f75868b080d038fc96eb57d2231f18c26f0d7663c8022f73b2383a530e043b54",
+    "workflow": "6a289d5ff2bfaf21e2da328a0083375c14318c054094cd86cb4393cd05d191ee"
+  },
+  "dependencies": {
+    "runnerSHA256": "3464a455677d7e45b77d622aa05feb7674d0ba65bf6382ab7e8e2a2f99bc715c",
+    "toolManifestSHA256": "4d81f1784ef074bba86895dda6127fcce4b293ad1f6a6ac3ed666a28519a0fe8",
+    "sourceClosureSHA256": "ad948c7383b6af6b7cc3a82e0d7752982a9cadd5d38101bd683ccdde6cb0e31d",
+    "inputSHA256": "2a3f43ffb5a78165ce9d32958089e0e3973280829fa5f3ab33f69fa44ea70aae"
+  }
+}

@@ -1,0 +1,137 @@
+name: Bounded ordinary sandbox platform diagnostic
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/ordinary-category-sandbox-diagnostic.yml'
+      - 'ports/mygo/scripts/ordinary-category-sandbox-diagnostic/**'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: ordinary-sandbox-diagnostic-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  diagnose:
+    if: github.ref == 'refs/heads/main'
+    runs-on: macos-15
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+          fetch-depth: 1
+      - name: Verify frozen diagnostic and offline contracts
+        env:
+          PYTHONDONTWRITEBYTECODE: '1'
+          DRIVER_SHA: 9c367ac67f8ce7fa2de6a3a5bc145f29c6af5193e9536ae91b5e4192b970a6fb
+        run: |
+          python3 -B - "$DRIVER_SHA" verify --reviewed-driver-sha256 "$DRIVER_SHA" --reviewed-manifest-sha256 4d81f1784ef074bba86895dda6127fcce4b293ad1f6a6ac3ed666a28519a0fe8 <<'PY'
+          import hashlib, os, pathlib, stat, sys
+          p = pathlib.Path.cwd() / "ports/mygo/scripts/ordinary-category-sandbox-diagnostic/driver.py"
+          fd = os.open("/", os.O_RDONLY | os.O_DIRECTORY)
+          try:
+              for part in p.parts[1:-1]:
+                  nxt = os.open(part, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW, dir_fd=fd)
+                  os.close(fd); fd = nxt
+              leaf = os.open(p.name, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK, dir_fd=fd)
+              with os.fdopen(leaf, "rb") as f:
+                  before = os.fstat(f.fileno())
+                  if not stat.S_ISREG(before.st_mode) or before.st_nlink != 1 or before.st_size > 131072:
+                      raise SystemExit("unsafe diagnostic driver")
+                  raw = f.read(131073)
+                  def identity(s): return (s.st_dev, s.st_ino, s.st_mode, s.st_uid, s.st_nlink, s.st_size, s.st_mtime_ns, s.st_ctime_ns)
+                  if identity(before) != identity(os.fstat(f.fileno())) or identity(before) != identity(os.stat(p.name, dir_fd=fd, follow_symlinks=False)):
+                      raise SystemExit("diagnostic driver identity changed")
+          finally:
+              os.close(fd)
+          if len(raw) > 131072 or hashlib.sha256(raw).hexdigest() != sys.argv[1]:
+              raise SystemExit("diagnostic driver hash mismatch")
+          sys.argv = [str(p)] + sys.argv[2:]
+          exec(compile(raw, str(p), "exec"), {"__name__": "__main__", "__file__": str(p)})
+          PY
+          python3 -B ports/mygo/scripts/ordinary-category-sandbox-diagnostic/test_diagnostic.py -v
+      - name: Run only three bounded sandboxed platform probes
+        env:
+          PYTHONDONTWRITEBYTECODE: '1'
+          DRIVER_SHA: 9c367ac67f8ce7fa2de6a3a5bc145f29c6af5193e9536ae91b5e4192b970a6fb
+          WORK_ROOT: ${{ runner.temp }}/noonmark-sandbox-diagnostic-${{ github.run_id }}-${{ github.run_attempt }}
+          EVIDENCE_ROOT: ${{ runner.temp }}/noonmark-sandbox-diagnostic-evidence-${{ github.run_id }}-${{ github.run_attempt }}
+          RUN_ID: ${{ github.run_id }}
+          ATTEMPT: ${{ github.run_attempt }}
+          HEAD_SHA: ${{ github.sha }}
+        run: |
+          python3 -B - "$DRIVER_SHA" probe --reviewed-driver-sha256 "$DRIVER_SHA" --reviewed-manifest-sha256 4d81f1784ef074bba86895dda6127fcce4b293ad1f6a6ac3ed666a28519a0fe8 --work-root "$WORK_ROOT" --evidence-root "$EVIDENCE_ROOT" --run-id "$RUN_ID" --attempt "$ATTEMPT" --head-sha "$HEAD_SHA" <<'PY'
+          import hashlib, os, pathlib, stat, sys
+          p = pathlib.Path.cwd() / "ports/mygo/scripts/ordinary-category-sandbox-diagnostic/driver.py"
+          fd = os.open("/", os.O_RDONLY | os.O_DIRECTORY)
+          try:
+              for part in p.parts[1:-1]:
+                  nxt = os.open(part, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW, dir_fd=fd)
+                  os.close(fd); fd = nxt
+              leaf = os.open(p.name, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK, dir_fd=fd)
+              with os.fdopen(leaf, "rb") as f:
+                  before = os.fstat(f.fileno())
+                  if not stat.S_ISREG(before.st_mode) or before.st_nlink != 1 or before.st_size > 131072:
+                      raise SystemExit("unsafe diagnostic driver")
+                  raw = f.read(131073)
+                  def identity(s): return (s.st_dev, s.st_ino, s.st_mode, s.st_uid, s.st_nlink, s.st_size, s.st_mtime_ns, s.st_ctime_ns)
+                  if identity(before) != identity(os.fstat(f.fileno())) or identity(before) != identity(os.stat(p.name, dir_fd=fd, follow_symlinks=False)):
+                      raise SystemExit("diagnostic driver identity changed")
+          finally:
+              os.close(fd)
+          if len(raw) > 131072 or hashlib.sha256(raw).hexdigest() != sys.argv[1]:
+              raise SystemExit("diagnostic driver hash mismatch")
+          sys.argv = [str(p)] + sys.argv[2:]
+          exec(compile(raw, str(p), "exec"), {"__name__": "__main__", "__file__": str(p)})
+          PY
+      - name: Export validated bounded diagnostic evidence
+        if: always()
+        env:
+          PYTHONDONTWRITEBYTECODE: '1'
+          DRIVER_SHA: 9c367ac67f8ce7fa2de6a3a5bc145f29c6af5193e9536ae91b5e4192b970a6fb
+          WORK_ROOT: ${{ runner.temp }}/noonmark-sandbox-diagnostic-${{ github.run_id }}-${{ github.run_attempt }}
+          EVIDENCE_ROOT: ${{ runner.temp }}/noonmark-sandbox-diagnostic-evidence-${{ github.run_id }}-${{ github.run_attempt }}
+          RUN_ID: ${{ github.run_id }}
+          ATTEMPT: ${{ github.run_attempt }}
+          HEAD_SHA: ${{ github.sha }}
+        run: |
+          python3 -B - "$DRIVER_SHA" export --reviewed-driver-sha256 "$DRIVER_SHA" --reviewed-manifest-sha256 4d81f1784ef074bba86895dda6127fcce4b293ad1f6a6ac3ed666a28519a0fe8 --work-root "$WORK_ROOT" --evidence-root "$EVIDENCE_ROOT" --run-id "$RUN_ID" --attempt "$ATTEMPT" --head-sha "$HEAD_SHA" <<'PY'
+          import hashlib, os, pathlib, stat, sys
+          p = pathlib.Path.cwd() / "ports/mygo/scripts/ordinary-category-sandbox-diagnostic/driver.py"
+          fd = os.open("/", os.O_RDONLY | os.O_DIRECTORY)
+          try:
+              for part in p.parts[1:-1]:
+                  nxt = os.open(part, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW, dir_fd=fd)
+                  os.close(fd); fd = nxt
+              leaf = os.open(p.name, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK, dir_fd=fd)
+              with os.fdopen(leaf, "rb") as f:
+                  before = os.fstat(f.fileno())
+                  if not stat.S_ISREG(before.st_mode) or before.st_nlink != 1 or before.st_size > 131072:
+                      raise SystemExit("unsafe diagnostic driver")
+                  raw = f.read(131073)
+                  def identity(s): return (s.st_dev, s.st_ino, s.st_mode, s.st_uid, s.st_nlink, s.st_size, s.st_mtime_ns, s.st_ctime_ns)
+                  if identity(before) != identity(os.fstat(f.fileno())) or identity(before) != identity(os.stat(p.name, dir_fd=fd, follow_symlinks=False)):
+                      raise SystemExit("diagnostic driver identity changed")
+          finally:
+              os.close(fd)
+          if len(raw) > 131072 or hashlib.sha256(raw).hexdigest() != sys.argv[1]:
+              raise SystemExit("diagnostic driver hash mismatch")
+          sys.argv = [str(p)] + sys.argv[2:]
+          exec(compile(raw, str(p), "exec"), {"__name__": "__main__", "__file__": str(p)})
+          PY
+      - name: Upload two explicit diagnostic files only
+        if: always()
+        env:
+          EVIDENCE_ROOT: ${{ runner.temp }}/noonmark-sandbox-diagnostic-evidence-${{ github.run_id }}-${{ github.run_attempt }}
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: ordinary-sandbox-diagnostic-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ env.EVIDENCE_ROOT }}/sandbox-diagnostic-evidence.zip
+            ${{ env.EVIDENCE_ROOT }}/export-summary.json
+          if-no-files-found: error
+          retention-days: 7
+          include-hidden-files: false
+          overwrite: false
