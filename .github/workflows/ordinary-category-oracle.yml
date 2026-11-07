@@ -19,8 +19,6 @@ jobs:
     env:
       DEVELOPER_DIR: /Applications/Xcode_26.2.app/Contents/Developer
       PYTHONDONTWRITEBYTECODE: '1'
-      NOONMARK_MYGO_BUILD_ROOT: ${{ runner.temp }}/noonmark-ordinary-category-${{ github.run_id }}-${{ github.run_attempt }}
-      EVIDENCE_ROOT: ${{ runner.temp }}/noonmark-ordinary-category-evidence-${{ github.run_id }}-${{ github.run_attempt }}
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # Same fixed v6 SHA as the existing name oracle
         with:
@@ -33,6 +31,8 @@ jobs:
           python3 -B ports/mygo/scripts/ordinary-category-oracle-ci/test_ci.py -v
       - name: Capture isolated ordinary classification reference
         id: capture
+        env:
+          NOONMARK_MYGO_BUILD_ROOT: ${{ runner.temp }}/noonmark-ordinary-category-${{ github.run_id }}-${{ github.run_attempt }}
         run: |
           python3 -B ports/mygo/scripts/ordinary-category-oracle/runner.py capture \
             --reviewed-manifest-sha256 4d81f1784ef074bba86895dda6127fcce4b293ad1f6a6ac3ed666a28519a0fe8 \
@@ -41,6 +41,8 @@ jobs:
       - name: Export only bounded allowlisted synthetic evidence
         if: always()
         env:
+          NOONMARK_MYGO_BUILD_ROOT: ${{ runner.temp }}/noonmark-ordinary-category-${{ github.run_id }}-${{ github.run_attempt }}
+          EVIDENCE_ROOT: ${{ runner.temp }}/noonmark-ordinary-category-evidence-${{ github.run_id }}-${{ github.run_attempt }}
           CAPTURE_OUTCOME: ${{ steps.capture.outcome }}
         run: |
           python3 -B ports/mygo/scripts/ordinary-category-oracle-ci/export_evidence.py \
@@ -49,6 +51,8 @@ jobs:
             --capture-outcome "$CAPTURE_OUTCOME"
       - name: Upload explicit evidence files only
         if: always()
+        env:
+          EVIDENCE_ROOT: ${{ runner.temp }}/noonmark-ordinary-category-evidence-${{ github.run_id }}-${{ github.run_attempt }}
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # Same fixed v6 SHA as the existing name oracle
         with:
           name: ordinary-category-oracle-${{ github.run_id }}-${{ github.run_attempt }}

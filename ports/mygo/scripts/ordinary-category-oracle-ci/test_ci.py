@@ -28,6 +28,37 @@ class WorkflowSafety(unittest.TestCase):
     def test_exact_workflow_contract(self):
         e.check_workflow(e.WORKFLOW.read_bytes())
 
+    def assert_runner_context_contract(self, raw):
+        # runner is unavailable in jobs.<job_id>.env, but available in step env.
+        # Keep this regression independent of the exact-byte workflow hash.
+        job, steps = raw.split('    steps:\n', 1)
+        self.assertNotIn('${{ runner.', job)
+        work = 'NOONMARK_MYGO_BUILD_ROOT: ${{ runner.temp }}/noonmark-ordinary-category-${{ github.run_id }}-${{ github.run_attempt }}'
+        evidence = 'EVIDENCE_ROOT: ${{ runner.temp }}/noonmark-ordinary-category-evidence-${{ github.run_id }}-${{ github.run_attempt }}'
+        capture = steps.split('        id: capture\n', 1)[1].split('      - name:', 1)[0]
+        export = steps.split('      - name: Export only bounded allowlisted synthetic evidence\n', 1)[1].split('      - name:', 1)[0]
+        upload = steps.split('      - name: Upload explicit evidence files only\n', 1)[1]
+        self.assertIn('        env:\n          ' + work + '\n', capture)
+        self.assertIn('        env:\n          ' + work + '\n          ' + evidence + '\n', export)
+        self.assertIn('        env:\n          ' + evidence + '\n', upload)
+        self.assertEqual(raw.count(work), 2)
+        self.assertEqual(raw.count(evidence), 2)
+
+    def test_runner_paths_are_bound_at_step_scope(self):
+        self.assert_runner_context_contract(e.WORKFLOW.read_text())
+
+    def test_reject_runner_context_at_job_scope_without_hash_lock(self):
+        raw = e.WORKFLOW.read_text()
+        broken = raw.replace('    env:\n', '    env:\n      BROKEN: ${{ runner.temp }}\n', 1)
+        with self.assertRaises(AssertionError):
+            self.assert_runner_context_contract(broken)
+
+    def test_reject_inconsistent_step_paths_without_hash_lock(self):
+        raw = e.WORKFLOW.read_text()
+        broken = raw.replace('/noonmark-ordinary-category-${{ github.run_id }}', '/different-${{ github.run_id }}', 1)
+        with self.assertRaises(AssertionError):
+            self.assert_runner_context_contract(broken)
+
     def test_frozen_source_lock(self):
         _, identity = e.r.verify(e.REVIEWED)
         self.assertEqual(identity, e.REVIEWED)

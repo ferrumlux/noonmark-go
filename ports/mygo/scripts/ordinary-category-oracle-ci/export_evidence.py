@@ -19,7 +19,7 @@ SPEC = importlib.util.spec_from_file_location('ordinary_category_reference', ORA
 r = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(r)
 REVIEWED = '4d81f1784ef074bba86895dda6127fcce4b293ad1f6a6ac3ed666a28519a0fe8'
-WORKFLOW_SHA = '28c242f9cf743e9f6a786acdaf6f911934a32510acd78c61eec370836140e033'
+WORKFLOW_SHA = '6e68e7e54705105148c9f3c6c6b697b755981aa656eadbd514029808c8c49a70'
 REPO = HERE.parents[3]
 WORKFLOW = REPO / '.github/workflows/ordinary-category-oracle.yml'
 LABELS = ('xcode-version', 'swiftc-path', 'swift-version', 'macos-version', 'sdk-version',
