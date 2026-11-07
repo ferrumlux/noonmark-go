@@ -4,6 +4,7 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"github.com/ferrumlux/noonmark/ports/mygo/internal/taskapp"
@@ -723,12 +724,24 @@ func main() {
 	initSession := flag.String("init-session", "", "Exclusively create a new isolated development session directory")
 	session := flag.String("session", "", "Open an existing isolated development session")
 	prototype := flag.Bool("prototype", false, "Run the static UI prototype without storage")
+	_ = flag.String("runtime-profile", legacyDevelopment, "Explicit isolated runtime: legacy-development or ordinary-development (experimental; no production import)")
 	_ = flag.String("native-window-smoke", "", "Internal lifecycle-only development probe report")
-	reportFile, preflightErr := nativeWindowPreflight(os.Args[1:])
+	startup, startupErr := parseRuntimeStartup(os.Args[1:])
+	if startupErr != nil {
+		log.Fatal(startupErr)
+	}
+	if err := startup.checkPaths(); err != nil {
+		log.Fatal(err)
+	}
+	reportPlan, preflightErr := planNativeWindowReport(os.Args[1:])
 	if preflightErr != nil {
 		log.Fatal(preflightErr)
 	}
 	flag.Parse()
+	reportFile, reportErr := createNativeWindowReport(reportPlan)
+	if reportErr != nil {
+		log.Fatal(reportErr)
+	}
 	if *list {
 		for _, spec := range screens {
 			fmt.Printf("%s %dx%d\n", spec.key, spec.width, spec.height)
@@ -754,15 +767,11 @@ func main() {
 			probe = newNativeWindowProbe(reportFile.stage, fmt.Sprintf("%04d-%02d-%02d", today.Year, today.Month, today.Day), os.Stdout)
 		}
 		var err error
-		if *initSession != "" {
-			service, err = taskapp.Create(*initSession, today)
-		} else {
-			service, err = taskapp.Open(*session, today)
-		}
+		service, err = startup.openService(today)
 		if err != nil {
-			log.Fatal("Cannot open isolated development session: ", err)
+			log.Fatal(startup.startupFailure("会话启动", err))
 		}
-		defer service.Close()
+		fmt.Fprintf(os.Stderr, "隔离开发会话: %s\nversion=%s profile=%s\n重开: noonmark -runtime-profile=%s -session %q\n", startup.path(), runtimeSourceVersion(), startup.profile, startup.profile, startup.path())
 	}
 	if service == nil && !*prototype && *render == "" && *one == "" {
 		log.Fatal("Use -init-session or -session for development storage; -prototype for the static visual study")
@@ -772,14 +781,15 @@ func main() {
 		if *one != "" {
 			dir = *one
 		}
-		if err := os.MkdirAll(dir, 0755); err != nil {
-			log.Fatal(err)
-		}
+		renderErr := os.MkdirAll(dir, 0755)
 		targets := screens
 		if *one != "" {
 			targets = []screenSpec{spec}
 		}
 		for _, target := range targets {
+			if renderErr != nil {
+				break
+			}
 			var err error
 			if service != nil {
 				state := newRuntimeApp(service)
@@ -789,8 +799,14 @@ func main() {
 				err = renderScreen(target, dir)
 			}
 			if err != nil {
-				log.Fatal(err)
+				renderErr = err
 			}
+		}
+		if service != nil {
+			renderErr = errors.Join(renderErr, service.Close())
+		}
+		if renderErr != nil {
+			log.Fatal(renderErr)
 		}
 		return
 	}
@@ -801,6 +817,16 @@ func main() {
 		var post func(func())
 		dispatcher, post = newTitleDispatch()
 		hub = newTitleHub(service, writer, post, wallTitleClock{}, time.Now, mygo.App.Quit)
+		if startup.profile == ordinaryDevelopment {
+			if err := hub.enableCategoryCandidate(); err != nil {
+				writer.StopAfterDrain()
+				<-writer.Done()
+				dispatcher.StopAfterDrain()
+				<-dispatcher.Done()
+				closeErr := service.Close()
+				log.Fatal(startup.startupFailure("窗口初始化", errors.Join(err, closeErr)))
+			}
+		}
 		mygo.App.OnBeforeQuit(func(e *mygo.QuitEvent) {
 			if !hub.beforeQuit() {
 				e.PreventDefault()
@@ -831,6 +857,9 @@ func main() {
 		title := "Noonmark · MyGo UI Prototype"
 		if service != nil {
 			title = "Noonmark · MyGo Development"
+			if startup.profile == ordinaryDevelopment {
+				title = "隔离开发会话 · 普通分类"
+			}
 		}
 		win := mygo.NewWindow(mygo.WindowOptions{Title: title, Width: spec.width, Height: spec.height, MinWidth: mw, MinHeight: mh, Content: ui.View(s.view)})
 		s.closeWindow = win.Close
@@ -848,10 +877,13 @@ func main() {
 	}
 	mygo.App.WhenReady(func() { open(*page) })
 	runErr := mygo.App.Run()
+	if runErr != nil && service != nil {
+		log.Print(startup.startupFailure("原生窗口启动", runErr))
+	}
 	if probe != nil {
 		probe.RecordRunReturned(runErr)
 	}
-	code := runtimeExitStatus(runErr, func() {
+	code := runtimeExitStatus(runErr, func() error {
 		// The event loop has ended. No UI callback waits here; drain accepted
 		// commands before closing storage, including an event-loop startup failure.
 		if writer != nil {
@@ -871,10 +903,9 @@ func main() {
 			if probe != nil {
 				probe.RecordServiceClose(err)
 			}
-			if err != nil {
-				log.Print(err)
-			}
+			return err
 		}
+		return nil
 	})
 	if probe != nil {
 		payload, err := probe.Finalize()
@@ -896,10 +927,10 @@ func main() {
 	}
 }
 
-func runtimeExitStatus(runErr error, cleanup func()) int {
-	cleanup()
-	if runErr != nil {
-		log.Print(runErr)
+func runtimeExitStatus(runErr error, cleanup func() error) int {
+	cleanupErr := cleanup()
+	if err := errors.Join(runErr, cleanupErr); err != nil {
+		log.Print(err)
 		return 1
 	}
 	return 0

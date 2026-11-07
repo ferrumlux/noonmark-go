@@ -1,0 +1,131 @@
+diff --git a/ports/mygo/main.go b/ports/mygo/main.go
+index 16c860f..73ddc3a 100644
+--- a/ports/mygo/main.go
++++ b/ports/mygo/main.go
+@@ -772,7 +772,6 @@ func main() {
+ 			log.Fatal(startup.startupFailure("会话启动", err))
+ 		}
+ 		fmt.Fprintf(os.Stderr, "隔离开发会话: %s\nversion=%s profile=%s\n重开: noonmark -runtime-profile=%s -session %q\n", startup.path(), runtimeSourceVersion(), startup.profile, startup.profile, startup.path())
+-		defer service.Close()
+ 	}
+ 	if service == nil && !*prototype && *render == "" && *one == "" {
+ 		log.Fatal("Use -init-session or -session for development storage; -prototype for the static visual study")
+@@ -782,14 +781,15 @@ func main() {
+ 		if *one != "" {
+ 			dir = *one
+ 		}
+-		if err := os.MkdirAll(dir, 0755); err != nil {
+-			log.Fatal(err)
+-		}
++		renderErr := os.MkdirAll(dir, 0755)
+ 		targets := screens
+ 		if *one != "" {
+ 			targets = []screenSpec{spec}
+ 		}
+ 		for _, target := range targets {
++			if renderErr != nil {
++				break
++			}
+ 			var err error
+ 			if service != nil {
+ 				state := newRuntimeApp(service)
+@@ -799,9 +799,15 @@ func main() {
+ 				err = renderScreen(target, dir)
+ 			}
+ 			if err != nil {
+-				log.Fatal(err)
++				renderErr = err
+ 			}
+ 		}
++		if service != nil {
++			renderErr = errors.Join(renderErr, service.Close())
++		}
++		if renderErr != nil {
++			log.Fatal(renderErr)
++		}
+ 		return
+ 	}
+ 	var hub *titleHub
+@@ -877,7 +883,7 @@ func main() {
+ 	if probe != nil {
+ 		probe.RecordRunReturned(runErr)
+ 	}
+-	code := runtimeExitStatus(runErr, func() {
++	code := runtimeExitStatus(runErr, func() error {
+ 		// The event loop has ended. No UI callback waits here; drain accepted
+ 		// commands before closing storage, including an event-loop startup failure.
+ 		if writer != nil {
+@@ -897,10 +903,9 @@ func main() {
+ 			if probe != nil {
+ 				probe.RecordServiceClose(err)
+ 			}
+-			if err != nil {
+-				log.Print(err)
+-			}
++			return err
+ 		}
++		return nil
+ 	})
+ 	if probe != nil {
+ 		payload, err := probe.Finalize()
+@@ -922,10 +927,10 @@ func main() {
+ 	}
+ }
+ 
+-func runtimeExitStatus(runErr error, cleanup func()) int {
+-	cleanup()
+-	if runErr != nil {
+-		log.Print(runErr)
++func runtimeExitStatus(runErr error, cleanup func() error) int {
++	cleanupErr := cleanup()
++	if err := errors.Join(runErr, cleanupErr); err != nil {
++		log.Print(err)
+ 		return 1
+ 	}
+ 	return 0
+diff --git a/ports/mygo/runtime_category.go b/ports/mygo/runtime_category.go
+index e026cc7..3bcc2f6 100644
+--- a/ports/mygo/runtime_category.go
++++ b/ports/mygo/runtime_category.go
+@@ -117,6 +117,25 @@ func (s *app) categoryEditor(chain core.TaskChainID) *runtimeCategoryEditor {
+ 	}
+ 	return w.category
+ }
++
++// categoryDisplayName bounds only the UI's single source D preprocessing pass.
++// ordinary.budget.display prepays 3*len(raw) and checks D output <= input.
++// Use division before D to avoid an overflowing multiplication. Native input
++// backing storage and the Service's full transaction budget are separate.
++func categoryDisplayName(raw string) (string, error) {
++	if len(raw) > ordinary.DefaultLimits().MaxBytes/3 {
++		return "", ordinary.ErrResourceLimit
++	}
++	name, err := canonical16.DisplayName(raw)
++	if err != nil {
++		return "", err
++	}
++	if len(name) > len(raw) {
++		return "", ordinary.ErrResourceLimit
++	}
++	return name, nil
++}
++
+ func (s *app) submitCategory(e *runtimeCategoryEditor, choice ordinary.Choice) {
+ 	h := s.titles
+ 	if h == nil || h.category == nil {
+@@ -133,9 +152,13 @@ func (s *app) submitCategory(e *runtimeCategoryEditor, choice ordinary.Choice) {
+ 		if !ok || snap.Composing {
+ 			return
+ 		}
+-		name, err := canonical16.DisplayName(snap.Text)
++		name, err := categoryDisplayName(snap.Text)
+ 		if err != nil || name == "" {
+-			e.failure = errors.New("请输入分组名称。")
++			e.savedUntil = time.Time{}
++			e.failure = err
++			if e.failure == nil {
++				e.failure = errors.New("请输入分组名称。")
++			}
+ 			w.invalidate()
+ 			return
+ 		}

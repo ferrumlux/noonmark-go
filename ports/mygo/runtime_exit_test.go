@@ -15,7 +15,7 @@ func TestRuntimeExitStatusCleansBeforeReturningFailure(t *testing.T) {
 			want = 1
 		}
 		order := []string{}
-		code := runtimeExitStatus(err, func() { order = append(order, "drain writer", "drain dispatcher", "close service") })
+		code := runtimeExitStatus(err, func() error { order = append(order, "drain writer", "drain dispatcher", "close service"); return nil })
 		if code != want || len(order) != 3 || order[2] != "close service" {
 			t.Fatal("exit status or cleanup lost", code, order)
 		}

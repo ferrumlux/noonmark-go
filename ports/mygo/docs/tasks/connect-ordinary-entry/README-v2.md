@@ -1,0 +1,23 @@
+# 普通入口 v2：准确版本转换
+
+产品输入固定为55144bdca3caf1bf640a02edc6e425681ef3732f。本批只改合同测试与文档，不改产品、默认身份、后端、预算或API，不表示正式整合或产品验收。
+
+v1合同在2348eaa固定并通过。所有v1文件、摘要、转换helper及拒绝断言保留；原第九层main转换也保持原样。后续两项已声明产品变化必须使用本v2明确合同，不允许扩成任意路径或任意hash：
+
+1. UI预处理预算：父任务报告8db候选已独审Accepted，移植提交为600fd3db141c0bfffeb0be043f6b3cb16aa4704f。产品变化只有runtime_category.go，精确6686cb2e2c9fd2f8f5a23d31d021c23b580b1b8640df08302c9e0e4e45df12fc→b6bc3fae51a38f6cb84c53355727d36488e7b22e564ab13a5dfc433be8d965a7。其预算测试属于独立UI修复，不由此合同代替行为验收。
+2. 退出清理：55144bd的main.go精确2ff3666a303fa97c6d91861523af2f896152d4a57f99dd9000cc227fbb63de2a→c98d2afcbf81472783aca205a796febb51405d754d1d8bedc1ac2a222b082878。runtimeExitStatus接收cleanup func() error，render/native/enable各只Close一次并移除defer；本合同只固定源码身份，不把静态通过称为行为证明。
+
+## 两份独立约束
+
+- 第十层ordinaryEntryCleanupFrozenOverlay放在原第九层之后，只推进main一件。输入完整73路径摘要固定；原production循环、command suffix以及所有先前阶段保留。四个既有有序consumer列表只明确追加第十项。
+- PRODUCT-SOURCES-v2.tsv继续固定全部120件非测试Go及go.mod/go.sum；ENTRY-SOURCE-CHANGES-v2.tsv严格只允许上述两件从v1到v2。先验证v1整集合、精确转换、v2固定manifest与磁盘完整集合一致，才返回准确v1历史输入，让原v1源码断言及全部负例继续执行。没有绕过当前文件hash验证。
+
+未变的native_window_preflight.go、runtime_startup.go及其他118项必须仍等于v1。新增、缺失、别名、任何未声明产品改动或已前移输入均拒绝。v2产品清单SHA256：81a93f13d6d3e8d70c27f3bdd43fb3a87627c171c733d47651695f7b46943cec。完整两文件源码diff在ENTRY-SOURCE-v2.diff。
+
+## 新证据与边界
+
+旧v1拒绝UI预算与main清理的真实红例分别保留在外置category-entry-build/v1-rejects-ui-budget.log及v1-rejects-cleanup-main.log；不覆盖、不将旧v1绿日志当成v2通过。
+
+本轮在55144bd产品组合及新增v2合同上重新执行12项确切名称taskapp focused静态测试，count=1、非race，全部通过，0.556秒。日志category-entry-build/entry-v2-contract-focused.log。新增main层逐字节/完整73路径负例继续运行；v2产品转换拒绝310个overlay字节mutation、360个全基线路径mutation，另拒绝缺行、重复、额外、空、全/单项前移并核对失败不变与返回map不别名。git diff --check通过。
+
+未执行完整check、全包/race、CLI脚本、cross-build或native host实机，本轮不能引用2348的日志充作这些在新组合上的结果。最终集成提交及完整门禁由父任务另行固定和执行。

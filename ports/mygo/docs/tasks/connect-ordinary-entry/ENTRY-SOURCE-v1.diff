@@ -1,0 +1,372 @@
+diff --git a/ports/mygo/main.go b/ports/mygo/main.go
+index 01255bc..16c860f 100644
+--- a/ports/mygo/main.go
++++ b/ports/mygo/main.go
+@@ -4,6 +4,7 @@
+ package main
+ 
+ import (
++	"errors"
+ 	"flag"
+ 	"fmt"
+ 	"github.com/ferrumlux/noonmark/ports/mygo/internal/taskapp"
+@@ -723,12 +724,24 @@ func main() {
+ 	initSession := flag.String("init-session", "", "Exclusively create a new isolated development session directory")
+ 	session := flag.String("session", "", "Open an existing isolated development session")
+ 	prototype := flag.Bool("prototype", false, "Run the static UI prototype without storage")
++	_ = flag.String("runtime-profile", legacyDevelopment, "Explicit isolated runtime: legacy-development or ordinary-development (experimental; no production import)")
+ 	_ = flag.String("native-window-smoke", "", "Internal lifecycle-only development probe report")
+-	reportFile, preflightErr := nativeWindowPreflight(os.Args[1:])
++	startup, startupErr := parseRuntimeStartup(os.Args[1:])
++	if startupErr != nil {
++		log.Fatal(startupErr)
++	}
++	if err := startup.checkPaths(); err != nil {
++		log.Fatal(err)
++	}
++	reportPlan, preflightErr := planNativeWindowReport(os.Args[1:])
+ 	if preflightErr != nil {
+ 		log.Fatal(preflightErr)
+ 	}
+ 	flag.Parse()
++	reportFile, reportErr := createNativeWindowReport(reportPlan)
++	if reportErr != nil {
++		log.Fatal(reportErr)
++	}
+ 	if *list {
+ 		for _, spec := range screens {
+ 			fmt.Printf("%s %dx%d\n", spec.key, spec.width, spec.height)
+@@ -754,14 +767,11 @@ func main() {
+ 			probe = newNativeWindowProbe(reportFile.stage, fmt.Sprintf("%04d-%02d-%02d", today.Year, today.Month, today.Day), os.Stdout)
+ 		}
+ 		var err error
+-		if *initSession != "" {
+-			service, err = taskapp.Create(*initSession, today)
+-		} else {
+-			service, err = taskapp.Open(*session, today)
+-		}
++		service, err = startup.openService(today)
+ 		if err != nil {
+-			log.Fatal("Cannot open isolated development session: ", err)
++			log.Fatal(startup.startupFailure("会话启动", err))
+ 		}
++		fmt.Fprintf(os.Stderr, "隔离开发会话: %s\nversion=%s profile=%s\n重开: noonmark -runtime-profile=%s -session %q\n", startup.path(), runtimeSourceVersion(), startup.profile, startup.profile, startup.path())
+ 		defer service.Close()
+ 	}
+ 	if service == nil && !*prototype && *render == "" && *one == "" {
+@@ -801,6 +811,16 @@ func main() {
+ 		var post func(func())
+ 		dispatcher, post = newTitleDispatch()
+ 		hub = newTitleHub(service, writer, post, wallTitleClock{}, time.Now, mygo.App.Quit)
++		if startup.profile == ordinaryDevelopment {
++			if err := hub.enableCategoryCandidate(); err != nil {
++				writer.StopAfterDrain()
++				<-writer.Done()
++				dispatcher.StopAfterDrain()
++				<-dispatcher.Done()
++				closeErr := service.Close()
++				log.Fatal(startup.startupFailure("窗口初始化", errors.Join(err, closeErr)))
++			}
++		}
+ 		mygo.App.OnBeforeQuit(func(e *mygo.QuitEvent) {
+ 			if !hub.beforeQuit() {
+ 				e.PreventDefault()
+@@ -831,6 +851,9 @@ func main() {
+ 		title := "Noonmark · MyGo UI Prototype"
+ 		if service != nil {
+ 			title = "Noonmark · MyGo Development"
++			if startup.profile == ordinaryDevelopment {
++				title = "隔离开发会话 · 普通分类"
++			}
+ 		}
+ 		win := mygo.NewWindow(mygo.WindowOptions{Title: title, Width: spec.width, Height: spec.height, MinWidth: mw, MinHeight: mh, Content: ui.View(s.view)})
+ 		s.closeWindow = win.Close
+@@ -848,6 +871,9 @@ func main() {
+ 	}
+ 	mygo.App.WhenReady(func() { open(*page) })
+ 	runErr := mygo.App.Run()
++	if runErr != nil && service != nil {
++		log.Print(startup.startupFailure("原生窗口启动", runErr))
++	}
+ 	if probe != nil {
+ 		probe.RecordRunReturned(runErr)
+ 	}
+diff --git a/ports/mygo/native_window_preflight.go b/ports/mygo/native_window_preflight.go
+index 440a410..cf4e70f 100644
+--- a/ports/mygo/native_window_preflight.go
++++ b/ports/mygo/native_window_preflight.go
+@@ -19,7 +19,22 @@ type nativeWindowReportFile struct {
+ 	stage string
+ }
+ 
++type nativeWindowReportPlan struct{ parent, base, stage string }
++
++// Compatibility wrapper for the original smoke driver; main uses the split
++// read-only plan and exclusive creation phases below.
+ func nativeWindowPreflight(args []string) (*nativeWindowReportFile, error) {
++	plan, err := planNativeWindowReport(args)
++	if err != nil {
++		return nil, err
++	}
++	return createNativeWindowReport(plan)
++}
++
++// Read-only checks: no directory, file or Service can be created here.
++func planNativeWindowReport(args []string) (*nativeWindowReportPlan, error) {
++	// The standalone legacy helper is a no-op outside smoke mode. main always
++	// validates the entire argv before calling it.
+ 	enabled := false
+ 	for _, arg := range args {
+ 		name, _, _ := strings.Cut(strings.TrimPrefix(strings.TrimPrefix(arg, "-"), "-"), "=")
+@@ -30,33 +45,17 @@ func nativeWindowPreflight(args []string) (*nativeWindowReportFile, error) {
+ 	if !enabled {
+ 		return nil, nil
+ 	}
+-	values := map[string]string{}
+-	for i := 0; i < len(args); i++ {
+-		arg := args[i]
+-		if arg == "--" || !strings.HasPrefix(arg, "-") {
+-			return nil, fmt.Errorf("native window smoke rejects positional arguments and --")
+-		}
+-		name, value, equal := strings.Cut(strings.TrimPrefix(strings.TrimPrefix(arg, "-"), "-"), "=")
+-		switch name {
+-		case "native-window-smoke", "init-session", "session", "screen":
+-		default:
+-			return nil, fmt.Errorf("native window smoke rejects flag %q", name)
+-		}
+-		if _, exists := values[name]; exists {
+-			return nil, fmt.Errorf("duplicate native window smoke flag %q", name)
+-		}
+-		if !equal {
+-			i++
+-			if i == len(args) || strings.HasPrefix(args[i], "-") {
+-				return nil, fmt.Errorf("missing value for %s", name)
+-			}
+-			value = args[i]
+-		}
+-		if value == "" {
+-			return nil, fmt.Errorf("empty native window smoke flag %s", name)
+-		}
+-		values[name] = value
++	options, err := parseRuntimeStartup(args)
++	if err != nil {
++		return nil, err
++	}
++	if !options.present("native-window-smoke") {
++		return nil, nil
+ 	}
++	if err := options.checkPaths(); err != nil {
++		return nil, err
++	}
++	values := options.values
+ 	if page, exists := values["screen"]; exists && page != "day" {
+ 		return nil, errors.New("native window smoke requires day")
+ 	}
+@@ -98,16 +97,28 @@ func nativeWindowPreflight(args []string) (*nativeWindowReportFile, error) {
+ 	if _, err := os.Lstat(report); !errors.Is(err, os.ErrNotExist) {
+ 		return nil, errors.New("native window smoke report already exists or cannot be inspected")
+ 	}
+-	root, err := os.OpenRoot(parent)
++	return &nativeWindowReportPlan{parent: parent, base: reportBase, stage: stage}, nil
++}
++
++func createNativeWindowReport(plan *nativeWindowReportPlan) (*nativeWindowReportFile, error) {
++	if plan == nil {
++		return nil, nil
++	}
++	// Recheck plain parents immediately before opening; exclusivity remains the
++	// authority if a report appears after the read-only checks.
++	if err := nativeWindowCheckParents(plan.parent); err != nil {
++		return nil, err
++	}
++	root, err := os.OpenRoot(plan.parent)
+ 	if err != nil {
+ 		return nil, err
+ 	}
+-	file, err := root.OpenFile(reportBase, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0600)
++	file, err := root.OpenFile(plan.base, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0600)
+ 	if err != nil {
+ 		_ = root.Close()
+ 		return nil, err
+ 	}
+-	return &nativeWindowReportFile{file: file, root: root, stage: stage}, nil
++	return &nativeWindowReportFile{file: file, root: root, stage: plan.stage}, nil
+ }
+ 
+ func nativeWindowCheckParents(path string) error {
+diff --git a/ports/mygo/runtime_startup.go b/ports/mygo/runtime_startup.go
+new file mode 100644
+index 0000000..2fc1c48
+--- /dev/null
++++ b/ports/mygo/runtime_startup.go
+@@ -0,0 +1,170 @@
++// SPDX-License-Identifier: AGPL-3.0-only
++package main
++
++import (
++	"errors"
++	"fmt"
++	"os"
++	"path/filepath"
++	"runtime/debug"
++	"strconv"
++	"strings"
++
++	"github.com/ferrumlux/noonmark/ports/mygo/domain/core"
++	"github.com/ferrumlux/noonmark/ports/mygo/internal/taskapp"
++)
++
++const legacyDevelopment = "legacy-development"
++const ordinaryDevelopment = "ordinary-development"
++
++type runtimeStartup struct {
++	profile, session, initSession, screen string
++	values                                map[string]string
++}
++
++// Pure argument validation. Never open storage or create a report here. Unlike
++// flag.Parse this rejects trailing arguments and duplicate flags on every route.
++func parseRuntimeStartup(args []string) (runtimeStartup, error) {
++	o := runtimeStartup{profile: legacyDevelopment, screen: "day", values: map[string]string{}}
++	if len(args) == 1 && (args[0] == "-h" || args[0] == "-help" || args[0] == "--help") {
++		return o, nil
++	}
++	for i := 0; i < len(args); i++ {
++		arg := args[i]
++		if arg == "--" || !strings.HasPrefix(arg, "-") {
++			return o, errors.New("positional arguments and -- are not supported")
++		}
++		name, value, equal := strings.Cut(strings.TrimPrefix(strings.TrimPrefix(arg, "-"), "-"), "=")
++		boolean := name == "list" || name == "prototype"
++		switch name {
++		case "runtime-profile", "session", "init-session", "screen", "render", "render-one", "native-window-smoke", "list", "prototype":
++		default:
++			return o, fmt.Errorf("unknown flag %q", name)
++		}
++		if _, ok := o.values[name]; ok {
++			return o, fmt.Errorf("duplicate flag %q", name)
++		}
++		if boolean && !equal {
++			value = "true"
++		} else if !equal {
++			i++
++			if i == len(args) || strings.HasPrefix(args[i], "-") {
++				return o, fmt.Errorf("missing value for %s", name)
++			}
++			value = args[i]
++		}
++		if value == "" {
++			return o, fmt.Errorf("empty value for %s", name)
++		}
++		if boolean {
++			if _, err := strconv.ParseBool(value); err != nil {
++				return o, fmt.Errorf("invalid boolean for %s", name)
++			}
++		}
++		o.values[name] = value
++	}
++	if p, ok := o.values["runtime-profile"]; ok {
++		o.profile = p
++	}
++	if o.profile != legacyDevelopment && o.profile != ordinaryDevelopment {
++		return o, errors.New("runtime-profile must be legacy-development or ordinary-development")
++	}
++	o.session, o.initSession = o.values["session"], o.values["init-session"]
++	if s, ok := o.values["screen"]; ok {
++		o.screen = s
++	}
++	if _, ok := findScreen(o.screen); !ok {
++		return o, fmt.Errorf("unknown screen %q", o.screen)
++	}
++	hasSession := o.session != "" || o.initSession != ""
++	if o.session != "" && o.initSession != "" {
++		return o, errors.New("choose only one session action")
++	}
++	if o.values["render"] != "" && o.values["render-one"] != "" {
++		return o, errors.New("choose only one render action")
++	}
++	if hasSession && (o.present("prototype") || o.present("list") || o.present("render")) {
++		return o, errors.New("session mode cannot mix with prototype, list or all-screen rendering")
++	}
++	if o.present("list") && (o.present("prototype") || o.present("render") || o.present("render-one")) {
++		return o, errors.New("list cannot mix with rendering or prototype")
++	}
++	if o.present("runtime-profile") && !hasSession {
++		return o, errors.New("runtime-profile requires a session action")
++	}
++	if o.profile == ordinaryDevelopment && o.present("render-one") {
++		return o, errors.New("ordinary-development does not support render-one")
++	}
++	if o.present("native-window-smoke") {
++		for name := range o.values {
++			switch name {
++			case "native-window-smoke", "init-session", "session", "screen", "runtime-profile":
++			default:
++				return o, fmt.Errorf("native window smoke rejects flag %q", name)
++			}
++		}
++		if !hasSession || o.screen != "day" {
++			return o, errors.New("native window smoke requires one session action and day")
++		}
++	}
++	if !hasSession && !o.present("prototype") && !o.present("list") && !o.present("render") && !o.present("render-one") {
++		return o, errors.New("use -init-session or -session for development storage; -prototype for static preview")
++	}
++	return o, nil
++}
++func (o runtimeStartup) present(name string) bool { _, ok := o.values[name]; return ok }
++func (o runtimeStartup) path() string {
++	if o.initSession != "" {
++		return o.initSession
++	}
++	return o.session
++}
++
++// Read-only filesystem checks precede all report/session/render writes.
++func (o runtimeStartup) checkPaths() error {
++	p := o.path()
++	if p == "" {
++		return nil
++	}
++	if !filepath.IsAbs(p) || filepath.Clean(p) != p || strings.ContainsRune(p, 0) {
++		return errors.New("session requires a clean absolute path")
++	}
++	if err := nativeWindowCheckParents(filepath.Dir(p)); err != nil {
++		return err
++	}
++	info, err := os.Lstat(p)
++	if o.initSession != "" {
++		if !errors.Is(err, os.ErrNotExist) {
++			return errors.New("init-session requires an absent directory")
++		}
++	} else if err != nil || !info.IsDir() || nativeWindowLink(info) {
++		return errors.New("session requires an existing plain directory")
++	}
++	return nil
++}
++
++func (o runtimeStartup) openService(today core.LocalDate) (*taskapp.Service, error) {
++	if o.profile == ordinaryDevelopment {
++		if o.initSession != "" {
++			return taskapp.CreateOrdinaryDevelopment(o.initSession, today)
++		}
++		return taskapp.OpenOrdinaryDevelopment(o.session, today)
++	}
++	if o.initSession != "" {
++		return taskapp.Create(o.initSession, today)
++	}
++	return taskapp.Open(o.session, today)
++}
++func (o runtimeStartup) startupFailure(stage string, err error) error {
++	return fmt.Errorf("%s未完成（profile=%s）；创建或启动日结可能已写入，目录已保留，请检查后再操作，不会自动重试或降级：%w", stage, o.profile, err)
++}
++func runtimeSourceVersion() string {
++	if b, ok := debug.ReadBuildInfo(); ok {
++		for _, s := range b.Settings {
++			if s.Key == "vcs.revision" {
++				return "ordinary-entry-v1 / " + s.Value
++			}
++		}
++	}
++	return "ordinary-entry-v1 / source-revision-not-embedded (experimental)"
++}

@@ -6,5 +6,5 @@
 - 这是原生桌面移植，不是既有 Web 服务端提案。禁止把 Go 原型切换为生产实现或声称已全面对等。
 - 源码仅放在 ports/mygo；缓存、二进制、运行资料和新证据放在显式外置 NOONMARK_MYGO_BUILD_ROOT，不得建立 .build、artifacts、dist 或兼容链接。
 - 本轮只能运行隔离 development/e2e 身份，资料通过领域命令合成。禁止 production、iCloud、Keychain、真实 AI 网络调用。远端 Git 只能用于用户已批准的 ferrumlux/noonmark-go 备份。
-- 只允许经过严格验证的空 catalog 分类历史子集；真实非空 catalog 及其他未接通 supplement 仍 fail-closed。真实 macOS Swift 名称 capture 已取得，固定向量的 Go 名称／等价字段1807项对账吻合；仅此有限范围，不证明 Swift Character 分段、完整实体 codec、分类业务或非 Linux 产品／UI 实机对等。证据见 docs/tasks/verify-swift-name-comparison/evidence-42185254910.json；Swift 仅为独立研发对照工具，Go + MyGo 产品无 Swift 运行时依赖。
+- 默认 Create/Open 与 legacy-development 只允许经过严格验证的空 catalog 分类历史子集。显式 ordinary-development 可在隔离合成 development/e2e 会话实验验证 userDirect setCurrent（不分组／已有／新建）及本版既有任务命令；新建和打开共用完整 Service，沿用 v2，不迁移、过滤、降级或导入生产资料。其他未接通 supplement 仍整件 fail-closed。此为候选实验能力，不代表最终组合门禁或 native 分类业务验收已通过；受控开发准入、逐平台交付与 Swift 全状态互通证据分别记录于 docs/tasks/connect-ordinary-development-entry/README.md。真实 macOS Swift 名称 capture 已取得，固定向量的 Go 名称／等价字段1807项对账吻合；仅此有限范围，不证明 Swift Character 分段、完整实体 codec、分类业务或非 Linux 产品／UI 实机对等。证据见 docs/tasks/verify-swift-name-comparison/evidence-42185254910.json；Swift 仅为独立研发对照工具，Go + MyGo 产品无 Swift 运行时依赖。
 - 文档使用新加坡中文。UI 改动先阅读 DESIGN.md 和本轮设计；保留原型模式用于视觉回归，真实运行模式不可伪装静态预览功能已接通。

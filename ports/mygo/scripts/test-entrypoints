@@ -11,3 +11,27 @@ test "$(wc -l < "$session_parent/screens.txt" | tr -d ' ')" = 20
 if "$NOONMARK_MYGO_BINARY" -init-session "$session_parent/session" -render-one "$session_parent/frames" -screen day > "$session_parent/reuse.log" 2>&1; then echo 'Existing session was overwritten' >&2; exit 1; fi
 if "$NOONMARK_MYGO_BINARY" > "$session_parent/implicit.log" 2>&1; then echo 'Unscoped runtime unexpectedly started' >&2; exit 1; fi
 printf 'CLI development identity/create/reopen/reuse guards passed; desktop window not tested.\n'
+# v1 ordinary-entry rejection contract. Every case owns an initially empty
+# destination, so neither a session, report nor render output may be created.
+reject_without_writes() {
+  local name=$1
+  shift
+  local root="$session_parent/reject-$name"
+  mkdir "$root"
+  if "$NOONMARK_MYGO_BINARY" -init-session "$root/session" "$@" > "$session_parent/reject-$name.log" 2>&1; then
+    echo "Invalid startup unexpectedly accepted: $name" >&2; exit 1
+  fi
+  if test -n "$(find "$root" -mindepth 1 -print -quit)"; then
+    echo "Invalid startup wrote files: $name" >&2; exit 1
+  fi
+}
+reject_without_writes unknown-profile -runtime-profile unknown
+reject_without_writes empty-profile -runtime-profile=
+reject_without_writes missing-profile -runtime-profile
+reject_without_writes duplicate-profile -runtime-profile ordinary-development --runtime-profile=ordinary-development
+reject_without_writes trailing-argument -runtime-profile ordinary-development trailing
+reject_without_writes list-mixture -list
+reject_without_writes ordinary-render -runtime-profile ordinary-development -render-one "$session_parent/reject-ordinary-render/frames"
+reject_without_writes list-render -list -render-one "$session_parent/reject-list-render/frames"
+reject_without_writes smoke-profile -runtime-profile unknown -native-window-smoke "$session_parent/reject-smoke-profile/stage1.json"
+printf 'CLI v1 invalid profile/duplicate/trailing/list/render arguments rejected with zero destination writes.\n'

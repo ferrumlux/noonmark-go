@@ -19,7 +19,22 @@ type nativeWindowReportFile struct {
 	stage string
 }
 
+type nativeWindowReportPlan struct{ parent, base, stage string }
+
+// Compatibility wrapper for the original smoke driver; main uses the split
+// read-only plan and exclusive creation phases below.
 func nativeWindowPreflight(args []string) (*nativeWindowReportFile, error) {
+	plan, err := planNativeWindowReport(args)
+	if err != nil {
+		return nil, err
+	}
+	return createNativeWindowReport(plan)
+}
+
+// Read-only checks: no directory, file or Service can be created here.
+func planNativeWindowReport(args []string) (*nativeWindowReportPlan, error) {
+	// The standalone legacy helper is a no-op outside smoke mode. main always
+	// validates the entire argv before calling it.
 	enabled := false
 	for _, arg := range args {
 		name, _, _ := strings.Cut(strings.TrimPrefix(strings.TrimPrefix(arg, "-"), "-"), "=")
@@ -30,33 +45,17 @@ func nativeWindowPreflight(args []string) (*nativeWindowReportFile, error) {
 	if !enabled {
 		return nil, nil
 	}
-	values := map[string]string{}
-	for i := 0; i < len(args); i++ {
-		arg := args[i]
-		if arg == "--" || !strings.HasPrefix(arg, "-") {
-			return nil, fmt.Errorf("native window smoke rejects positional arguments and --")
-		}
-		name, value, equal := strings.Cut(strings.TrimPrefix(strings.TrimPrefix(arg, "-"), "-"), "=")
-		switch name {
-		case "native-window-smoke", "init-session", "session", "screen":
-		default:
-			return nil, fmt.Errorf("native window smoke rejects flag %q", name)
-		}
-		if _, exists := values[name]; exists {
-			return nil, fmt.Errorf("duplicate native window smoke flag %q", name)
-		}
-		if !equal {
-			i++
-			if i == len(args) || strings.HasPrefix(args[i], "-") {
-				return nil, fmt.Errorf("missing value for %s", name)
-			}
-			value = args[i]
-		}
-		if value == "" {
-			return nil, fmt.Errorf("empty native window smoke flag %s", name)
-		}
-		values[name] = value
+	options, err := parseRuntimeStartup(args)
+	if err != nil {
+		return nil, err
 	}
+	if !options.present("native-window-smoke") {
+		return nil, nil
+	}
+	if err := options.checkPaths(); err != nil {
+		return nil, err
+	}
+	values := options.values
 	if page, exists := values["screen"]; exists && page != "day" {
 		return nil, errors.New("native window smoke requires day")
 	}
@@ -98,16 +97,28 @@ func nativeWindowPreflight(args []string) (*nativeWindowReportFile, error) {
 	if _, err := os.Lstat(report); !errors.Is(err, os.ErrNotExist) {
 		return nil, errors.New("native window smoke report already exists or cannot be inspected")
 	}
-	root, err := os.OpenRoot(parent)
+	return &nativeWindowReportPlan{parent: parent, base: reportBase, stage: stage}, nil
+}
+
+func createNativeWindowReport(plan *nativeWindowReportPlan) (*nativeWindowReportFile, error) {
+	if plan == nil {
+		return nil, nil
+	}
+	// Recheck plain parents immediately before opening; exclusivity remains the
+	// authority if a report appears after the read-only checks.
+	if err := nativeWindowCheckParents(plan.parent); err != nil {
+		return nil, err
+	}
+	root, err := os.OpenRoot(plan.parent)
 	if err != nil {
 		return nil, err
 	}
-	file, err := root.OpenFile(reportBase, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0600)
+	file, err := root.OpenFile(plan.base, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0600)
 	if err != nil {
 		_ = root.Close()
 		return nil, err
 	}
-	return &nativeWindowReportFile{file: file, root: root, stage: stage}, nil
+	return &nativeWindowReportFile{file: file, root: root, stage: plan.stage}, nil
 }
 
 func nativeWindowCheckParents(path string) error {
