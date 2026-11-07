@@ -109,6 +109,10 @@ func TestHistoryEditFrozenProduction(t *testing.T) {
 	must(t, e)
 	expected, e = nativeWindowFrozenOverlay(expected, string(windowOverlay))
 	must(t, e)
+	quoteOverlay, e := os.ReadFile("../../docs/tasks/optimize-canonical-quote/FROZEN-PRODUCTION-OVERLAY-v1.tsv")
+	must(t, e)
+	expected, e = quoteFastFrozenOverlay(expected, string(quoteOverlay))
+	must(t, e)
 	for _, line := range strings.Split(strings.TrimSpace(string(rows)), "\n") {
 		parts := strings.Split(line, "\t")
 		if len(parts) != 2 {

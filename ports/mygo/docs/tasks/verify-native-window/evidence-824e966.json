@@ -1,0 +1,288 @@
+{
+  "evidence_date_utc": "2026-11-06",
+  "limitations": [
+    "These conclusions bind only the exact source/tree above, never a later commit.",
+    "Artifact digests identify actual downloaded ZIP bytes; the repository summary does not embed or preserve those ZIPs.",
+    "Actions retention is seven days; artifact URLs may later expire. Logs, source bindings and hashes remain useful identifiers, not substitutes for missing original bytes.",
+    "Linux lifecycle uses isolated Xvfb/software GL, not a user desktop compositor or hardware-GPU visual acceptance.",
+    "Headless PNGs show synthetic empty Day/Pool sessions, not real OS screen capture or rich business coverage.",
+    "No production migration, live AI, iCloud, Keychain, signing, installation or complete UI/IME acceptance is implied."
+  ],
+  "native_cli_headless": {
+    "artifacts": [
+      {
+        "binary_header_target": "darwin/arm64",
+        "binary_sha256": "ab6c25bc619c54dd63c88183caac929a5a84b357f53e442d9a11777a11d71a31",
+        "id": 13541444203,
+        "name": "native-bin-darwin-arm64-42297385613-1",
+        "zip_bytes": 9389037,
+        "zip_sha256": "af0147dbb1c60f50ca368bd8005ae44486caa332f25100642928e85a0f174b09"
+      },
+      {
+        "id": 13541494445,
+        "name": "native-runtime-evidence-darwin_amd64-42297385613-1",
+        "zip_bytes": 216044,
+        "zip_sha256": "e7c4e0797409130ebaf5cdc29d0491d93d8f72fab745a42265a0e2f636d412c8"
+      },
+      {
+        "id": 13541739032,
+        "name": "native-build-evidence-42297385613-1",
+        "zip_bytes": 1131,
+        "zip_sha256": "f6e7bb37dd30b0f0b2a4406564ae973bd3964345bfa11826ba31c075d3ccbf38"
+      },
+      {
+        "binary_header_target": "linux/amd64",
+        "binary_sha256": "54e54dde31da0a66670b7dfb5acd779289ada21b3b3f58d5c875d3415b876551",
+        "id": 13542149305,
+        "name": "native-bin-linux-amd64-42297385613-1",
+        "zip_bytes": 9586036,
+        "zip_sha256": "15b446df29e4d15a910a3171b8d609d30e52956f7138f360a7244a61c3b827e5"
+      },
+      {
+        "binary_header_target": "linux/arm64",
+        "binary_sha256": "57f7b80fba4cace7440353c1ec5b54d1d86763584cdeffb04d4c1b438f978e74",
+        "id": 13542154488,
+        "name": "native-bin-linux-arm64-42297385613-1",
+        "zip_bytes": 8769398,
+        "zip_sha256": "1bdb1b48e870603f371af4650268a7b4f90efe3864303af5b5ed086ddf10a8ea"
+      },
+      {
+        "id": 13542259267,
+        "name": "native-runtime-evidence-windows_arm64-42297385613-1",
+        "zip_bytes": 187457,
+        "zip_sha256": "826b7a9458451ab82aced13f9e628e1008c1f1fa88533746ce746b3b80fca671"
+      },
+      {
+        "id": 13542467910,
+        "name": "native-runtime-evidence-linux_arm64-42297385613-1",
+        "zip_bytes": 206092,
+        "zip_sha256": "3af5a04ee542a69d22cef60626bd203e12ffcae2d6a68cb786f78bca9f3b2418"
+      },
+      {
+        "binary_header_target": "darwin/amd64",
+        "binary_sha256": "3866dd88837431704330ebd8f9892076afaa0219f8670292304a71e0649c20d9",
+        "id": 13542552686,
+        "name": "native-bin-darwin-amd64-42297385613-1",
+        "zip_bytes": 10023326,
+        "zip_sha256": "f17e7b21e06006bf45bb54cb396f217e9968c5c6cec86cb19b6135badcabf542"
+      },
+      {
+        "binary_header_target": "windows/amd64",
+        "binary_sha256": "342df152f10f674f011861b7bd6f1d82aeb80c1df69d4780e4169f7ce1904ddc",
+        "id": 13542577653,
+        "name": "native-bin-windows-amd64-42297385613-1",
+        "zip_bytes": 9829886,
+        "zip_sha256": "013b54ee50a636e80ebf10538bde086b729d7510b84383f17e30b3245b59a6e7"
+      },
+      {
+        "binary_header_target": "windows/arm64",
+        "binary_sha256": "3277d65d36cd165e69ab7f10b3f2ec7ea4bc833e21f0686f9ad933de18091a26",
+        "id": 13542577659,
+        "name": "native-bin-windows-arm64-42297385613-1",
+        "zip_bytes": 8942319,
+        "zip_sha256": "f488bc319086337fb9f3694f65dfbd8b665fec7315075af7935e9f6e2acfb82c"
+      },
+      {
+        "id": 13542637885,
+        "name": "native-runtime-evidence-windows_amd64-42297385613-1",
+        "zip_bytes": 187451,
+        "zip_sha256": "c7513c258faddb5141aa622122e5267e8db76ecefd5ae60b48627de72c1d5fb6"
+      },
+      {
+        "id": 13543225790,
+        "name": "native-runtime-evidence-darwin_arm64-42297385613-1",
+        "zip_bytes": 215966,
+        "zip_sha256": "1e22fb61fb77731ce231866572c6f2f350c6796f08a0df7ca73ffd5ecdd9af28"
+      },
+      {
+        "id": 13543435025,
+        "name": "native-runtime-evidence-linux_amd64-42297385613-1",
+        "zip_bytes": 206086,
+        "zip_sha256": "75be1c25bd4cc4997111ec0372e3af2a732d7597418fb9e0d6789ba800b7aabf"
+      }
+    ],
+    "attempt": "1",
+    "conclusion": "success",
+    "expected_command_results": 30,
+    "native_targets": [
+      "darwin/amd64",
+      "darwin/arm64",
+      "linux/amd64",
+      "linux/arm64",
+      "windows/amd64",
+      "windows/arm64"
+    ],
+    "run_id": "42297385613",
+    "status": "completed",
+    "synthetic_pngs": 12
+  },
+  "native_window": {
+    "actual_create_open_stages": 12,
+    "artifacts": [
+      {
+        "binary_header_target": "windows/arm64",
+        "binary_sha256": "3277d65d36cd165e69ab7f10b3f2ec7ea4bc833e21f0686f9ad933de18091a26",
+        "id": 13541289264,
+        "name": "native-window-bin-windows-arm64-42297385629-1",
+        "zip_bytes": 8942319,
+        "zip_sha256": "b3ef56340684e7123ea2b39d33f5f6cc1656ac116bba86acdd52b9aa9dba84f6"
+      },
+      {
+        "id": 13541369999,
+        "name": "native-window-evidence-linux_amd64-42297385629-1",
+        "zip_bytes": 7310,
+        "zip_sha256": "684bf09b83093ec9c1d2deda8f773e776c7121261344f7366dc4f4e0ef0300de"
+      },
+      {
+        "binary_header_target": "darwin/amd64",
+        "binary_sha256": "3866dd88837431704330ebd8f9892076afaa0219f8670292304a71e0649c20d9",
+        "id": 13541494076,
+        "name": "native-window-bin-darwin-amd64-42297385629-1",
+        "zip_bytes": 10023326,
+        "zip_sha256": "2e11f8067ea82e3451065cc656d1316923e71d17e2696e3fcae2129eedd44c6b"
+      },
+      {
+        "id": 13541564674,
+        "name": "native-window-evidence-windows_arm64-42297385629-1",
+        "zip_bytes": 4748,
+        "zip_sha256": "c0a2eefc9b79bfc676f802765a9279b0259ec7d4ac07597d754dc81d9130b4a7"
+      },
+      {
+        "id": 13541643981,
+        "name": "native-window-evidence-linux_arm64-42297385629-1",
+        "zip_bytes": 7652,
+        "zip_sha256": "191715bc41b7c660e29ac8f46b286b2daa50bf5ad81b44733c5eb3a3dafae317"
+      },
+      {
+        "binary_header_target": "darwin/arm64",
+        "binary_sha256": "ab6c25bc619c54dd63c88183caac929a5a84b357f53e442d9a11777a11d71a31",
+        "id": 13541873761,
+        "name": "native-window-bin-darwin-arm64-42297385629-1",
+        "zip_bytes": 9389037,
+        "zip_sha256": "a02bb14055bae3aab64d8d5f9973d2fa2562915d3fdb8ae8139bba38a3646ed9"
+      },
+      {
+        "binary_header_target": "linux/arm64",
+        "binary_sha256": "57f7b80fba4cace7440353c1ec5b54d1d86763584cdeffb04d4c1b438f978e74",
+        "id": 13541938590,
+        "name": "native-window-bin-linux-arm64-42297385629-1",
+        "zip_bytes": 8769398,
+        "zip_sha256": "0638922d01d3e6d5b5b7e6ecbce7993f23ca254725cb64b74f49e7724f429bac"
+      },
+      {
+        "id": 13541963806,
+        "name": "native-window-evidence-darwin_arm64-42297385629-1",
+        "zip_bytes": 4740,
+        "zip_sha256": "4aa12ffeea8915b30b638afbfc9db45c6d0f1c1f0fd87a5782ae376801d7ef42"
+      },
+      {
+        "id": 13542492666,
+        "name": "native-window-build-evidence-42297385629-1",
+        "zip_bytes": 1133,
+        "zip_sha256": "5c649fbc18348e674f72e595df103e96e153a7cc8acf7652bca2ede3140a9d92"
+      },
+      {
+        "binary_header_target": "linux/amd64",
+        "binary_sha256": "54e54dde31da0a66670b7dfb5acd779289ada21b3b3f58d5c875d3415b876551",
+        "id": 13542497647,
+        "name": "native-window-bin-linux-amd64-42297385629-1",
+        "zip_bytes": 9586036,
+        "zip_sha256": "10973698859046e0835fd7de9ff19c05dd1bc373317a3c1eeb5851bf706d2044"
+      },
+      {
+        "binary_header_target": "windows/amd64",
+        "binary_sha256": "342df152f10f674f011861b7bd6f1d82aeb80c1df69d4780e4169f7ce1904ddc",
+        "id": 13542517595,
+        "name": "native-window-bin-windows-amd64-42297385629-1",
+        "zip_bytes": 9829886,
+        "zip_sha256": "507da0fb3319c3b7c75f9448f5253f33eac7e13c79a36667d980563d176b81a5"
+      },
+      {
+        "id": 13542692484,
+        "name": "native-window-evidence-darwin_amd64-42297385629-1",
+        "zip_bytes": 4761,
+        "zip_sha256": "7afb6c93dd86a097777cbf9ae37c11a393e587f55edc6ef0cee7e4d9b6ef8275"
+      },
+      {
+        "id": 13543130709,
+        "name": "native-window-evidence-windows_amd64-42297385629-1",
+        "zip_bytes": 4720,
+        "zip_sha256": "2e782e45eb808aa94e6c1e1912754e8428ed419c9a15f0356b2dd3447b343321"
+      }
+    ],
+    "attempt": "1",
+    "conclusion": "success",
+    "run_id": "42297385629",
+    "status": "completed",
+    "targets": {
+      "darwin/amd64": {
+        "binary_artifact_id": 13541494076,
+        "classification": "lifecycle-only success",
+        "conclusion": "success",
+        "job_id": 128168148676,
+        "runtime_artifact_id": 13542692484
+      },
+      "darwin/arm64": {
+        "binary_artifact_id": 13541873761,
+        "classification": "lifecycle-only success",
+        "conclusion": "success",
+        "job_id": 128168148692,
+        "runtime_artifact_id": 13541963806
+      },
+      "linux/amd64": {
+        "binary_artifact_id": 13542497647,
+        "classification": "lifecycle-only success",
+        "conclusion": "success",
+        "job_id": 128168148603,
+        "runtime_artifact_id": 13541369999
+      },
+      "linux/arm64": {
+        "binary_artifact_id": 13541938590,
+        "classification": "lifecycle-only success",
+        "conclusion": "success",
+        "job_id": 128168148684,
+        "runtime_artifact_id": 13541643981
+      },
+      "windows/amd64": {
+        "binary_artifact_id": 13542517595,
+        "classification": "lifecycle-only success",
+        "conclusion": "success",
+        "job_id": 128168148639,
+        "runtime_artifact_id": 13543130709
+      },
+      "windows/arm64": {
+        "binary_artifact_id": 13541289264,
+        "classification": "lifecycle-only success",
+        "conclusion": "success",
+        "job_id": 128168148667,
+        "runtime_artifact_id": 13541564674
+      }
+    }
+  },
+  "ordinary_ci": {
+    "artifact_bytes": 6458,
+    "artifact_id": 13544351129,
+    "artifact_sha256": "5ae616fb996485a057a2e7886f134654cd27d5399dc07e196c3406ba3d888e4e",
+    "attempt": 1,
+    "completed_at": "2026-11-06T21:57:46Z",
+    "default_timeout_seconds": 600,
+    "job_id": 128166048172,
+    "root_margin_seconds": 12.152,
+    "root_seconds": 587.848,
+    "run_id": 42297385679
+  },
+  "schema": "noonmark-development-evidence-summary-v1",
+  "scope": {
+    "cli_headless_six_native_hosts": true,
+    "complete_product_parity": false,
+    "ime_tested": false,
+    "product": "pure Go + MyGo",
+    "production_data_used": false,
+    "release_acceptance": false,
+    "system_pixels_verified": false,
+    "window_six_native_hosts": "lifecycle-only"
+  },
+  "source_sha": "824e96614a3c0196f9086505d201aae23b7c6de2",
+  "tree_sha": "5509119fc599aec2cb2df4a80640a588f13c6cde",
+  "verified_date_utc": "2026-11-07"
+}

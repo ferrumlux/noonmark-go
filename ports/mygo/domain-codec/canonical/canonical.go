@@ -265,6 +265,21 @@ func (w *writer) quote(s string) error {
 	if e := w.put("\""); e != nil {
 		return e
 	}
+	// Valid UTF-8 bytes above ASCII cannot need JSON escaping. Write an
+	// escape-free payload once, rather than one bounded buffer write per rune.
+	// If the payload cannot fit, retain the original partial-write/error path.
+	if len(s) <= w.lim.MaxBytes-w.b.Len() {
+		i := 0
+		for i < len(s) && s[i] >= 0x20 && s[i] != '"' && s[i] != '\\' {
+			i++
+		}
+		if i == len(s) {
+			if e := w.put(s); e != nil {
+				return e
+			}
+			return w.put("\"")
+		}
+	}
 	for _, r := range s {
 		var x string
 		switch r {
